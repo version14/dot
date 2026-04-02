@@ -1,0 +1,73 @@
+name: CI
+
+# ──────────────────────────────────────────────────────────────────────────────
+# TEMPLATE — adapt this workflow to your tech stack before committing.
+# Replace the placeholder steps below with your actual install/lint/test/build
+# commands. Remove this comment block when done.
+# ──────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Install runtime ────────────────────────────────
+      # Replace or extend with your language setup action.
+      # Examples:
+      #   Node:   actions/setup-node@v4
+      #   Python: actions/setup-python@v5
+      #   Go:     actions/setup-go@v5
+      #   Java:   actions/setup-java@v4
+      - name: Set up runtime
+        run: echo "Replace this step with your runtime setup"
+
+      # ── Install dependencies ───────────────────────────
+      - name: Install dependencies
+        run: echo "Replace with -> npm ci / pip install / go mod download / ..."
+
+      # ── Lint ───────────────────────────────────────────
+      - name: Lint
+        run: echo "Replace with your lint command"
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up runtime
+        run: echo "Replace this step with your runtime setup"
+
+      - name: Install dependencies
+        run: echo "Replace with your install command"
+
+      - name: Run tests
+        run: echo "Replace with your test command"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up runtime
+        run: echo "Replace this step with your runtime setup"
+
+      - name: Install dependencies
+        run: echo "Replace with your install command"
+
+      - name: Build
+        run: echo "Replace with your build command"

@@ -1,0 +1,25 @@
+#!/bin/sh
+# Validates commit messages against the Conventional Commits spec.
+# Activate with: git config core.hooksPath .githooks
+
+MSG=$(cat "$1")
+
+# Strip comments and trailing whitespace
+SUBJECT=$(echo "$MSG" | sed '/^#/d' | head -1 | sed 's/[[:space:]]*$//')
+
+PATTERN='^(feat|fix|refactor|test|docs|chore|perf|ci)(\(.+\))?(!)?: .{1,72}$'
+
+if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "  Commit message rejected — does not follow Conventional Commits."
+  echo ""
+  echo "  Format : <type>(<scope>): <description>"
+  echo "  Example: feat(auth): add refresh token rotation"
+  echo ""
+  echo "  Allowed types: feat | fix | refactor | test | docs | chore | perf | ci"
+  echo "  Subject must be lowercase and under 72 characters."
+  echo ""
+  echo "  Your message: $SUBJECT"
+  echo ""
+  exit 1
+fi
