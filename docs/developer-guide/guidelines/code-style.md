@@ -1,21 +1,32 @@
-# Code Style Guide
+# Go Code Style Guide
 
-<!-- Replace this file with your project's actual conventions. The sections below are a starting point. -->
-
-This document defines the code style and formatting conventions for this project. Consistency matters more than any individual rule — when in doubt, follow existing patterns in the codebase.
+This document defines the code style and formatting conventions for Scaffold CLI. We follow Go idioms and best practices from [Effective Go](https://golang.org/doc/effective_go). Consistency matters more than any individual rule — when in doubt, follow existing patterns in the codebase.
 
 ---
 
 ## Tooling
 
-<!-- Describe the linter / formatter used and how to run them. -->
+We use standard Go tooling to enforce code quality:
 
 ```bash
-# Check for style errors
-# Auto-fix formatting
+# Format code (auto-fixes formatting)
+go fmt ./...
+
+# Lint code (requires golangci-lint)
+golangci-lint run ./...
+
+# Vet code for suspicious constructs
+go vet ./...
+
+# Check for code coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
 ```
 
-All checks must pass before a PR can be merged. The CI pipeline enforces this automatically.
+All checks must pass before a PR can be merged. The CI pipeline enforces this automatically with:
+- `go fmt` (no unformatted code)
+- `golangci-lint` (no style violations)
+- `go test -race` (no race conditions)
 
 ---
 
@@ -30,66 +41,180 @@ All checks must pass before a PR can be merged. The CI pipeline enforces this au
 
 ## Naming Conventions
 
-<!-- Adapt the table below to your language and framework. -->
+Go uses specific conventions for identifiers. Follow these strictly:
 
 | Element | Convention | Example |
 |---------|------------|---------|
-| Files | `kebab-case` | `user-service.ts` |
-| Classes | `PascalCase` | `UserService` |
-| Functions / methods | `camelCase` | `getUserById` |
-| Constants | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
-| Private members | `_prefixed` or language convention | `_cache` |
+| Files | `snake_case` | `api_generator.go` |
+| Packages | `lowercase` | `survey`, `generators` |
+| Exported types | `PascalCase` | `ProjectSpec`, `APIGenerator` |
+| Exported functions | `PascalCase` | `Generate()`, `AskQuestions()` |
+| Unexported functions | `camelCase` | `renderTemplate()`, `mergeFiles()` |
+| Constants | `PascalCase` (exported) or `camelCase` (unexported) | `MaxRetries`, `defaultTimeout` |
+| Interfaces | `PascalCase` ending in `er` | `Generator`, `Reader`, `Writer` |
+| Errors | Start with `Err` or end with `Error` | `ErrNotFound`, `InvalidSpecError` |
+
+**Rule:** Exported identifiers (visible outside the package) start with an uppercase letter. Unexported identifiers start with a lowercase letter.
 
 ---
 
 ## Formatting
 
-<!-- Describe spacing, indentation, line length, quotes, etc. -->
+Go's `gofmt` enforces these conventions automatically:
 
-- **Indentation**: X spaces (no tabs)
-- **Max line length**: 100 characters
-- **Trailing commas**: yes / no
-- **Quotes**: single / double
+- **Indentation**: Use tabs (enforced by `gofmt`)
+- **Max line length**: No hard limit, but keep readable (~100 chars when practical)
+- **Spaces**: Go uses specific spacing rules; `gofmt` enforces them
+- **Braces**: Always on the same line as the declaration: `func foo() {` not `func foo()\n{`
+- **Blank lines**: Use sparingly; one blank line between functions and logical sections
 
 ---
 
-## Import / Dependency Order
+## Import Order
 
-<!-- Describe how imports should be ordered. Example for languages with explicit imports: -->
+Imports must be grouped and sorted alphabetically within each group:
 
-1. Standard library / built-ins
-2. Third-party packages
-3. Internal packages / modules
-4. Relative imports
+```go
+import (
+	// Standard library
+	"encoding/json"
+	"fmt"
+	"log"
 
-Separate each group with a blank line.
+	// Third-party packages
+	"github.com/AlecAivazis/survey/v2"
+
+	// Internal packages
+	"scaffold-cli/internal/generators"
+	"scaffold-cli/internal/spec"
+)
+```
+
+**Rules:**
+1. Standard library imports first
+2. Third-party imports next (sorted alphabetically)
+3. Internal package imports last (sorted alphabetically)
+4. Separate each group with a blank line
+5. Use `goimports` to auto-format: `go install golang.org/x/tools/cmd/goimports@latest && goimports -w ./...`
 
 ---
 
 ## Error Handling
 
-- Never swallow errors silently — log or propagate
-- Use typed/structured errors where the language supports it
-- Validate inputs at system boundaries; trust internal code
+**Go's approach to errors:**
+
+- Functions that can fail return `error` as the last return value
+- Always check errors immediately: `if err != nil { return err }`
+- Never swallow errors silently — always log or propagate
+- Use typed errors for specific cases:
+  ```go
+  type InvalidSpecError struct {
+      Field string
+      Reason string
+  }
+
+  func (e InvalidSpecError) Error() string {
+      return fmt.Sprintf("invalid spec: %s - %s", e.Field, e.Reason)
+  }
+  ```
+- Validate inputs at system boundaries (API, CLI); trust internal code
+- Wrap errors with context using `fmt.Errorf`: `return fmt.Errorf("failed to generate: %w", err)`
 
 ---
 
 ## Testing Conventions
 
-- Tests live next to the code they test, or in a dedicated `tests/` directory
+**Go testing patterns:**
+
+- Test files live in the same package as the code they test, named `*_test.go`
+  - Code: `generators/api.go`
+  - Tests: `generators/api_test.go`
+- Test function names start with `Test`, followed by the function being tested:
+  ```go
+  func TestAPIGenerator_Generate(t *testing.T) { ... }
+  func TestAPIGenerator_GenerateWithoutDatabase(t *testing.T) { ... }
+  ```
+- Use table-driven tests for multiple scenarios:
+  ```go
+  tests := []struct {
+      name    string
+      input   ProjectSpec
+      wantErr bool
+  }{
+      {"valid spec", spec1, false},
+      {"invalid service", spec2, true},
+  }
+  for _, tt := range tests {
+      t.Run(tt.name, func(t *testing.T) { ... })
+  }
+  ```
 - Each test should be independent and not rely on shared mutable state
-- Test names should describe the expected behavior: `should return 404 when user not found`
+- Use `t.Helper()` for test helper functions
+- Run tests with race detector: `go test -race ./...`
+
+---
+
+## Go-Specific Best Practices
+
+**Interfaces & Composition:**
+- Keep interfaces small (1-3 methods). See the `Generator` interface.
+- Use interface{} sparingly; prefer concrete types
+- Embed interfaces for composition:
+  ```go
+  type APIGenerator struct {
+      BaseGenerator // embed to reuse
+  }
+  ```
+
+**Concurrency:**
+- Use goroutines and channels for independent tasks
+- Always handle context cancellation
+- Avoid global state; pass dependencies as arguments
+
+**Dependencies:**
+- Keep `go.mod` minimal; only add packages you use
+- Run `go mod tidy` before committing
+- Prefer `context.Context` for cancellation and deadlines
+
+**Memory & Performance:**
+- Avoid unnecessary allocations; reuse buffers when possible
+- Use `strings.Builder` for string concatenation
+- Profile with `pprof` for hot paths
 
 ---
 
 ## Running the Full Validation Suite
 
+Before pushing or submitting a PR, run the complete validation suite:
+
 ```bash
-# Replace with your actual commands
-# Lint
-# Type-check (if applicable)
-# Tests
-# Build
+# 1. Format code
+go fmt ./...
+
+# 2. Import organization
+goimports -w ./...
+
+# 3. Vet for suspicious constructs
+go vet ./...
+
+# 4. Lint
+golangci-lint run ./...
+
+# 5. Run tests with coverage and race detector
+go test -race -coverprofile=coverage.out ./...
+
+# 6. Check coverage
+go tool cover -func=coverage.out
+
+# 7. Build
+go build -o scaffold ./cmd/scaffold
 ```
 
-All four must pass before pushing.
+**All checks must pass before pushing.** Quick version:
+
+```bash
+go fmt ./... && goimports -w ./... && go vet ./... && \
+golangci-lint run ./... && go test -race ./... && \
+go build -o scaffold ./cmd/scaffold && \
+echo "✓ All checks passed!"
+```

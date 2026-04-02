@@ -1,11 +1,9 @@
-# Project Name
+# Scaffold CLI
 
-<!-- Replace the title above, fill in each section, and delete these comments when done. -->
-
-[![CI](https://github.com/your-org/your-repo/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/your-repo/actions/workflows/ci.yml)
+[![CI](https://github.com/version14/scaffold-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/version14/scaffold-cli/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-One-paragraph description of what this project does and who it is for.
+Scaffold CLI is a modular code generator that builds complete, production-ready project structures from interactive questionnaires. Instead of merging templates, it composes independent generators that create files from specifications, eliminating conflicts and scaling effortlessly from single apps to enterprise monorepos.
 
 ---
 
@@ -22,7 +20,21 @@ One-paragraph description of what this project does and who it is for.
 
 ## Overview
 
-Describe the problem this project solves, its main features, and any key design decisions worth highlighting upfront.
+**The Problem:** Building project scaffolding tools typically involves merging incompatible templates, managing conflicting dependencies, and maintaining exponential combinations of configurations.
+
+**The Solution:** Scaffold CLI uses a **generator-based architecture** where each feature (API layer, database, CI/CD, etc.) is an independent generator. Generators compose together, eliminating conflicts and making the system trivially extensible.
+
+**Key Features:**
+- **Interactive CLI**: Answer questions to build a project specification (JSON)
+- **Modular Generators**: Independent, composable generators for different layers (base, API, database, auth, CI/CD, testing)
+- **Smart Merging**: Conflict-safe file generation with merge strategies for multi-generator files
+- **Extensible**: Add new generators in ~1 hour with a clear interface
+- **Production-Ready**: Generates complete, deployable monorepos and single-app projects
+
+**Design Philosophy:**
+- Generate from specs, don't merge templates
+- One generator = one concern
+- Minimal complexity, maximum flexibility
 
 ---
 
@@ -30,26 +42,21 @@ Describe the problem this project solves, its main features, and any key design 
 
 ### Prerequisites
 
-<!-- List the tools and versions required to run this project. -->
-
-| Tool | Version | Install |
-|------|---------|---------|
-| <!-- e.g. Node, Python, Go, Java --> | <!-- e.g. >= 22.x --> | <!-- link --> |
+| Tool | Version | Install                               |
+|------|---------|---------------------------------------|
+| go   | 1.26+  | [Install](https://go.dev/doc/install) |
 
 ### Installation
 
 ```bash
-git clone https://github.com/your-org/your-repo.git
+git clone https://github.com/version14/scaffold-cli.git
 cd your-repo
 
 # Activate the commit-msg hook (optional but recommended)
 git config core.hooksPath .githooks
 
-# Copy and fill in environment variables
-cp .env.example .env
-
-# Install dependencies (replace with your package manager)
-# e.g. npm install / pip install -r requirements.txt / go mod download
+# Install dependencies
+go mod download
 ```
 
 See [docs/getting-started](docs/getting-started/README.md) for the full setup guide.
@@ -59,26 +66,70 @@ See [docs/getting-started](docs/getting-started/README.md) for the full setup gu
 ## Development
 
 ```bash
-# Start development server
-# Run tests
-# Lint / format
-# Build for production
-```
+# Build the CLI binary
+go build -o scaffold ./cmd/scaffold
 
-<!-- Replace the comments above with your project's actual commands. -->
+# Run the CLI directly (interactive questionnaire)
+go run ./cmd/scaffold new
+
+# Run tests
+go test ./...
+
+# Run tests with coverage
+go test -v -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+
+# Format code
+go fmt ./...
+
+# Lint code
+golangci-lint run ./...
+```
 
 ---
 
 ## Architecture
 
-Brief description of the high-level structure. Link to detailed docs if available.
+Scaffold CLI follows a **modular generator pattern** where specifications drive code generation. See [Architecture.md](.claude/ressources/Architecture.md) for detailed design decisions.
 
 ```
-.
-├── src/           # Source code
-├── docs/          # Documentation
-└── .github/       # GitHub configuration
+scaffold-cli/
+├── cmd/
+│   └── scaffold/
+│       └── main.go              # CLI entrypoint
+├── internal/
+│   ├── survey/                  # Interactive questionnaire
+│   │   └── questions.go
+│   ├── spec/                    # Project specification (JSON)
+│   │   └── spec.go
+│   ├── generators/              # Composable generators
+│   │   ├── base.go              # Base project structure
+│   │   ├── api.go               # API layer (REST/gRPC)
+│   │   ├── database.go          # Database setup
+│   │   ├── ci_cd.go             # GitHub Actions, Docker
+│   │   ├── auth.go              # Authentication scaffolding
+│   │   └── testing.go           # Test setup
+│   ├── template/                # Template rendering
+│   │   └── render.go
+│   └── merge/                   # Smart file merging
+│       └── merge.go             # Conflict-safe appending
+├── templates/                   # Reusable template files
+│   ├── rest_handler.go.tpl
+│   ├── grpc_handler.proto.tpl
+│   ├── github_actions.yml.tpl
+│   └── ...
+├── docs/                        # Documentation
+├── .github/                     # GitHub Actions workflows
+└── go.mod
 ```
+
+### Workflow
+
+1. **Survey** → User answers questions via CLI
+2. **Spec** → Answers converted to a project specification (JSON)
+3. **Generators** → Independent generators read the spec and produce files
+4. **Merge** → Multiple generators can safely modify the same file
+5. **Write** → All files written to disk, project complete
 
 ---
 

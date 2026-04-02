@@ -1,17 +1,15 @@
 # Getting Started
 
-This guide walks you through setting up the project locally for development.
+This guide walks you through setting up Scaffold CLI for local development.
 
 ---
 
 ## Prerequisites
 
-<!-- List the tools required to run this project and link to their installation pages. -->
-
-| Tool | Version | Install |
-|------|---------|---------|
-| <!-- e.g. Node --> | <!-- e.g. >= 22.x --> | <!-- link --> |
-| <!-- e.g. Docker --> | <!-- e.g. >= 27.x --> | <!-- link --> |
+| Tool | Version | Install                               |
+|------|---------|---------------------------------------|
+| go   | 1.26+  | [Install](https://go.dev/doc/install) |
+| git  | Latest  | [Install](https://git-scm.com/)       |
 
 ---
 
@@ -20,8 +18,8 @@ This guide walks you through setting up the project locally for development.
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-org/your-repo.git
-   cd your-repo
+   git clone https://github.com/version14/scaffold-cli.git
+   cd scaffold-cli
    ```
 
 2. **Activate the commit-msg hook** (one-time, after cloning)
@@ -30,62 +28,106 @@ This guide walks you through setting up the project locally for development.
    git config core.hooksPath .githooks
    ```
 
-3. **Copy the environment file**
+3. **Download dependencies**
 
    ```bash
-   cp .env.example .env
+   go mod download
    ```
 
-   Open `.env` and fill in the required values. See [Environment Variables](#environment-variables) below.
-
-4. **Install dependencies**
+4. **Run the CLI**
 
    ```bash
-   # Replace with your package manager / build tool
-   # e.g. npm install / pip install -r requirements.txt / go mod download / mvn install
+   go run ./cmd/scaffold new
    ```
 
-5. **Start the development server**
-
-   ```bash
-   # Replace with your start command
-   # e.g. npm run dev / python manage.py runserver / go run ./cmd/server
-   ```
+   This starts an interactive questionnaire that will scaffold a new project.
 
 ---
 
-## Environment Variables
+## Project Structure
 
-<!-- Document every variable in .env.example here. -->
+Here's what you'll work with:
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT`   | No       | `3000`  | Port the server listens on |
-| <!-- add rows --> | | | |
+```
+scaffold-cli/
+├── cmd/scaffold/           # CLI entrypoint
+├── internal/
+│   ├── survey/            # Interactive questionnaire
+│   ├── spec/              # Project specification
+│   ├── generators/        # Composable generators
+│   ├── template/          # Template rendering
+│   └── merge/             # Smart file merging
+├── templates/             # Template files
+└── go.mod                 # Module definition
+```
+
+For details, see the [Architecture Documentation](../../.claude/ressources/Architecture.md).
 
 ---
 
 ## Common Commands
 
-<!-- Replace with your actual commands. -->
-
 ```bash
-# Start development server
-# Run tests
-# Run linter
-# Build for production
+# Build the CLI binary
+go build -o scaffold ./cmd/scaffold
+
+# Run the interactive CLI
+go run ./cmd/scaffold new
+
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test -v -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+
+# Format all Go code
+go fmt ./...
+
+# Lint code (requires golangci-lint)
+golangci-lint run ./...
+
+# Run linter and tests together
+go fmt ./... && golangci-lint run ./... && go test ./...
 ```
 
 ---
 
 ## Troubleshooting
 
-**Port already in use**
+**Go version mismatch**
 
-Find and stop the process occupying the port before starting the server.
+Make sure your Go version matches the one listed in [Prerequisites](#prerequisites):
 
-**Dependencies not installing**
+```bash
+go version
+```
 
-Make sure your runtime version matches the one listed in [Prerequisites](#prerequisites). Delete any lock files and retry a fresh install.
+**Dependency issues**
+
+If you encounter dependency problems, try:
+
+```bash
+go mod tidy
+go mod download
+go mod verify
+```
+
+**Tests failing**
+
+Run tests with verbose output to see what's failing:
+
+```bash
+go test -v ./...
+```
+
+**Build errors**
+
+Ensure all dependencies are installed:
+
+```bash
+go mod download
+go build ./...
+```
 
 For other issues, check the [FAQ](../developer-guide/faq.md) or open a [Discussion](../../../discussions).
