@@ -21,7 +21,7 @@ jobs:
     name: Lint & type-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ── Install runtime ────────────────────────────────
       # Replace or extend with your language setup action.
@@ -45,7 +45,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up runtime
         run: echo "Replace this step with your runtime setup"
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up runtime
         run: echo "Replace this step with your runtime setup"
