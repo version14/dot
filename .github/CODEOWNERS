@@ -2,16 +2,16 @@
 # Owners are automatically requested for review when a PR modifies matched files.
 # Last matching rule takes precedence.
 #
-# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Docs: https://docs.github.com/en/repositories/managing-scaffold-clisitorys-settings-and-features/customizing-scaffold-clisitory/about-code-owners
 
 # ── Default: all files ───────────────────────────────────
-# * @your-org/maintainers
+# * @version14/maintainers
 
 # ── CI/CD and GitHub config ──────────────────────────────
-# .github/ @your-org/devops
+# .github/ @version14/devops
 
 # ── Documentation ────────────────────────────────────────
-# /docs/ @your-org/docs-team
+# /docs/ @version14/docs-team
 
 # ── Security-sensitive paths ─────────────────────────────
-# /src/auth/ @your-org/security-team
+# /src/auth/ @version14/security-team

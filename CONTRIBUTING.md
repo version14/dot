@@ -32,12 +32,12 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/your-username/your-repo.git
-   cd your-repo
+   git clone https://github.com/your-username/scaffold-cli.git
+   cd scaffold-cli
    ```
 3. **Add the upstream remote:**
    ```bash
-   git remote add upstream https://github.com/your-org/your-repo.git
+   git remote add upstream https://github.com/version14/scaffold-cli.git
    ```
 4. Follow the [development setup guide](docs/getting-started/README.md)
 

@@ -50,7 +50,7 @@ Scaffold CLI is a modular code generator that builds complete, production-ready 
 
 ```bash
 git clone https://github.com/version14/scaffold-cli.git
-cd your-repo
+cd scaffold-cli
 
 # Activate the commit-msg hook (optional but recommended)
 git config core.hooksPath .githooks
