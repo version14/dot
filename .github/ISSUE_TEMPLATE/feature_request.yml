@@ -35,10 +35,8 @@ body:
     attributes:
       label: Area
       options:
-        - Frontend / UI
-        - Backend / API
-        - Database
-        - Authentication
+        - TUI
+        - Core
         - Developer experience
         - Documentation
         - Other

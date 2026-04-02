@@ -48,10 +48,8 @@ body:
     attributes:
       label: Area
       options:
-        - Frontend / UI
-        - Backend / API
-        - Database
-        - Authentication
+        - TUI
+        - Core
         - CI/CD
         - Documentation
         - Other
