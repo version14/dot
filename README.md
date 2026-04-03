@@ -13,6 +13,7 @@ Scaffold CLI is a modular code generator that builds complete, production-ready 
 - [Getting Started](#getting-started)
 - [Development](#development)
 - [Architecture](#architecture)
+- [CI/CD](#cicd)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -142,9 +143,40 @@ scaffold-cli/
 
 ---
 
+## CI/CD
+
+We use GitHub Actions for automated quality checks and releases.
+
+### Workflows
+
+- **CI** — Format check, linting, tests, build (on every push & PR)
+- **Commitlint** — Validate commit messages (on every push & PR)
+- **Release** — Build binaries, create release (on version tags)
+
+See [docs/CI_CD.md](docs/CI_CD.md) for detailed information.
+
+### Local Checks
+
+Before pushing, run:
+
+```bash
+make validate      # Runs all checks locally
+make commit-lint   # Shows commit message rules
+make hooks         # Activates git hooks for commit validation
+```
+
+---
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+Key steps:
+1. Activate git hooks: `make hooks`
+2. Make changes following our style guide
+3. Run validation: `make validate`
+4. Commit with Conventional Commits format
+5. Open a PR
 
 ---
 

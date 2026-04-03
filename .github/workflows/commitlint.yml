@@ -22,3 +22,22 @@ jobs:
           failOnWarnings: false
           helpURL: https://www.conventionalcommits.org
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR if commits are invalid
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Commit message validation failed.\n\n' +
+                    'Please ensure your commits follow the [Conventional Commits](https://www.conventionalcommits.org) format:\n\n' +
+                    '```\n' +
+                    '<type>(<scope>): <description>\n' +
+                    '```\n\n' +
+                    '**Allowed types:** feat, fix, docs, style, refactor, perf, test, chore, ci, revert\n\n' +
+                    'See [CONTRIBUTING.md](https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/blob/main/CONTRIBUTING.md#commit-conventions) for details.'
+            })
+        continue-on-error: true
