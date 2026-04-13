@@ -40,7 +40,7 @@ func cmdInit() error {
 	fmt.Println()
 
 	// Confirm before generating.
-	var confirmed bool
+	var confirmed bool = true
 	confirm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
@@ -49,7 +49,7 @@ func cmdInit() error {
 				Negative("Cancel").
 				Value(&confirmed),
 		),
-	).WithTheme(huh.ThemeDracula())
+	).WithTheme(themeDot())
 
 	if err := confirm.Run(); err != nil {
 		return err
@@ -221,7 +221,7 @@ func surveySpec() (spec.Spec, error) {
 				Value(&deployment),
 		).Title("Config"),
 	).
-		WithTheme(huh.ThemeDracula()).
+		WithTheme(themeDot()).
 		WithAccessible(accessible)
 
 	if err := form.Run(); err != nil {
