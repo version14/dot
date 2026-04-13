@@ -1,7 +1,5 @@
 # FAQ — dot
 
-Frequently asked questions about developing dot.
-
 ---
 
 ## General
@@ -16,14 +14,13 @@ Open a [Bug Report issue](../../../issues/new/choose) using the provided templat
 Open a [Feature Request issue](../../../issues/new/choose) first to discuss the idea. See [Adding a Generator](#adding-a-generator) below for implementation guidance.
 
 **Q: How does dot work?**
-It uses a **generator-based architecture**:
-1. User answers TUI questions → builds a typed `Spec`
-2. `Registry.ForSpec` finds generators matching the spec's language and modules
+1. `dot init` launches a huh TUI survey → user choices become a typed `Spec`
+2. `Registry.ForSpec` finds generators matching the spec's language + modules
 3. Each generator's `Apply(spec)` returns `[]FileOp` (create, template, append, patch)
-4. The pipeline collects all ops, resolves conflicts, and writes atomically
+4. The pipeline collects all ops, resolves conflicts, and writes atomically to disk
 5. `.dot/config.json` and `.dot/manifest.json` are written to the project root
 
-See [docs/getting-started/README.md](../getting-started/README.md#project-structure) for a structural overview.
+See [getting-started/README.md](../getting-started/README.md#project-structure) for a structural overview.
 
 ---
 
@@ -38,10 +35,11 @@ make build   # Just build to bin/dot
 
 **Q: How do I run a specific test?**
 ```bash
-go test -v ./internal/generator -run TestRegistry_ForSpec
+go test -v ./internal/generator/... -run TestRegistryForSpec
+go test -v ./internal/pipeline/... -run TestPatchImportBlock
 ```
 
-Or run all tests:
+Or run everything:
 ```bash
 make test
 ```
@@ -54,11 +52,12 @@ dlv debug ./cmd/dot
 ```
 
 **Q: Tests are failing locally but passing in CI (or vice versa).**
-- Ensure your Go version matches [Prerequisites](../getting-started/README.md#prerequisites)
+- Ensure your Go version matches the `go` directive in `go.mod`
 - Run `go mod tidy && go mod download` to sync dependencies
 
 **Q: The build fails with module not found errors.**
 ```bash
+go mod tidy
 go mod download
 ```
 
@@ -66,7 +65,7 @@ go mod download
 ```bash
 make validate
 ```
-This runs: formatting → vet → lint → tests.
+Runs in sequence: formatting → vet → lint → tests.
 
 ---
 
@@ -77,28 +76,89 @@ This runs: formatting → vet → lint → tests.
 1. Create `generators/go/redis.go`
 2. Implement the `Generator` interface from `internal/generator/generator.go`:
    ```go
+   package gogen
+
+   import (
+       "github.com/version14/dot/internal/generator"
+       "github.com/version14/dot/internal/spec"
+   )
+
    type GoRedisGenerator struct{}
 
-   func (g *GoRedisGenerator) Name() string     { return "go-redis" }
-   func (g *GoRedisGenerator) Language() string { return "go" }
+   func (g *GoRedisGenerator) Name() string      { return "go-redis" }
+   func (g *GoRedisGenerator) Language() string  { return "go" }
    func (g *GoRedisGenerator) Modules() []string { return []string{"redis"} }
 
-   func (g *GoRedisGenerator) Apply(spec generator.Spec) ([]generator.FileOp, error) {
-       // Return FileOps for Redis setup
+   func (g *GoRedisGenerator) Apply(s spec.Spec) ([]generator.FileOp, error) {
+       // Return FileOps for Redis setup files
    }
 
    func (g *GoRedisGenerator) Commands() []generator.CommandDef {
-       // Return commands this generator registers (e.g., "new cache-key")
+       return []generator.CommandDef{
+           {
+               Name:        "new cache-key",
+               Args:        []string{"<name>"},
+               Description: "Generate a new Redis cache key helper",
+               Action:      "redis.new-cache-key",
+               Generator:   "go-redis",
+           },
+       }
    }
 
-   func (g *GoRedisGenerator) RunAction(action string, args []string, spec generator.Spec) ([]generator.FileOp, error) {
+   func (g *GoRedisGenerator) RunAction(action string, args []string, s spec.Spec) ([]generator.FileOp, error) {
        // Handle post-creation commands
    }
    ```
-3. Register it in `cmd/dot/init.go` with `registry.Register(&GoRedisGenerator{})`
+3. Register it in `cmd/dot/build.go`:
+   ```go
+   func buildRegistry() *generator.Registry {
+       reg := &generator.Registry{}
+       must(reg.Register(&gogen.GoRestAPIGenerator{}))
+       must(reg.Register(&gogen.GoRedisGenerator{}))  // add here
+       return reg
+   }
+   ```
 4. Write tests in `generators/go/redis_test.go`
 
-See `generators/go/rest_api.go` for a complete stub example.
+See `generators/go/rest_api.go` for a complete working example.
+
+---
+
+## Distribution
+
+**Q: How do I install dot on a new machine?**
+
+```bash
+# Homebrew (macOS/Linux)
+brew install version14/tap/dot
+
+# curl (no Go required)
+curl -fsSL https://raw.githubusercontent.com/version14/dot/main/install.sh | sh
+
+# go install
+go install github.com/version14/dot/cmd/dot@latest
+```
+
+**Q: How do I update dot?**
+```bash
+dot self-update
+```
+
+**Q: How do I uninstall dot?**
+```bash
+# Homebrew
+brew uninstall dot
+
+# curl / go install / from source
+curl -fsSL https://raw.githubusercontent.com/version14/dot/main/uninstall.sh | sh
+```
+
+**Q: How do I cut a new release?**
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+GoReleaser handles the rest. See [CI_CD.md](../CI_CD.md#how-to-cut-a-release) for details.
 
 ---
 
@@ -111,13 +171,13 @@ Aim for PRs reviewable in under 30 minutes. Split larger changes.
 Yes for new features and bug fixes. Documentation-only PRs are exempt.
 
 **Q: Who merges PRs?**
-Maintainers merge PRs once they have one approving review and all CI checks are green.
+Maintainers merge once there is one approving review and all CI checks are green.
 
 **Q: What's the PR submission checklist?**
 ```bash
-make validate
+make validate   # fmt → vet → lint → test
 ```
-This checks formatting, vet, lint, and tests. Then verify documentation is updated.
+Then verify documentation is updated if the change affects user-facing behaviour.
 
 ---
 

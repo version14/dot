@@ -1,20 +1,16 @@
 # CI/CD Workflows — dot
 
-This document explains the automated CI/CD pipelines for dot.
-
 ---
 
 ## Overview
 
-We use GitHub Actions to automate code quality checks, testing, and releases.
-
-### Workflows
+We use GitHub Actions for code quality and releases.
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **CI** | Push to main, PR | Format check, linting, tests, build |
-| **Commitlint** | Push to main, PR | Validate commit messages |
-| **Release** | Tag push (`v*.*.*`) | Build binaries, create release |
+| **CI** | Push / PR | Vet, lint, test, build |
+| **Commitlint** | Push / PR | Validate commit messages |
+| **Release** | `v*.*.*` tag | GoReleaser: multi-platform binaries, GitHub Release, Homebrew tap |
 
 ---
 
@@ -22,34 +18,20 @@ We use GitHub Actions to automate code quality checks, testing, and releases.
 
 **File:** `.github/workflows/ci.yml`
 
-Runs on every push to `main` and every PR.
+Runs on every push to `main` and every PR. Jobs run in parallel; build depends on all three.
 
-### Jobs
+| Job | Command | What it checks |
+|-----|---------|----------------|
+| **vet** | `go vet ./...` | Suspicious constructs, misuse of sync primitives |
+| **lint** | `golangci-lint run ./...` | Style, errcheck, staticcheck |
+| **test** | `go test -race -v -coverprofile=coverage.out ./...` | Correctness + race conditions |
+| **build** | `go build -v -o dot ./cmd/dot` | Compiles successfully |
 
-#### 1. Vet — Go static analysis
-- Checks for suspicious constructs
-- **Command:** `go vet ./...`
+Local equivalent:
 
-#### 2. Lint — Code quality
-- Runs golangci-lint
-- Checks code formatting with `go fmt`
-- **Commands:** `golangci-lint run ./...`, `go fmt ./...`
-
-#### 3. Test — Unit tests
-- Runs all tests with race detector
-- Generates coverage report, uploads to Codecov
-- **Command:** `go test -race -v -coverprofile=coverage.out ./...`
-
-#### 4. Build — Binary compilation
-- Builds the `dot` binary
-- Depends on vet, lint, test (all must pass)
-- **Command:** `go build -v -o dot ./cmd/dot`
-
-### Key Features
-
-- Concurrent execution — vet, lint, and test run in parallel
-- Race detection — catches concurrency bugs early
-- Required checks — PR can't be merged if any job fails
+```bash
+make validate   # fmt → vet → lint → test
+```
 
 ---
 
@@ -57,15 +39,21 @@ Runs on every push to `main` and every PR.
 
 **File:** `.github/workflows/commitlint.yml`
 
-Validates every commit message against Conventional Commits format.
+Validates every commit message on push and PRs. Format:
 
 ```
 <type>(<scope>): <description>
 ```
 
-**Allowed types:** feat, fix, docs, style, refactor, perf, test, chore, ci, revert
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `revert`
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-conventions) for details.
+The same check runs locally when you activate git hooks:
+
+```bash
+make hooks
+```
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-conventions) for the full rules.
 
 ---
 
@@ -73,44 +61,47 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-conventions) for details.
 
 **File:** `.github/workflows/release.yml`
 
-Runs when a tag matching `v*.*.*` is pushed.
+Triggered by any tag matching `v*.*.*`. Runs [GoReleaser](https://goreleaser.com) via the official action.
 
-### Builds
+### What GoReleaser does
 
-| Platform | Artifact |
-|----------|----------|
-| Linux x86_64 | `dot-linux-amd64` |
-| Linux ARM64 | `dot-linux-arm64` |
-| macOS x86_64 | `dot-darwin-amd64` |
-| macOS ARM64 | `dot-darwin-arm64` |
-| Windows x86_64 | `dot-windows-amd64.exe` |
+1. Builds binaries for all targets (CGO disabled, `buildVersion` stamped via `-ldflags`)
+2. Packages each binary into a `.tar.gz` (Linux/macOS) or `.zip` (Windows)
+3. Generates `checksums.txt` (SHA-256)
+4. Creates a GitHub Release with all artifacts and auto-generated release notes
+5. Pushes an updated Homebrew formula to `github.com/version14/homebrew-tap`
 
-### How to Release
+### Build targets
+
+| OS | Arch | Archive |
+|----|------|---------|
+| Linux | amd64 | `dot_VERSION_linux_amd64.tar.gz` |
+| Linux | arm64 | `dot_VERSION_linux_arm64.tar.gz` |
+| macOS | amd64 | `dot_VERSION_darwin_amd64.tar.gz` |
+| macOS | arm64 | `dot_VERSION_darwin_arm64.tar.gz` |
+| Windows | amd64 | `dot_VERSION_windows_amd64.zip` |
+
+### Required secrets
+
+| Secret | Where to get it | Used for |
+|--------|----------------|---------|
+| `GITHUB_TOKEN` | Automatic | GitHub Release, asset upload |
+| `HOMEBREW_TAP_TOKEN` | Personal Access Token with `repo` write on `homebrew-tap` | Push Homebrew formula |
+
+Add secrets at: `github.com/version14/dot → Settings → Secrets → Actions`
+
+### How to cut a release
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow will build binaries for all platforms, create a GitHub Release, and attach them.
+GoReleaser runs automatically. The release appears at `github.com/version14/dot/releases` and the Homebrew formula at `github.com/version14/homebrew-tap` is updated within a minute.
 
----
+### GoReleaser config
 
-## Local vs CI
-
-### Local Checks (Before Push)
-
-```bash
-make validate
-```
-
-Runs: format → vet → lint → tests.
-
-### Commit Message Check
-
-**Local:** `.githooks/commit-msg` validates on every commit (`make hooks` to activate)
-
-**CI:** `commitlint` validates on every PR and push
+**File:** `.goreleaser.yaml` — edit this to change archive names, add new targets, or update the Homebrew formula template.
 
 ---
 
@@ -118,41 +109,39 @@ Runs: format → vet → lint → tests.
 
 **CI passed locally but failed on GitHub**
 
-Check Go version:
 ```bash
-go version  # should match ci.yml (currently Go 1.26)
-go mod download
+go version   # must match go.mod directive
+go mod tidy
 ```
 
-**Commitlint failed on PR**
+**Commitlint failed**
 
 ```bash
-make commit-lint          # view rules
-git commit --amend -m "feat(scope): correct message"
-git push origin your-branch
+make commit-lint                              # view rules
+git commit --amend -m "fix: correct message"
+git push --force-with-lease origin your-branch
 ```
+
+**Release failed: Homebrew push rejected**
+
+Check that `HOMEBREW_TAP_TOKEN` is set in repo secrets and has `repo` write access to `github.com/version14/homebrew-tap`.
 
 **Build job fails**
 
 ```bash
-go build ./cmd/dot        # run locally, check errors
+go build ./cmd/dot   # run locally, read the error
 go vet ./...
 ```
 
 ---
 
-## Configuration Files
+## Configuration files
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/ci.yml` | Main CI pipeline |
-| `.github/workflows/commitlint.yml` | Commit validation |
-| `.github/workflows/release.yml` | Release automation |
+| `.github/workflows/ci.yml` | CI pipeline |
+| `.github/workflows/commitlint.yml` | Commit message validation |
+| `.github/workflows/release.yml` | Release via GoReleaser |
+| `.goreleaser.yaml` | GoReleaser config (targets, archives, Homebrew) |
 | `.commitlintrc.json` | Commitlint rules |
 | `.githooks/commit-msg` | Local commit hook |
-
----
-
-## Questions?
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) or open a [Discussion](https://github.com/version14/dot/discussions).
