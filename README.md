@@ -116,6 +116,7 @@ dot self-update           # Update to the latest release
 All commands except `dot init` look for `.dot/config.json` by traversing up from `$PWD` to the git root.
 
 See [docs/getting-started](docs/getting-started/README.md) for the full walkthrough.
+See [docs/](docs/README.md) for the full documentation index.
 
 ---
 
