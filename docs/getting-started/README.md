@@ -223,7 +223,7 @@ go fmt ./...
 **Go version mismatch**
 
 ```bash
-go version  # should be 1.26+
+go version  # should be 1.21+
 ```
 
 **Dependency issues**
