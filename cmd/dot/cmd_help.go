@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/version14/dot/internal/generator"
 	"github.com/version14/dot/internal/project"
 )
 
@@ -31,11 +30,6 @@ func cmdHelp() error {
 	}
 	sort.Strings(keys)
 
-	// Build a table: two columns, command name and description.
-	// We look up the description from the live registry (it's not persisted).
-	reg := buildRegistry()
-	descMap := buildDescMap(reg, ctx)
-
 	// Measure the longest command name for alignment.
 	maxLen := 0
 	for _, k := range keys {
@@ -50,10 +44,8 @@ func cmdHelp() error {
 	rows := make([]string, 0, len(keys)+2)
 	for _, k := range keys {
 		padded := k + strings.Repeat(" ", maxLen-len(k)+2)
-		desc := descMap[k]
 		row := "  dot " +
-			commandNameStyle.Render(padded) +
-			commandDescStyle.Render(desc)
+			commandNameStyle.Render(padded)
 		rows = append(rows, row)
 	}
 
@@ -61,22 +53,4 @@ func cmdHelp() error {
 	fmt.Println(boxStyle.Render(content))
 	fmt.Println()
 	return nil
-}
-
-// buildDescMap looks up CommandDef.Description for each persisted command key.
-func buildDescMap(reg *generator.Registry, ctx *project.Context) map[string]string {
-	m := make(map[string]string, len(ctx.Commands))
-	for k, ref := range ctx.Commands {
-		g, ok := reg.Get(ref.Generator)
-		if !ok {
-			continue
-		}
-		for _, cmd := range g.Commands() {
-			if cmd.Name == k {
-				m[k] = cmd.Description
-				break
-			}
-		}
-	}
-	return m
 }

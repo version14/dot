@@ -71,25 +71,6 @@ func Register(mux *http.ServeMux) {
 	}, nil
 }
 
-func (g *GoRestAPIGenerator) Commands() []generator.CommandDef {
-	return []generator.CommandDef{
-		{
-			Name:        "new route",
-			Args:        []string{"<name>"},
-			Description: "generate a new HTTP route handler",
-			Action:      "rest-api.new-route",
-			Generator:   g.Name(),
-		},
-		{
-			Name:        "new handler",
-			Args:        []string{"<name>"},
-			Description: "generate a new handler stub",
-			Action:      "rest-api.new-handler",
-			Generator:   g.Name(),
-		},
-	}
-}
-
 func (g *GoRestAPIGenerator) RunAction(action string, args []string, s spec.Spec) ([]generator.FileOp, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("name argument required")

@@ -126,16 +126,6 @@ func BuildManifest(ops []generator.FileOp) (*Manifest, error) {
 	return m, nil
 }
 
-// CommandsFromDefs converts a []CommandDef slice into the map format stored
-// in .dot/config.json. The key is CommandDef.Name (e.g. "new route").
-func CommandsFromDefs(defs []generator.CommandDef) map[string]CommandRef {
-	m := make(map[string]CommandRef, len(defs))
-	for _, d := range defs {
-		m[d.Name] = CommandRef{Generator: d.Generator, Action: d.Action}
-	}
-	return m
-}
-
 func writeJSON(path string, v any) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
