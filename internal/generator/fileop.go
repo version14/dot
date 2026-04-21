@@ -41,6 +41,15 @@ const (
 	AnchorInitFunc = "init_func"
 )
 
+// PostOp is a shell command to run after the pipeline writes all files.
+// Dir is relative to the project root; leave empty for the root itself.
+type PostOp struct {
+	Command   string   `json:"command"`
+	Args      []string `json:"args"`
+	Dir       string   `json:"dir"`
+	Generator string   `json:"generator"`
+}
+
 // FileOp describes a single file operation produced by a generator.
 // The pipeline collects all FileOps from all matched generators, resolves
 // conflicts, then writes everything atomically (no partial writes on error).

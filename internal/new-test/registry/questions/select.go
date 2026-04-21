@@ -40,6 +40,18 @@ func (b *SelectBuilder) ChoiceGen(label, value, generatorID string, next ...*Que
 	return b
 }
 
+// ChoiceWithGen adds a choice that calls fn when the path is taken.
+// fn is invoked by core.Collect after the survey completes.
+func (b *SelectBuilder) ChoiceWithGen(label, value string, fn GeneratorFunc, next ...*Question) *SelectBuilder {
+	opt := &Option{Label: label, Value: value}
+	opt.Next = &Next{Generator: fn}
+	if len(next) > 0 && next[0] != nil {
+		opt.Next.Question = next[0]
+	}
+	b.optionQuestion.Options = append(b.optionQuestion.Options, opt)
+	return b
+}
+
 // Then sets the shared continuation taken after the question regardless of
 // which option was chosen. Required for Multiple() questions.
 func (b *SelectBuilder) Then(next *Question) *SelectBuilder {
