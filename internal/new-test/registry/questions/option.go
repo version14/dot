@@ -11,7 +11,7 @@ type OptionQuestion struct {
 	Label       string
 	Description string
 	Value       string
-	Multiple    bool  // true = multi-select (e.g. databases)
+	Multiple    bool // true = multi-select (e.g. databases)
 	Options     []*Option
 	Next        *Next // used when Multiple=true: continuation after selection
 }
