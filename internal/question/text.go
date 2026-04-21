@@ -13,28 +13,28 @@ type TextQuestion struct {
 // Builder
 
 type TextBuilder struct {
-	textQeustion *TextQuestion
+	textQuestion *TextQuestion
 }
 
 func Text(label, value string) *TextBuilder {
-	return &TextBuilder{textQeustion: &TextQuestion{Label: label, Value: value}}
+	return &TextBuilder{textQuestion: &TextQuestion{Label: label, Value: value}}
 }
 
 func (b *TextBuilder) Description(d string) *TextBuilder {
-	b.textQeustion.Description = d
+	b.textQuestion.Description = d
 	return b
 }
 
 func (b *TextBuilder) Placeholder(p string) *TextBuilder {
-	b.textQeustion.Placeholder = p
+	b.textQuestion.Placeholder = p
 	return b
 }
 
 func (b *TextBuilder) Then(next *Question) *TextBuilder {
-	b.textQeustion.Next = &Next{Question: next}
+	b.textQuestion.Next = &Next{Question: next}
 	return b
 }
 
 func (b *TextBuilder) Q() *Question {
-	return &Question{TextQuestion: b.textQeustion}
+	return &Question{TextQuestion: b.textQuestion}
 }
