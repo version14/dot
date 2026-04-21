@@ -1,10 +1,9 @@
 package question
 
 type Option struct {
-	Label       string
-	Value       string
-	Next        *Next
-	GeneratorID string // ID of the generator to invoke when this option is selected
+	Label string
+	Value string
+	Next  *Next
 }
 
 type OptionQuestion struct {
