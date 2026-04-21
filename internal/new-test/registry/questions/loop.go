@@ -9,3 +9,11 @@ type LoopAction struct {
 	Value       string
 	Question    *Question
 }
+
+// Builder
+
+// Loop creates a loop question. The runner first asks for the count (label/value),
+// then repeats body N times.
+func Loop(label, value string, body *Question) *Question {
+	return &Question{LoopQuestion: &LoopAction{Label: label, Value: value, Question: body}}
+}
