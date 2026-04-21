@@ -48,6 +48,14 @@ var (
 			Padding(0, 1)
 )
 
+const dotBanner = `
+ ██████╗  ██████╗ ████████╗
+ ██╔══██╗██╔═══██╗╚══██╔══╝
+ ██║  ██║██║   ██║   ██║
+ ██║  ██║██║   ██║   ██║
+ ██████╔╝╚██████╔╝   ██║
+ ╚═════╝  ╚═════╝    ╚═╝   `
+
 // themeDot returns a custom huh theme built around the dot blue palette.
 // Every color is an AdaptiveColor so the form looks sharp on both dark and
 // light terminal backgrounds.

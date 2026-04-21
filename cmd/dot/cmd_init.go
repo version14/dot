@@ -15,6 +15,7 @@ import (
 )
 
 func cmdInit() error {
+	fmt.Println(headerStyle.Render(dotBanner))
 	runner := scaffold.Runner{Flow: templates.StarterQuestions}
 	if err := runner.Run(); err != nil {
 		return fmt.Errorf("survey: %w", err)

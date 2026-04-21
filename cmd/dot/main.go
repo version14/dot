@@ -34,6 +34,7 @@ func run(args []string) error {
 }
 
 func printUsage() {
+	fmt.Println(headerStyle.Render(dotBanner))
 	fmt.Print(`dot — universal project companion
 
 Usage:
