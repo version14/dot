@@ -21,12 +21,7 @@ func run(args []string) error {
 	switch args[0] {
 	case "init":
 		return cmdInit()
-	case "new":
-		if len(args) < 3 {
-			return fmt.Errorf("usage: dot new <type> <name>")
-		}
-		return cmdNew(args[1], args[2], args[3:])
-	case "help", "commands":
+	case "help":
 		return cmdHelp()
 	case "self-update", "update":
 		return cmdSelfUpdate()
@@ -42,11 +37,9 @@ func printUsage() {
 	fmt.Print(`dot — universal project companion
 
 Usage:
-  dot init                  scaffold a new project (launches TUI)
-  dot new <type> <name>     generate a new artifact in the current project
-  dot help                  list available commands for the current project
-  dot version               print version
-  dot self-update           update dot to the latest release
-
+  dot init          scaffold a new project
+  dot help          list available commands
+  dot version       print version
+  dot self-update   update dot to the latest release
 `)
 }

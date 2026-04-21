@@ -30,17 +30,9 @@ var (
 			MarginTop(1).
 			MarginBottom(1)
 
-	subheaderStyle = lipgloss.NewStyle().
-			Foreground(colorMuted).
-			MarginBottom(1)
-
 	successStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(colorSuccess)
-
-	errorStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(colorError)
 
 	mutedStyle = lipgloss.NewStyle().
 			Foreground(colorMuted).
@@ -49,9 +41,6 @@ var (
 	commandNameStyle = lipgloss.NewStyle().
 				Foreground(colorAccent).
 				Bold(true)
-
-	commandDescStyle = lipgloss.NewStyle().
-				Foreground(colorMuted)
 
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -144,11 +133,3 @@ func themeDot() *huh.Theme {
 
 	return t
 }
-
-const dotBanner = `
- ██████╗  ██████╗ ████████╗
- ██╔══██╗██╔═══██╗╚══██╔══╝
- ██║  ██║██║   ██║   ██║
- ██║  ██║██║   ██║   ██║
- ██████╔╝╚██████╔╝   ██║
- ╚═════╝  ╚═════╝    ╚═╝   `
