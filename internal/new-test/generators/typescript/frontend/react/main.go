@@ -10,7 +10,7 @@ import (
 
 	"github.com/version14/dot/internal/generator"
 	newtest_generator "github.com/version14/dot/internal/new-test/generator"
-	frontend_architecture_generator "github.com/version14/dot/internal/new-test/generators/common/architecture"
+	frontend_architecture_generator "github.com/version14/dot/internal/new-test/generators/common/frontend/architecture"
 	"github.com/version14/dot/internal/spec"
 )
 
