@@ -12,6 +12,7 @@ import (
 // plugins inject extra FileOps into an existing generator without forking it.
 type Generator struct {
 	Name              string
+	Version           string // semver, e.g. "1.0.0" — used by future `dot upgrade`
 	Language          string
 	ApplyFunction     func(s spec.Spec) ([]generator.FileOp, error)
 	PostApplyFunction func(s spec.Spec) []generator.PostOp // optional
