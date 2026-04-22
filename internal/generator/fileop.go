@@ -41,13 +41,32 @@ const (
 	AnchorInitFunc = "init_func"
 )
 
+// PostOpPhase controls when a PostOp is executed.
+type PostOpPhase string
+
+const (
+	// PhaseInstall runs after scaffolding during normal `dot init` (e.g. pnpm install).
+	// Empty Phase is also treated as PhaseInstall for backward compatibility.
+	PhaseInstall PostOpPhase = "install"
+	// PhaseTypeCheck runs during `make validate` to verify TypeScript type correctness.
+	PhaseTypeCheck PostOpPhase = "typecheck"
+	// PhaseSmoke runs during `make validate` smoke pass: starts a dev server and
+	// hits the health endpoint. Background=true ops are started first and killed
+	// after all foreground ops in the same phase complete.
+	PhaseSmoke PostOpPhase = "smoke"
+)
+
 // PostOp is a shell command to run after the pipeline writes all files.
 // Dir is relative to the project root; leave empty for the root itself.
+// Phase controls when the op runs; empty Phase is treated as PhaseInstall.
+// Background ops (e.g. a dev server) are started and killed by the test runner.
 type PostOp struct {
-	Command   string   `json:"command"`
-	Args      []string `json:"args"`
-	Dir       string   `json:"dir"`
-	Generator string   `json:"generator"`
+	Command    string      `json:"command"`
+	Args       []string    `json:"args"`
+	Dir        string      `json:"dir"`
+	Generator  string      `json:"generator"`
+	Phase      PostOpPhase `json:"phase,omitempty"`
+	Background bool        `json:"background,omitempty"`
 }
 
 // FileOp describes a single file operation produced by a generator.

@@ -15,6 +15,20 @@ import (
 	"github.com/version14/dot/internal/generator"
 )
 
+// RunIn is like Run but writes all files relative to baseDir instead of the
+// working directory. Use in tests to write into a t.TempDir().
+func RunIn(baseDir string, ops []generator.FileOp) error {
+	if len(ops) == 0 {
+		return nil
+	}
+	prefixed := make([]generator.FileOp, len(ops))
+	copy(prefixed, ops)
+	for i := range prefixed {
+		prefixed[i].Path = filepath.Join(baseDir, prefixed[i].Path)
+	}
+	return Run(prefixed)
+}
+
 // Run executes a slice of FileOps. It:
 //  1. Sorts ops by Priority (descending), then Generator name (alphabetical).
 //  2. Detects Create/Template conflicts (two ops at same priority for same path).

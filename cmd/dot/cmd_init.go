@@ -44,16 +44,29 @@ func cmdInit() error {
 		return nil
 	}
 
+	// Flatten every survey answer into Extensions so any generator can read
+	// any key without cmd_init needing to know which flow was taken.
+	extensions := make(map[string]any, len(result.Entries))
+	for _, e := range result.Entries {
+		if len(e.Multi) > 0 {
+			extensions[e.Key] = e.Multi
+		} else {
+			extensions[e.Key] = e.Value
+		}
+	}
+
+	language := result.Get("service-language")
+	if language == "" {
+		language = result.Get("frontend-language")
+	}
+
 	s := spec.Spec{
 		Project: spec.ProjectSpec{
 			Name:     result.Get("project-name"),
-			Language: result.Get("frontend-language"),
-			Type:     "frontend",
+			Language: language,
+			Type:     result.Get("app-type"),
 		},
-		Extensions: map[string]any{
-			"framework":    result.Get("frontend-framework"),
-			"architecture": result.Get("frontend-architecture"),
-		},
+		Extensions: extensions,
 	}
 
 	activations := scaffold.Collect(templates.StarterQuestions, result)
@@ -80,6 +93,11 @@ func cmdInit() error {
 	fmt.Printf("%s  wrote %d file(s)\n", successStyle.Render("✓"), len(fileOps))
 
 	for _, pop := range postOps {
+		// Only run install-phase ops during normal scaffolding.
+		// TypeCheck and Smoke ops are reserved for `make validate`.
+		if pop.Phase != "" && pop.Phase != generator.PhaseInstall {
+			continue
+		}
 		fmt.Printf("%s  running: %s %s\n", mutedStyle.Render("→"), pop.Command, strings.Join(pop.Args, " "))
 		cmd := exec.Command(pop.Command, pop.Args...)
 		if pop.Dir != "" && pop.Dir != "." {
