@@ -1,13 +1,16 @@
 package backend_templates
 
-import "github.com/version14/dot/internal/question"
+import (
+	typescript_base_generator "github.com/version14/dot/generators/common/typescript/base"
+	"github.com/version14/dot/internal/question"
+)
 
 // ServiceDetailFlow is the shared core: language → framework → arch →
 // linter → formatter → databases → db-schema.
 // Used by both monolith (directly) and each microservice (inside a loop).
 var ServiceDetailFlow = question.Select("Language", "service-language").
-	Choice("Go", "go", goArchitectureQ).
-	Choice("TypeScript", "typescript", tsFrameworkQ).
+	// Choice("Go", "go", goArchitectureQ). // TODO: Need to implement
+	ChoiceWithGen("TypeScript", "typescript", typescript_base_generator.BaseTypescriptTS.Func(), tsFrameworkQ).
 	Q()
 
 // perServiceHostingQ is asked only when the user picked "per-service" hosting
