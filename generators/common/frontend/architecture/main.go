@@ -3,16 +3,17 @@ package frontend_architecture_generator
 import (
 	"embed"
 	"fmt"
-	"io/fs"
-	"strings"
 
 	"github.com/version14/dot/internal/generator"
+	"github.com/version14/dot/internal/generator/genfs"
 	newtest_generator "github.com/version14/dot/internal/scaffold"
 	"github.com/version14/dot/internal/spec"
 )
 
 //go:embed all:files
 var archFiles embed.FS
+
+const generatorName = "frontend-architecture-ts"
 
 // ArchitectureTS creates the src/ folder structure for a given frontend
 // architecture pattern. It is framework-agnostic: any TypeScript frontend
@@ -21,7 +22,7 @@ var archFiles embed.FS
 //
 // Reads spec.Extensions["architecture"]: "feature-sliced" | "atomic" | "container-presentational".
 var ArchitectureTS = &newtest_generator.Generator{
-	Name:     "frontend-architecture-ts",
+	Name:     generatorName,
 	Language: "typescript",
 
 	ApplyFunction: func(s spec.Spec) ([]generator.FileOp, error) {
@@ -30,8 +31,7 @@ var ArchitectureTS = &newtest_generator.Generator{
 			return nil, fmt.Errorf("frontend-architecture-ts: spec.Extensions[\"architecture\"] is not set")
 		}
 
-		archDir := fmt.Sprintf("files/%s", arch)
-		ops, err := walkDir(archFiles, archDir)
+		ops, err := genfs.WalkDir(archFiles, "files/"+arch, generatorName)
 		if err != nil {
 			return nil, fmt.Errorf("frontend-architecture-ts [%s]: %w", arch, err)
 		}
@@ -39,34 +39,7 @@ var ArchitectureTS = &newtest_generator.Generator{
 	},
 }
 
-// walkDir returns a FileOp for every file found under root in fsys.
-// Output paths are relative to root (root prefix is stripped).
+// walkDir is kept for tests that call it directly.
 func walkDir(fsys embed.FS, root string) ([]generator.FileOp, error) {
-	var ops []generator.FileOp
-
-	err := fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-
-		content, err := fsys.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read %s: %w", path, err)
-		}
-
-		outPath := strings.TrimPrefix(path, root+"/")
-		ops = append(ops, generator.FileOp{
-			Kind:      generator.Create,
-			Path:      outPath,
-			Content:   string(content),
-			Generator: "frontend-architecture-ts",
-			Priority:  100,
-		})
-		return nil
-	})
-
-	return ops, err
+	return genfs.WalkDir(fsys, root, generatorName)
 }
