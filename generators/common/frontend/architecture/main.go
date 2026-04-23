@@ -20,15 +20,15 @@ const generatorName = "frontend-architecture-ts"
 // generator (React, Next.js, etc.) can call ArchitectureTS.Apply(s) to get
 // the right directories without duplicating the folder manifests.
 //
-// Reads spec.Extensions["architecture"]: "feature-sliced" | "atomic" | "container-presentational".
+// Reads spec.Extensions["frontend-architecture"]: "feature-sliced" | "atomic" | "container-presentational".
 var ArchitectureTS = &newtest_generator.Generator{
 	Name:     generatorName,
 	Language: "typescript",
 
 	ApplyFunction: func(s spec.Spec) ([]generator.FileOp, error) {
-		arch, _ := s.Extensions["architecture"].(string)
+		arch, _ := s.Extensions["frontend-architecture"].(string)
 		if arch == "" {
-			return nil, fmt.Errorf("frontend-architecture-ts: spec.Extensions[\"architecture\"] is not set")
+			return nil, fmt.Errorf("frontend-architecture-ts: spec.Extensions[\"frontend-architecture\"] is not set")
 		}
 
 		ops, err := genfs.WalkDir(archFiles, "files/"+arch, generatorName)
