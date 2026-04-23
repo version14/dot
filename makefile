@@ -158,6 +158,13 @@ commit-lint: ## Validate commit messages (shows format rules)
 	@echo "  refactor(generators): extract common logic"
 	@echo ""
 
+test-flows: ## Run integration tests — scaffold every generator flow, typecheck, and smoke-test (requires pnpm)
+	$(call print_header,"TEST FLOWS","                         ")
+	$(call print_info,"Running integration tests for all generator flows...")
+	@$(GO) test -tags integration -count=1 -v -timeout 300s ./internal/integration/... || (echo "$(RED)✗ Flow tests failed$(RESET)"; exit 1)
+	$(call print_success,"All flow tests passed")
+	@echo ""
+
 validate: fmt vet lint test ## Run full validation suite
 	@echo ""
 	$(call print_header,"VALIDATION PASSED","            ")

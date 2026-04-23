@@ -1,0 +1,18 @@
+{
+  "name": "frontend/react/atomic-design",
+  "port": 3004,
+  "answers": [
+    { "key": "project-name", "value": "test-app" },
+    { "key": "project-monorepo", "value": "no" },
+    { "key": "app-type", "value": "frontend" },
+    { "key": "frontend-language", "value": "typescript" },
+    { "key": "frontend-framework", "value": "react" },
+    { "key": "frontend-architecture", "value": "atomic" }
+  ],
+  "expect": {
+    "generators": [
+      "frontend-language=typescript",
+      "frontend-architecture=atomic"
+    ]
+  }
+}
