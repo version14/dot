@@ -19,7 +19,7 @@ const generatorName = "typescript-express"
 // ExpressTS generates Express-specific source files layered on top of an
 // architecture generator. It dispatches to the correct files subdirectory
 // based on the "ts-architecture" answer recorded in spec.Extensions.
-var ExpressTS = &scaffold.Generator{
+var Generator = &scaffold.Generator{
 	Name:     generatorName,
 	Version:  "1.0.0",
 	Language: "typescript",

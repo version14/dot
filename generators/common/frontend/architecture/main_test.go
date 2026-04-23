@@ -30,11 +30,10 @@ func TestArchitectureTSKnownPatterns(t *testing.T) {
 	}
 
 	for _, tc := range patterns {
-		tc := tc
 		t.Run(tc.arch, func(t *testing.T) {
 			t.Parallel()
 
-			s := spec.Spec{Extensions: map[string]any{"architecture": tc.arch}}
+			s := spec.Spec{Extensions: map[string]any{"frontend-architecture": tc.arch}}
 			ops, err := ArchitectureTS.Apply(s)
 			if err != nil {
 				t.Fatalf("Apply(%q): %v", tc.arch, err)
@@ -81,7 +80,7 @@ func TestArchitectureTSMissingExtension(t *testing.T) {
 func TestArchitectureTSUnknownArch(t *testing.T) {
 	t.Parallel()
 
-	s := spec.Spec{Extensions: map[string]any{"architecture": "nonexistent-pattern"}}
+	s := spec.Spec{Extensions: map[string]any{"frontend-architecture": "nonexistent-pattern"}}
 	_, err := ArchitectureTS.Apply(s)
 	if err == nil {
 		t.Fatal("want error for unknown architecture pattern, got nil")

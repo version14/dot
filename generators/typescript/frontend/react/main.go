@@ -1,4 +1,4 @@
-package frontend_react_generator
+package typescript_frontend_react_generator
 
 import (
 	"embed"
@@ -22,12 +22,12 @@ const generatorName = "react-ts"
 // Wire it into a question with ReactTS.Func():
 //
 //	question.Select(...).ChoiceWithGen("React", "react", ReactTS.Func())
-var ReactTS = &newtest_generator.Generator{
+var Generator = &newtest_generator.Generator{
 	Name:     generatorName,
 	Language: "typescript",
 
 	ApplyFunction: func(s spec.Spec) ([]generator.FileOp, error) {
-		arch, _ := s.Extensions["architecture"].(string)
+		arch, _ := s.Extensions["frontend-architecture"].(string)
 		data := struct {
 			Name         string
 			Architecture string

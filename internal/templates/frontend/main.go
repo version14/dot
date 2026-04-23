@@ -7,9 +7,9 @@ import (
 )
 
 var frontendArchitectureQ = question.Select("Frontend architecture", "frontend-architecture").
-	ChoiceWithGen("Feature-sliced Design", "feature-sliced", frontend_react_generator.ReactTS.Func()).
-	ChoiceWithGen("Atomic Design", "atomic", frontend_react_generator.ReactTS.Func()).
-	ChoiceWithGen("Container-Presentational", "container-presentational", frontend_react_generator.ReactTS.Func()).
+	ChoiceWithGen("Feature-sliced Design", "feature-sliced", frontend_react_generator.Generator.Func()).
+	ChoiceWithGen("Atomic Design", "atomic", frontend_react_generator.Generator.Func()).
+	ChoiceWithGen("Container-Presentational", "container-presentational", frontend_react_generator.Generator.Func()).
 	Q()
 
 var FrontendQuestions = question.Select("Language", "frontend-language").
