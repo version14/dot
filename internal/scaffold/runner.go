@@ -61,6 +61,13 @@ func (result *Result) add(entry AnswerEntry) {
 	result.Entries = append(result.Entries, entry)
 }
 
+// Add appends an answer entry and indexes it by key. Exported so callers that
+// synthesize a Result (tests, alternative input layers) can mirror what the
+// survey runner produces.
+func (result *Result) Add(entry AnswerEntry) {
+	result.add(entry)
+}
+
 // Runner holds the question flow and accumulates answers.
 type Runner struct {
 	Flow  *q.Question
