@@ -1,0 +1,27 @@
+{
+  "name": "backend/express/clean",
+  "port": 3002,
+  "answers": [
+    { "key": "project-name", "value": "test-app" },
+    { "key": "project-monorepo", "value": "no" },
+    { "key": "app-type", "value": "backend" },
+    { "key": "backend-architecture-type", "value": "monolith" },
+    { "key": "service-language", "value": "typescript" },
+    { "key": "ts-framework", "value": "express" },
+    { "key": "ts-architecture", "value": "clean" },
+    { "key": "ts-linter", "value": "none" },
+    { "key": "ts-formatter", "value": "none" },
+    { "key": "databases", "multi": ["none"] },
+    { "key": "db-schema", "value": "" }
+  ],
+  "expect": {
+    "generators": [
+      "service-language=typescript",
+      "ts-framework=express",
+      "ts-architecture=clean"
+    ],
+    "files": [
+      "src/shared/middlewares/error.middleware.ts"
+    ]
+  }
+}
