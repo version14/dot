@@ -1,6 +1,7 @@
 package backend_templates
 
 import (
+	"github.com/version14/dot/generators"
 	clean_generator "github.com/version14/dot/generators/typescript/backend/architecture/clean-architecture"
 	hexagonal_generator "github.com/version14/dot/generators/typescript/backend/architecture/hexagonal"
 	mvc_generator "github.com/version14/dot/generators/typescript/backend/architecture/mvc"
@@ -26,9 +27,9 @@ var databasesQ = question.Select("Databases", "databases").
 // TypeScript tooling
 
 var tsFormatterQ = question.Select("Formatter", "ts-formatter").
-	Choice("Prettier", "prettier", databasesQ).
-	Choice("Biome", "biome", databasesQ).
-	Choice("None", "none", databasesQ).
+	// Choice("Prettier", "prettier", databasesQ).
+	ChoiceWithGen("Biome", "biome", generators.Generators.Typescript.Linters.Biome.Func(), databasesQ).
+	// Choice("None", "none", databasesQ).
 	Q()
 
 var tsLinterQ = question.Select("Linter", "ts-linter").

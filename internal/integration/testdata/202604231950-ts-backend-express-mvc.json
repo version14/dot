@@ -10,7 +10,7 @@
     { "key": "ts-framework", "value": "express" },
     { "key": "ts-architecture", "value": "mvc" },
     { "key": "ts-linter", "value": "none" },
-    { "key": "ts-formatter", "value": "none" },
+    { "key": "ts-formatter", "value": "biome" },
     { "key": "databases", "multi": ["none"] },
     { "key": "db-schema", "value": "" }
   ],
