@@ -1,10 +1,13 @@
 package backend_templates
 
-import "github.com/version14/dot/internal/question"
+import (
+	express_generator "github.com/version14/dot/generators/typescript/backend/frameworks/express"
+	"github.com/version14/dot/internal/question"
+)
 
 // tsFrameworkQ routes TypeScript services to their framework-specific flow.
 // Express gets architecture selection; NestJS skips it (opinionated by design).
 var tsFrameworkQ = question.Select("Framework", "ts-framework").
-	Choice("Express", "express", tsArchitectureQ).
-	Choice("NestJS", "nestjs", tsLinterQ).
+	ChoiceWithGen("Express", "express", express_generator.Generator.Func(), tsArchitectureQ).
+	// ChoiceWithGen("NestJS", "nestjs", ..., tsLinterQ). // TODO: Need to implement
 	Q()

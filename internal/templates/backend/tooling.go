@@ -1,6 +1,12 @@
 package backend_templates
 
-import "github.com/version14/dot/internal/question"
+import (
+	"github.com/version14/dot/generators"
+	clean_generator "github.com/version14/dot/generators/typescript/backend/architecture/clean-architecture"
+	hexagonal_generator "github.com/version14/dot/generators/typescript/backend/architecture/hexagonal"
+	mvc_generator "github.com/version14/dot/generators/typescript/backend/architecture/mvc"
+	"github.com/version14/dot/internal/question"
+)
 
 // Databases
 
@@ -18,30 +24,12 @@ var databasesQ = question.Select("Databases", "databases").
 	Then(dbSchemaQ).
 	Q()
 
-// Go tooling
-
-var goFormatterQ = question.Select("Formatter", "go-formatter").
-	Choice("gofmt", "gofmt", databasesQ).
-	Choice("None", "none", databasesQ).
-	Q()
-
-var goLinterQ = question.Select("Linter", "go-linter").
-	Choice("golangci-lint", "golangci-lint", goFormatterQ).
-	Choice("None", "none", goFormatterQ).
-	Q()
-
-var goArchitectureQ = question.Select("Architecture pattern", "go-architecture").
-	Choice("Clean Architecture", "clean", goLinterQ).
-	Choice("MVC", "mvc", goLinterQ).
-	Choice("Hexagonal", "hexagonal", goLinterQ).
-	Q()
-
 // TypeScript tooling
 
 var tsFormatterQ = question.Select("Formatter", "ts-formatter").
-	Choice("Prettier", "prettier", databasesQ).
-	Choice("Biome", "biome", databasesQ).
-	Choice("None", "none", databasesQ).
+	// Choice("Prettier", "prettier", databasesQ).
+	ChoiceWithGen("Biome", "biome", generators.Generators.Typescript.Linters.Biome.Func(), databasesQ).
+	// Choice("None", "none", databasesQ).
 	Q()
 
 var tsLinterQ = question.Select("Linter", "ts-linter").
@@ -51,7 +39,7 @@ var tsLinterQ = question.Select("Linter", "ts-linter").
 	Q()
 
 var tsArchitectureQ = question.Select("Architecture pattern", "ts-architecture").
-	Choice("Clean Architecture", "clean", tsLinterQ).
-	Choice("MVC", "mvc", tsLinterQ).
-	Choice("Hexagonal", "hexagonal", tsLinterQ).
+	ChoiceWithGen("Clean Architecture", "clean", clean_generator.CleanArchitectureTS.Func(), tsLinterQ).
+	ChoiceWithGen("MVC", "mvc", mvc_generator.MvcTS.Func(), tsLinterQ).
+	ChoiceWithGen("Hexagonal", "hexagonal", hexagonal_generator.HexagonalTS.Func(), tsLinterQ).
 	Q()
