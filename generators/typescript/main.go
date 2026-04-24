@@ -6,6 +6,7 @@ import (
 	mvc_arch "github.com/version14/dot/generators/typescript/backend/architecture/mvc"
 	typescript_express_generator "github.com/version14/dot/generators/typescript/backend/frameworks/express"
 	typescript_frontend_react_generator "github.com/version14/dot/generators/typescript/frontend/react"
+	typescript_linters_biome_generator "github.com/version14/dot/generators/typescript/linters/biome"
 	"github.com/version14/dot/internal/scaffold"
 )
 
@@ -28,9 +29,14 @@ type frontendGeneratorsMap struct {
 	React scaffold.Generator
 }
 
+type LintersGeneratorsMap struct {
+	Biome scaffold.Generator
+}
+
 type TypescriptGeneratorsMap struct {
 	Backend  backendGeneratorsMap
 	Frontend frontendGeneratorsMap
+	Linters  LintersGeneratorsMap
 }
 
 var TypescriptGenerators = TypescriptGeneratorsMap{
@@ -46,5 +52,8 @@ var TypescriptGenerators = TypescriptGeneratorsMap{
 	},
 	Frontend: frontendGeneratorsMap{
 		React: *typescript_frontend_react_generator.Generator,
+	},
+	Linters: LintersGeneratorsMap{
+		Biome: *typescript_linters_biome_generator.Generator,
 	},
 }
