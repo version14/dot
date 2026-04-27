@@ -67,6 +67,9 @@ type IfQuestion struct {
 }
 
 func (q *OptionQuestion) Next(answer Answer) *Next {
+	if q.Multiple {
+		return q.Next_
+	}
 	val, ok := answer.(string)
 	if !ok {
 		return nil
