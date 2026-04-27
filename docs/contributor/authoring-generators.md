@@ -110,6 +110,55 @@ Do not use absolute paths or `../` segments.
 
 ## Writing files
 
+
+### From github repository
+
+When creating a generator, you may want to retrieve files from an external GitHub repository. The `VirtualProjectState` provides a `WriteFilesFromGitHub` method to simplify this process. This method allows you to fetch and write files from a specified GitHub repository, enabling you to reuse templates, configurations, or other assets across different projects.
+
+#### Usage
+
+To use `WriteFilesFromGitHub`, you need to provide the repository owner, name, and a list of `FileMapping` objects. Each `FileMapping` specifies the source path in the repository and the destination path in your project.
+
+```go
+// From a generator
+func (g *MyGenerator) Generate(ctx *dotapi.Context) error {
+    mappings := []state.FileMapping{
+        {Source: "templates/README.md", Destination: "README.md"},
+        {Source: "config/.env.example", Destination: ".env"},
+    }
+
+    err := ctx.State.WriteFilesFromGitHub("owner", "repo-name", mappings)
+    if err != nil {
+        return fmt.Errorf("failed to write files from github: %w", err)
+    }
+
+    return nil
+}
+```
+This will fetch `templates/README.md` and `config/.env.example` from the `owner/repo-name` repository and write them to `README.md` and `.env` in your project, respectively.
+
+### From external URL
+
+In addition to fetching files from a Git repository, you can also retrieve content from any external URL. The `VirtualProjectState` provides a `WriteFileFromExternal` method that fetches content from a given URL and writes it to a specified file path in your project. This is useful for retrieving configuration files, scripts, or any other assets hosted on the web.
+
+#### Usage
+
+To use `WriteFileFromExternal`, provide the destination file path and the URL of the external content. The method will fetch the content and write it to the specified path.
+
+```go
+// From a generator
+func (g *MyGenerator) Generate(ctx *dotapi.Context) error {
+    err := ctx.State.WriteFileFromExternal("config/config.json", "http://example.com/config.json")
+    if err != nil {
+        return fmt.Errorf("failed to write file from external: %w", err)
+    }
+
+    return nil
+}
+```
+This will fetch the content from `http://example.com/config.json` and write it to `config/config.json` in your project.
+
+
 ### Raw content
 
 ```go
