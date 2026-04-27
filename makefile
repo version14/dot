@@ -57,7 +57,7 @@ fmt: ## Format Go code
 lint: ## Lint Go code with golangci-lint
 	$(call print_header,"LINT","                             ")
 	$(call print_info,"Running linter...")
-	@golangci-lint run ./... || (echo "$(RED)✗ Linting failed$(RESET)"; exit 1)
+	@golangci-lint run ./... -c .golangci.yml || (echo "$(RED)✗ Linting failed$(RESET)"; exit 1)
 	$(call print_success,"Linting passed")
 	@echo ""
 
