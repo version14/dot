@@ -21,6 +21,7 @@ type TestCase struct {
 	Name             string                 `json:"name"`
 	FlowID           string                 `json:"flow_id"`
 	Answers          map[string]flow.Answer `json:"answers"`
+	Disabled         bool                   `json:"disabled"`
 	ExpectedIDs      []string               `json:"expected_visited,omitempty"`
 	SkipPostCommands bool                   `json:"skip_post_commands,omitempty"`
 	SkipTestCommands bool                   `json:"skip_test_commands,omitempty"`

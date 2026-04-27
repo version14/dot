@@ -85,6 +85,10 @@ func main() {
 	}
 
 	for _, tc := range cases {
+		if tc.Disabled {
+			continue
+		}
+
 		def, ok := registry.Get(tc.FlowID)
 		if !ok {
 			r := &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}

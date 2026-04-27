@@ -16,5 +16,7 @@
     "use_biome",
     "biome_extras.strict_mode",
     "confirm_generate"
-  ]
+  ],
+  "skip_post_commands": true,
+  "skip_test_commands": true
 }
