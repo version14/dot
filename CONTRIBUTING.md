@@ -18,6 +18,7 @@ Thank you for your interest in contributing. This document explains how to get i
 - [Pull Request Process](#pull-request-process)
 - [Code Style](#code-style)
 - [Testing](#testing)
+- [Documentation](#documentation)
 
 ---
 
@@ -39,13 +40,38 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
    ```bash
    git remote add upstream https://github.com/version14/dot.git
    ```
-4. Follow the [development setup guide](docs/getting-started/README.md)
+4. Follow the [Development Setup](#development-setup) section below and [docs/getting-started.md](docs/getting-started.md).
 
 ---
 
 ## Development Setup
 
-See [Getting Started](docs/getting-started/README.md) for the full setup guide.
+### Prerequisites
+
+- Go 1.21+ (`go version`)
+- `git` on `$PATH`
+- `golangci-lint` (for linting): `brew install golangci-lint` or see [golangci-lint docs](https://golangci-lint.run/usage/install/)
+
+### Build and run
+
+```bash
+make build        # produces bin/dot
+./bin/dot version
+```
+
+### Full validation
+
+```bash
+make validate     # fmt → vet → lint → test
+```
+
+### End-to-end test
+
+```bash
+make test-flow    # runs test-flow against all testdata fixtures (skips test commands)
+```
+
+See [docs/test-flow.md](docs/test-flow.md) for the full guide.
 
 ---
 
@@ -54,13 +80,13 @@ See [Getting Started](docs/getting-started/README.md) for the full setup guide.
 ### Reporting Bugs
 
 Before opening an issue:
-- Search [existing issues](../../issues) to avoid duplicates
-- Make sure you are on the latest version (`git pull upstream main`)
+- Search [existing issues](../../issues) to avoid duplicates.
+- Make sure you are on the latest version (`git pull upstream main`).
 
 When opening a bug report, include:
 - Steps to reproduce
 - Expected vs actual behavior
-- Your environment (OS, Go version)
+- Your environment (OS, Go version, `dot version`)
 - Relevant logs or error output
 
 ### Suggesting Features
@@ -86,11 +112,6 @@ git config core.hooksPath .githooks
 chmod +x .githooks/commit-msg
 ```
 
-View commit rules anytime:
-```bash
-make commit-lint
-```
-
 ### Submitting Code Changes
 
 1. **Create a branch** from `main`:
@@ -100,28 +121,32 @@ make commit-lint
    git checkout -b feat/your-feature-name
    ```
 
-2. **Make your changes** following the [code style](#code-style) guidelines
+2. **Make your changes** following the [Code Style](#code-style) guidelines.
 
-3. **Write or update tests** — every new behavior needs a test
+3. **Write or update tests** — every new behavior needs a test. If you changed a flow or generator, add or update a `test-flow` fixture (see [docs/test-flow.md](docs/test-flow.md)).
 
-4. **Run validation locally**:
+4. **Update documentation** — see [Documentation](#documentation) for the rules.
+
+5. **Run validation locally**:
    ```bash
    make validate
+   make test-flow
    ```
-   This runs: format → vet → lint → tests
 
-5. **Commit following [commit conventions](#commit-conventions)**
+6. **Commit following [Commit Conventions](#commit-conventions)**.
 
-6. **Push and open a Pull Request**:
+7. **Push and open a Pull Request**:
    ```bash
    git push origin feat/your-feature-name
    ```
 
 **Before submitting the PR, verify:**
+
 - [ ] All validations pass (`make validate`)
 - [ ] Commits follow Conventional Commits
 - [ ] Tests pass (`make test`)
-- [ ] Documentation is updated if needed
+- [ ] `test-flow` fixtures pass (`make test-flow`)
+- [ ] Documentation is updated (see [Documentation rules](#documentation))
 
 ---
 
@@ -154,19 +179,17 @@ We follow **Conventional Commits** format. Messages are validated both locally (
 | `ci`       | CI/CD changes                         |
 | `revert`   | Revert a previous commit              |
 
-**Scope** (optional): the area affected, e.g. `spec`, `pipeline`, `generators`, `registry`.
+**Scope** (optional): the area affected, e.g. `flow`, `generator`, `cli`, `plugin`, `spec`.
 
 ### Examples
 
 ```
-feat: add user authentication
-feat(pipeline): add conflict marker support
-fix(registry): error on duplicate module claim
-docs(readme): update installation steps
-refactor(spec): extract validation logic
-test(pipeline): add AnchorImportBlock edge cases
-chore: update dependencies
-ci: add Go 1.26 matrix
+feat(flow): add IfQuestion conditional node
+fix(resolver): preserve loop iteration invocations after dedup
+docs(test-flow): document loop fixture schema
+refactor(cli): extract Scaffold into ScaffoldOptions struct
+test(generator): add validator round-trip tests
+chore: upgrade huh to v1.0.1
 ```
 
 ### Rules
@@ -194,7 +217,13 @@ PRs are merged by maintainers once they have one approving review and all checks
 
 ## Code Style
 
-See [Code Style Guide](docs/developer-guide/guidelines/code-style.md) for detailed conventions.
+- Standard Go style: `gofmt`-formatted, idiomatic.
+- No `internal/*` imports from `pkg/` or `plugins/` — use `pkg/dotapi` and `pkg/dotplugin`.
+- Error messages: lowercase, no trailing period, wrap with `%w` for context.
+- No `panic` in library code (only in `main` or test setup).
+- Keep functions short. If a function needs a comment to explain what it does, consider splitting it.
+
+Run `make fmt` and `make lint` before committing.
 
 ---
 
@@ -202,13 +231,59 @@ See [Code Style Guide](docs/developer-guide/guidelines/code-style.md) for detail
 
 Every PR should maintain or improve existing test coverage.
 
+### Unit tests
+
+```bash
+make test           # go test -race ./...
+```
+
 Critical areas that require table-driven tests:
-- `internal/pipeline/patch.go` — import block patching
-- `internal/generator/registry.go` — `ForSpec` matching
+- `internal/flow/` — question branching, engine traversal
+- `internal/generator/` — resolver dedup, topo-sort, validator
+- `internal/versioning/` — semver parsing and constraint matching
 - `internal/spec/` — spec serialization round-trips
+
+### End-to-end tests (test-flow)
+
+```bash
+make test-flow      # go run ./tools/test-flow -skip-test
+```
+
+Every flow change needs a matching fixture. See [docs/test-flow.md](docs/test-flow.md).
+
+---
+
+## Documentation
+
+The `docs/` directory is the single source of truth. Read [docs/README.md](docs/README.md) for the full documentation rules.
+
+**Summary of when to update docs in a PR:**
+
+| Change | Required update |
+|--------|----------------|
+| New CLI command or flag | `docs/cli-reference.md` |
+| New flow | `docs/authoring-flows.md` + test fixture |
+| New question type | `docs/authoring-flows.md` + `docs/architecture.md` |
+| New injection kind | `docs/authoring-plugins.md` |
+| New exported type in `pkg/dotapi` or `pkg/dotplugin` | `docs/authoring-generators.md` or `docs/authoring-plugins.md` |
+| **New generator** | **Create `docs/generators/<name>.md`** (copy `docs/generators/_template.md`) + update `docs/README.md` |
+| **New plugin** | **Create `docs/plugins/<name>.md`** (copy `docs/plugins/_template.md`) + update `docs/README.md` |
+| **New flow** | **Create `docs/flows/<id>.md`** (copy `docs/flows/_template.md`) + update `docs/README.md` |
+| Generator manifest fields change | `docs/generators/<name>.md` |
+| Plugin injection IDs change | `docs/plugins/<name>.md` + affected test fixtures |
+| Pipeline step change | `docs/architecture.md` |
+| `.dot/` schema change | `docs/architecture.md` |
+| New `test-flow` flag | `docs/test-flow.md` |
+| Install mechanism change | `docs/getting-started.md` |
+
+Documentation updates use the `docs` commit type:
+
+```
+docs(authoring-flows): document IfQuestion conditional node
+```
 
 ---
 
 ## Questions?
 
-Open a [Discussion](../../discussions) or check the [FAQ](docs/developer-guide/faq.md).
+Open a [Discussion](../../discussions) or read the [docs/](docs/README.md).
