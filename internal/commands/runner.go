@@ -1,3 +1,199 @@
 package commands
 
-// Executes post-generation commands (pnpm i, go mod download, etc.) after disk write
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/version14/dot/pkg/dotapi"
+)
+
+// defaultBackgroundReadyDelay is used when a background command has no
+// explicit ReadyDelay — long enough for most dev servers to bind a port
+// without making each test feel slow.
+const defaultBackgroundReadyDelay = 3 * time.Second
+
+// Plan resolves manifests + scoped answers into a deduplicated, ordered list
+// of PlannedCommands ready for execution.
+func Plan(invocations []Invocation) []PlannedCommand {
+	all := make([]PlannedCommand, 0)
+	for _, inv := range invocations {
+		for _, cmd := range inv.Manifest.PostGenerationCommands {
+			all = append(all, PlannedCommand{
+				Cmd:        interpolate(cmd.Cmd, inv.Answers),
+				WorkDir:    interpolate(cmd.WorkDir, inv.Answers),
+				Source:     inv.Manifest.Name,
+				Background: cmd.Background,
+				ReadyDelay: cmd.ReadyDelay,
+			})
+		}
+	}
+	return Dedup(all)
+}
+
+// Invocation pairs a manifest with the scoped answers used to interpolate
+// its commands. One entry per generator invocation.
+type Invocation struct {
+	Manifest dotapi.Manifest
+	Answers  map[string]interface{}
+}
+
+// Runner executes PlannedCommands sequentially against an on-disk project.
+// Each command is run via /bin/sh -c so shell features (pipes, &&) work.
+type Runner struct {
+	ProjectRoot string
+	Logger      dotapi.Logger
+	// DryRun, when true, logs commands but does not execute them.
+	DryRun bool
+}
+
+// NewRunner constructs a Runner anchored at projectRoot.
+func NewRunner(projectRoot string, logger dotapi.Logger) *Runner {
+	if logger == nil {
+		logger = dotapi.DiscardLogger{}
+	}
+	return &Runner{ProjectRoot: projectRoot, Logger: logger}
+}
+
+// Run executes each command in order, streaming their stdout/stderr to the
+// process's own stdout/stderr. On the first failure execution halts.
+//
+// For quiet UX (spinner + capture-on-failure), use RunOneCaptured.
+func (r *Runner) Run(ctx context.Context, cmds []PlannedCommand) error {
+	for _, c := range cmds {
+		if err := r.RunOne(ctx, c); err != nil {
+			return fmt.Errorf("commands: %s [%s]: %w", c.Cmd, c.Source, err)
+		}
+	}
+	return nil
+}
+
+// RunOne dispatches to runForeground or runBackground based on the command,
+// streaming output to os.Stdout/os.Stderr.
+func (r *Runner) RunOne(ctx context.Context, c PlannedCommand) error {
+	wd := r.workDir(c)
+	if r.DryRun {
+		r.Logger.Infof("[dry-run] %s (in %s)", c.Cmd, relOrDot(r.ProjectRoot, wd))
+		return nil
+	}
+	if c.Background {
+		return r.runBackground(ctx, c, wd, os.Stdout, os.Stderr)
+	}
+	return r.runForeground(ctx, c, wd, os.Stdout, os.Stderr)
+}
+
+// RunOneCaptured runs a command quietly: stdout+stderr are merged into a
+// returned byte slice instead of streaming to the terminal. The output is
+// returned regardless of success so callers can dump it on failure.
+func (r *Runner) RunOneCaptured(ctx context.Context, c PlannedCommand) ([]byte, error) {
+	wd := r.workDir(c)
+	if r.DryRun {
+		return nil, nil
+	}
+
+	var buf bytes.Buffer
+	var err error
+	if c.Background {
+		err = r.runBackground(ctx, c, wd, &buf, &buf)
+	} else {
+		err = r.runForeground(ctx, c, wd, &buf, &buf)
+	}
+	return buf.Bytes(), err
+}
+
+func (r *Runner) workDir(c PlannedCommand) string {
+	if c.WorkDir == "" {
+		return r.ProjectRoot
+	}
+	return filepath.Join(r.ProjectRoot, c.WorkDir)
+}
+
+func (r *Runner) runForeground(ctx context.Context, c PlannedCommand, wd string, stdout, stderr fileOrBuf) error {
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", c.Cmd)
+	cmd.Dir = wd
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	cmd.Env = os.Environ()
+	return cmd.Run()
+}
+
+// runBackground starts the command, waits ReadyDelay, verifies it's still
+// running, then sends SIGTERM (with a SIGKILL fallback after 5s).
+func (r *Runner) runBackground(ctx context.Context, c PlannedCommand, wd string, stdout, stderr fileOrBuf) error {
+	delay := c.ReadyDelay
+	if delay <= 0 {
+		delay = defaultBackgroundReadyDelay
+	}
+
+	cmd := exec.Command("/bin/sh", "-c", c.Cmd)
+	cmd.Dir = wd
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	cmd.Env = os.Environ()
+	// Put the child in its own process group so we can kill its descendants.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start: %w", err)
+	}
+
+	exited := make(chan error, 1)
+	go func() { exited <- cmd.Wait() }()
+
+	select {
+	case err := <-exited:
+		if err != nil {
+			return fmt.Errorf("died before ready: %w", err)
+		}
+		return fmt.Errorf("exited before ready (delay %s)", delay)
+
+	case <-time.After(delay):
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+		select {
+		case <-exited:
+			return nil
+		case <-time.After(5 * time.Second):
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			<-exited
+			return nil
+		}
+	}
+}
+
+// fileOrBuf accepts both *os.File (for live streaming) and *bytes.Buffer (for
+// capture). Both implement io.Writer; we use the interface alias to keep the
+// runForeground/runBackground signatures honest about what they need.
+type fileOrBuf = interface {
+	Write(p []byte) (int, error)
+}
+
+func relOrDot(root, wd string) string {
+	rel, err := filepath.Rel(root, wd)
+	if err != nil || rel == "" {
+		return "."
+	}
+	return rel
+}
+
+// interpolate substitutes {key}-style tokens in s using values from answers.
+// Unknown tokens are left literal.
+func interpolate(s string, answers map[string]interface{}) string {
+	if s == "" || !strings.ContainsRune(s, '{') {
+		return s
+	}
+	out := s
+	for k, v := range answers {
+		token := "{" + k + "}"
+		if !strings.Contains(out, token) {
+			continue
+		}
+		out = strings.ReplaceAll(out, token, fmt.Sprint(v))
+	}
+	return out
+}
