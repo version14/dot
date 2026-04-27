@@ -6,6 +6,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: commitlint-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   commitlint:
     name: Validate commit messages
@@ -24,7 +28,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on PR if commits are invalid
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
