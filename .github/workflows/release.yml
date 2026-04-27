@@ -21,6 +21,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+          args: -c .golangci.yml
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
