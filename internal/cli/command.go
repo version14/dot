@@ -61,6 +61,7 @@ func Dispatch(ctx context.Context, args []string, toolVersion string) int {
 
 // printUsage writes the top-level help text.
 func printUsage(w io.Writer, version string) {
+	PrintBanner()
 	fmt.Fprintf(w, "dot %s — generative project scaffolding\n\n", version)
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  dot scaffold [flow-id] [-out DIR]   Run an interactive scaffold flow")
@@ -128,6 +129,8 @@ func runScaffold(ctx context.Context, args []string, toolVersion string) int {
 	if fs.NArg() > 0 {
 		flowID = fs.Arg(0)
 	}
+
+	PrintBanner()
 
 	flowReg := flows.Default()
 	def, err := pickFlow(flowReg, flowID)

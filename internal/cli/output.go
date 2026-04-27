@@ -8,10 +8,23 @@ import (
 	"github.com/version14/dot/pkg/dotapi"
 )
 
+const bannerText = `
+██████╗  ██████╗ ████████╗
+██╔══██╗██╔═══██╗╚══██╔══╝
+██║  ██║██║   ██║   ██║
+██║  ██║██║   ██║   ██║
+██████╔╝╚██████╔╝   ██║
+╚═════╝  ╚═════╝    ╚═╝
+`
+
 var (
+	bannerStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#5676f4"))
+
 	headingStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#7D56F4")).
+			Foreground(lipgloss.Color("#5676f4")).
 			MarginTop(1)
 
 	progressStyle = lipgloss.NewStyle().
@@ -32,6 +45,10 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color("#FFAF00"))
 )
+
+func PrintBanner() {
+	fmt.Println(bannerStyle.Render(bannerText))
+}
 
 func PrintHeading(s string) {
 	fmt.Println(headingStyle.Render(s))
