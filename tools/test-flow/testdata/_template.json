@@ -1,0 +1,14 @@
+{
+  "name": "flow_id_description",
+  "flow_id": "flow-id",
+  "answers": {
+    "project_name": "test-project",
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "confirm_generate"
+  ],
+  "skip_post_commands": true,
+  "skip_test_commands": true
+}

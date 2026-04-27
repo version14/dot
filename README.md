@@ -3,48 +3,24 @@
 [![CI](https://github.com/version14/dot/actions/workflows/ci.yml/badge.svg)](https://github.com/version14/dot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-dot is a **universal project companion**. Describe what you want — dot builds it.
+**dot** is a generative project scaffolding tool. Answer a few questions — dot generates a production-ready project.
 
-- You answer a few questions. dot generates a production-ready project.
-- After creation, dot knows your project's architecture and gives you commands to manage it.
-- Works for REST APIs, CLIs, frontend apps, monorepos, and more.
-- Extensible: anyone can publish generators for new languages, frameworks, and patterns.
+- Interactive TUI survey → production-ready project on disk
+- Works for TypeScript apps, monorepos, microservices, Go backends, and more
+- Extensible: publish generators and plugins for any language or pattern
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
 - [Install](#install)
 - [Usage](#usage)
+- [Built-in flows](#built-in-flows)
 - [Development](#development)
 - [Architecture](#architecture)
 - [CI/CD](#cicd)
 - [Contributing](#contributing)
 - [License](#license)
-
----
-
-## Overview
-
-**The Problem:** Starting a project today means one of three broken paths:
-
-1. **Opinionated starters** — fast, but you spend hours removing what you don't need.
-2. **GitHub template repos** — someone did the work, but you spend 30+ minutes filtering out their decisions.
-3. **From scratch** — full control, but 200 lines of boilerplate before you write a single line of business logic.
-
-**dot's answer:** describe exactly what you want (stack, modules, config) and get a working project. Not just for new projects — also for adding features to existing ones.
-
-**How it works:**
-
-```
-dot init
- └── TUI survey → Spec
-                   └── Generator engine
-                          └── FileOp pipeline → project on disk + .dot/config.json
-```
-
-After `dot init`, the project has a `.dot/config.json` that knows which generators were used and what commands they registered. `dot new route UserController` works from anywhere in the project.
 
 ---
 
@@ -70,7 +46,7 @@ Installs to `/usr/local/bin/dot` by default. Override with `INSTALL_DIR=~/bin sh
 go install github.com/version14/dot/cmd/dot@latest
 ```
 
-Requires Go 1.21+. Binary lands in `$GOPATH/bin` (usually already on `$PATH`).
+Requires Go 1.26+. Binary lands in `$GOPATH/bin`.
 
 ### From source
 
@@ -84,10 +60,8 @@ make build        # → bin/dot
 ### Keep it up to date
 
 ```bash
-dot self-update
+dot update
 ```
-
-Fetches the latest release from GitHub and replaces the binary in place. Works regardless of how you installed it.
 
 ### Uninstall
 
@@ -106,78 +80,115 @@ Project `.dot/` directories are left untouched — remove them manually if neede
 ## Usage
 
 ```bash
-dot init                  # Launch TUI → generate project
-dot new route <name>      # Generate a new artifact in the current project
-dot help                  # List available commands for the current project
-dot version               # Print version
-dot self-update           # Update to the latest release
+dot scaffold [flow-id] [-out DIR]   # Run an interactive scaffold flow
+dot update [PATH]                   # Re-run generators against an existing project
+dot doctor [PATH]                   # Diagnose drift between spec and installed tools
+dot plugin <list|install|uninstall> # Manage installable plugins
+dot flows                           # List available flows
+dot generators                      # List registered generators
+dot version                         # Print version
+dot help                            # Show help
 ```
 
-All commands except `dot init` look for `.dot/config.json` by traversing up from `$PWD` to the git root.
+**Quick start:**
 
-See [docs/getting-started](docs/getting-started/README.md) for the full walkthrough.
-See [docs/](docs/README.md) for the full documentation index.
+```bash
+dot scaffold                  # pick a flow interactively
+dot scaffold monorepo         # use a specific flow by ID
+dot scaffold fullstack -out ~/projects
+```
+
+After scaffolding, a `.dot/` directory is written alongside the project. It stores the full spec (`spec.json`) and generator manifest (`manifest.json`) so `dot update` and `dot doctor` can work later.
+
+See [docs/user/getting-started.md](docs/user/getting-started.md) for the full walkthrough.
+See [docs/README.md](docs/README.md) for the complete documentation index.
+
+---
+
+## Built-in flows
+
+| Flow ID | What it builds |
+|---------|---------------|
+| `monorepo` | General-purpose project — TypeScript, optional React, optional Biome |
+| `fullstack` | TypeScript frontend + optional Go backend |
+| `microservices` | N independent services, each with its own name and port |
+| `plugin-template` | A publishable dot plugin repository |
+
+Run `dot flows` to see the up-to-date list with descriptions.
 
 ---
 
 ## Development
 
-We use a **Makefile** for convenient command execution with clean, colored output:
-
 ```bash
-make help        # See all available commands
+make help        # See all available targets
 
-make dev         # Build and run dot
-make build       # Build to bin/dot
-make run         # Run directly (no build step)
+make build       # Compile → bin/dot
+make dev         # Build and run
 
-make validate    # Full check suite: fmt → vet → lint → test
-make test        # Run tests with race detector
+make validate    # fmt → vet → lint → test  (run before every PR)
+make test        # Unit tests with race detector
+make test-flows  # End-to-end fixture tests (requires pnpm)
 make fmt         # Format code
-make lint        # Lint code
+make lint        # Lint with golangci-lint
 make clean       # Remove build artifacts
+
+make hooks       # Activate git hooks (commit message validation)
 ```
 
 **Or raw Go commands:**
 
 ```bash
 go build -o bin/dot ./cmd/dot
-go run ./cmd/dot
 go test ./...
-go fmt ./...
 golangci-lint run ./...
 ```
+
+First time setting up? See [docs/contributor/getting-started.md](docs/contributor/getting-started.md) — includes a one-command setup script for macOS, Linux, and Windows.
 
 ---
 
 ## Architecture
 
-dot uses a **generator-based architecture** — specifications drive file generation.
+dot uses a **flow → spec → generator pipeline** architecture.
+
+```
+dot scaffold
+ └── TUI survey (flow graph)
+       └── Spec (typed answers)
+             └── Generator resolver (topological sort)
+                   └── VirtualProjectState (in-memory file tree)
+                         └── Persist → project on disk + .dot/
+```
+
+**Package layout:**
 
 ```
 dot/
-├── cmd/dot/                  ← CLI entry point (thin: parse → call internal → print)
+├── cmd/dot/          ← main() — thin entry point, imports plugins
+├── flows/            ← built-in flow definitions + registry
+├── generators/       ← built-in generator packages (one per generator)
+├── plugins/          ← in-tree plugins (biome_extras, ...)
+├── examples/         ← reference plugin implementations
+├── tools/test-flow/  ← end-to-end test runner + fixtures
+│
 ├── internal/
-│   ├── spec/                 ← Spec, ProjectSpec, CoreConfig, ModuleSpec
-│   ├── generator/            ← Generator interface, Registry, FileOp, CommandDef
-│   ├── project/              ← ProjectContext, Load, Save (.dot/config.json)
-│   └── pipeline/             ← FileOp collect → resolve → write
-├── generators/
-│   ├── go/                   ← official Go generators
-│   └── common/               ← language-agnostic (CI, Docker, etc.)
-└── templates/                ← embedded via go:embed
+│   ├── cli/          ← command dispatch, Scaffold(), TUI form runner, spinner
+│   ├── flow/         ← question DSL, FlowEngine, HookRegistry, FragmentRegistry
+│   ├── spec/         ← ProjectSpec, builder, loader
+│   ├── generator/    ← registry, executor, resolver, topological sorter, validator
+│   ├── state/        ← VirtualProjectState, Persist, JSON/YAML/GoMod helpers
+│   ├── commands/     ← post-gen + test command planner and runner
+│   ├── dotdir/       ← .dot/ read/write (spec.json, manifest.json)
+│   ├── plugin/       ← provider interface, loader, installer
+│   └── versioning/   ← semver parser and constraint checker
+│
+└── pkg/
+    ├── dotapi/       ← public Generator interface, Manifest, Context (stable API)
+    └── dotplugin/    ← public plugin author API — re-exports from internal
 ```
 
-**Workflow:**
-
-1. **Survey** → TUI collects user choices
-2. **Spec** → choices become a typed `Spec` struct
-3. **Registry** → finds generators matching the spec's language + modules
-4. **Apply** → generators return `[]FileOp` (create, template, append, patch)
-5. **Pipeline** → ops collected in memory, conflicts resolved, then written atomically
-6. **Context** → `.dot/config.json` written with spec + available commands
-
-See [docs/developer-guide](docs/developer-guide) for deep-dives.
+See [docs/contributor/architecture.md](docs/contributor/architecture.md) for a deep-dive into each subsystem.
 
 ---
 
@@ -189,13 +200,12 @@ See [docs/developer-guide](docs/developer-guide) for deep-dives.
 | **Commitlint** | Push / PR | Validate commit messages |
 | **Release** | `v*.*.*` tag | Build multi-platform binaries, create GitHub Release |
 
-See [docs/CI_CD.md](docs/CI_CD.md) for details.
-
 **Local checks before pushing:**
 
 ```bash
-make validate    # fmt → vet → lint → test
-make hooks       # Activate git hooks for local commit validation
+make validate     # fmt → vet → lint → test
+make test-flows   # end-to-end fixture tests
+make hooks        # activate git hooks for commit validation
 ```
 
 ---
@@ -205,11 +215,14 @@ make hooks       # Activate git hooks for local commit validation
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
 
 Key steps:
-1. Activate git hooks: `make hooks`
+
+1. Set up your environment: `bash scripts/setup-dev.sh` (or `scripts/setup-dev.ps1` on Windows)
 2. Make changes and write tests
-3. Run: `make validate`
-4. Commit with Conventional Commits format
+3. Run `make validate && make test-flows`
+4. Commit with [Conventional Commits](https://www.conventionalcommits.org/) format
 5. Open a PR
+
+For contributor orientation (where to look, what to read, how the pipeline works), see [docs/contributor/navigation-guide.md](docs/contributor/navigation-guide.md).
 
 ---
 
