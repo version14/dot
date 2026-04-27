@@ -1,0 +1,26 @@
+{
+  "name": "plugin_template_full",
+  "flow_id": "plugin-template",
+  "answers": {
+    "project_name": "my-plugin",
+    "module_path": "github.com/example/my-plugin",
+    "plugin_description": "Adds extra polish to scaffolded projects",
+    "plugin_author": "Test Author",
+    "plugin_year": "2026",
+    "plugin_include_injection": true,
+    "plugin_include_generator": true,
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "module_path",
+    "plugin_description",
+    "plugin_author",
+    "plugin_year",
+    "plugin_include_injection",
+    "plugin_include_generator",
+    "confirm_generate"
+  ],
+  "skip_post_commands": true,
+  "skip_test_commands": true
+}

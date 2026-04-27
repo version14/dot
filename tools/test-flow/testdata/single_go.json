@@ -1,0 +1,16 @@
+{
+  "name": "single_go",
+  "flow_id": "monorepo",
+  "answers": {
+    "project_name": "go-svc",
+    "monorepo_type": "single",
+    "stack": "go",
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "monorepo_type",
+    "stack",
+    "confirm_generate"
+  ]
+}

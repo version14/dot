@@ -1,0 +1,20 @@
+{
+  "name": "fullstack_no_ui",
+  "flow_id": "fullstack",
+  "answers": {
+    "project_name": "headless-app",
+    "stack": "typescript",
+    "ui_library": "none",
+    "use_biome": false,
+    "biome_extras.strict_mode": false,
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "stack",
+    "ui_library",
+    "use_biome",
+    "biome_extras.strict_mode",
+    "confirm_generate"
+  ]
+}
