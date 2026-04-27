@@ -1,0 +1,20 @@
+{
+  "name": "microservices_three",
+  "flow_id": "microservices",
+  "answers": {
+    "project_name": "platform",
+    "services": [
+      {"name": "auth", "port": 3001},
+      {"name": "users", "port": 3002},
+      {"name": "billing", "port": 3003}
+    ],
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "services",
+    "confirm_generate"
+  ],
+  "skip_post_commands": false,
+  "skip_test_commands": false
+}

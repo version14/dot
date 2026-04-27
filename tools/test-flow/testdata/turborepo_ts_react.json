@@ -1,0 +1,22 @@
+{
+  "name": "turborepo_ts_react",
+  "flow_id": "monorepo",
+  "answers": {
+    "project_name": "demo-app",
+    "monorepo_type": "turborepo",
+    "stack": "typescript",
+    "use_react": true,
+    "use_biome": true,
+    "biome_extras.strict_mode": false,
+    "confirm_generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "monorepo_type",
+    "stack",
+    "use_react",
+    "use_biome",
+    "biome_extras.strict_mode",
+    "confirm_generate"
+  ]
+}
