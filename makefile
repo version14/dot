@@ -161,7 +161,7 @@ commit-lint: ## Validate commit messages (shows format rules)
 test-flows: ## Run integration tests — scaffold every generator flow, typecheck, and smoke-test (requires pnpm)
 	$(call print_header,"TEST FLOWS","                         ")
 	$(call print_info,"Running integration tests for all generator flows...")
-	@$(GO) test -tags integration -v -timeout 300s ./internal/integration/... || (echo "$(RED)✗ Flow tests failed$(RESET)"; exit 1)
+	@$(GO) run ./tools/test-flow -dir tools/test-flow/testdata || (echo "$(RED)✗ Flow tests failed$(RESET)"; exit 1)
 	$(call print_success,"All flow tests passed")
 	@echo ""
 
