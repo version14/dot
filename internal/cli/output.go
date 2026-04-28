@@ -8,6 +8,13 @@ import (
 	"github.com/version14/dot/pkg/dotapi"
 )
 
+var buildVersion string
+
+// SetBuildVersion sets the version string used by self-update. Called during init.
+func SetBuildVersion(v string) {
+	buildVersion = v
+}
+
 const bannerText = `
 ██████╗  ██████╗ ████████╗
 ██╔══██╗██╔═══██╗╚══██╔══╝
@@ -44,6 +51,9 @@ var (
 	warnStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#FFAF00"))
+
+	mutedStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#2e2828"))
 )
 
 func PrintBanner() {

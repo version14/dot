@@ -46,6 +46,9 @@ func Dispatch(ctx context.Context, args []string, toolVersion string) int {
 	case "update":
 		return runUpdate(ctx, rest, toolVersion)
 
+	case "self-update":
+		return runSelfUpdate()
+
 	case "doctor":
 		return runDoctor(ctx, rest)
 
@@ -66,6 +69,7 @@ func printUsage(w io.Writer, version string) {
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  dot scaffold [flow-id] [-out DIR]   Run an interactive scaffold flow")
 	fmt.Fprintln(w, "  dot update [PATH]                   Re-run generators against an existing project")
+	fmt.Fprintln(w, "  dot self-update                     Update dot to the latest release")
 	fmt.Fprintln(w, "  dot doctor [PATH]                   Diagnose drift between spec and current tools")
 	fmt.Fprintln(w, "  dot plugin <list|install|uninstall> Manage installable plugins")
 	fmt.Fprintln(w, "  dot flows                           List available flows")
@@ -110,6 +114,15 @@ func runListGenerators(w io.Writer) int {
 		if len(e.Manifest.DependsOn) > 0 {
 			fmt.Fprintf(w, "  %-18s  %s\n", "", InfoText("depends on: "+joinNames(e.Manifest.DependsOn)))
 		}
+	}
+	return 0
+}
+
+// runSelfUpdate checks for and installs the latest dot release.
+func runSelfUpdate() int {
+	if err := cmdSelfUpdate(); err != nil {
+		PrintError(err.Error())
+		return 1
 	}
 	return 0
 }

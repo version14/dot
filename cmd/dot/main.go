@@ -13,7 +13,10 @@ import (
 	_ "github.com/version14/dot/plugins/biome_extras"
 )
 
-var toolVersion string
+var (
+	toolVersion  string
+	buildVersion string
+)
 
 func main() {
 	// Cancel ctx on Ctrl-C so long-running scaffolds + post-gen commands
@@ -21,5 +24,6 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	cli.SetBuildVersion(buildVersion)
 	os.Exit(cli.Dispatch(ctx, os.Args[1:], toolVersion))
 }
