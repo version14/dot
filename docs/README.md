@@ -55,6 +55,9 @@ One file per built-in generator. Each covers: answers consumed, files written, v
 | [contributor/generators/biome_config.md](contributor/generators/biome_config.md) | `biome_config` — Biome formatter + linter |
 | [contributor/generators/service_writer.md](contributor/generators/service_writer.md) | `service_writer` — one service per loop iteration |
 | [contributor/generators/plugin_repo_skeleton.md](contributor/generators/plugin_repo_skeleton.md) | `plugin_repo_skeleton` — publishable plugin repo |
+| [contributor/generators/backend_architecture_mvc_architecture.md](contributor/generators/backend_architecture_mvc_architecture.md) | `backend_architecture_mvc` — MVC backend structure |
+| [contributor/generators/backend_architecture_clean_architecture.md](contributor/generators/backend_architecture_clean_architecture.md) | `backend_architecture_clean_architecture` — Clean Architecture backend structure |
+| [contributor/generators/backend_architecture_hexagonal_architecture.md](contributor/generators/backend_architecture_hexagonal_architecture.md) | `backend_architecture_hexagonal` — Hexagonal Architecture backend structure |
 
 ### Plugin reference (`docs/contributor/plugins/`)
 
