@@ -20,14 +20,6 @@ func (g *Generator) Name() string    { return Manifest.Name }
 func (g *Generator) Version() string { return Manifest.Version }
 
 func (g *Generator) Generate(ctx *dotapi.Context) error {
-	projectName, _ := ctx.Answers["project_name"].(string)
-	if projectName == "" {
-		projectName = ctx.Spec.Metadata.ProjectName
-	}
-	if projectName == "" {
-		projectName = "my-project"
-	}
-
 	snapshot, err := getBaseFilesSnapshot()
 	if err != nil {
 		return err
