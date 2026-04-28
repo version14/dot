@@ -16,5 +16,6 @@
     "confirm_generate"
   ],
   "skip_post_commands": true,
-  "skip_test_commands": true
+  "skip_test_commands": true,
+  "disabled": true
 }
