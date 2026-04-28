@@ -10,6 +10,13 @@ A **generator** is a Go struct that receives the user's answers and writes files
 - [Context](#context)
 - [VirtualProjectState](#virtualprojectstate)
 - [Writing files](#writing-files)
+  - [From github repository](#from-github-repository)
+  - [From external URL](#from-external-url)
+  - [From local folder](#from-local-folder)
+  - [Raw content](#raw-content)
+  - [JSON](#json)
+  - [YAML](#yaml)
+  - [go.mod](#go-mod)
 - [The Manifest](#the-manifest)
 - [Dependencies and conflicts](#dependencies-and-conflicts)
 - [Validators](#validators)
@@ -158,6 +165,57 @@ func (g *MyGenerator) Generate(ctx *dotapi.Context) error {
 ```
 This will fetch the content from `http://example.com/config.json` and write it to `config/config.json` in your project.
 
+
+### From local folder
+
+To scaffold a project from a local template directory, you can use the `local.Renderer`. This is particularly useful for complex generators with many template files, as it keeps the templates separate from the Go code.
+
+The renderer takes a source `fs.FS` (like from `embed.FS`), a source directory within the filesystem, a target directory on disk, and data for template execution.
+
+It walks the source directory and performs one of two actions for each file:
+- If the file name ends in `.tmpl`, it's treated as a Go template and executed with the provided data. The `.tmpl` suffix is removed from the destination file name.
+- Otherwise, the file is copied directly to the destination.
+
+#### Usage
+
+First, embed your template directory in your generator file:
+
+```go
+import "embed"
+
+//go:embed all:templates/my_skeleton
+var mySkeletonFS embed.FS
+
+const skeletonDir = "templates/my_skeleton"
+```
+**Note:** The `all:` prefix is required for `go:embed` to embed a directory.
+
+Then, in your generator's `Generate` method, create and run the renderer:
+
+```go
+import "github.com/version14/dot/pkg/plugins/scaffolder/local"
+
+func (g *MyGenerator) Generate(ctx *dotapi.Context) error {
+    // This can be any struct or map
+    templateData := struct {
+        ProjectName string
+        Author      string
+    }{
+        ProjectName: ctx.Answers["project_name"].(string),
+        Author:      "The DOT team",
+    }
+
+    // Assume TargetDir is the root of the new project
+    renderer := local.NewRenderer(mySkeletonFS, skeletonDir, ctx.State.GetTargetDir(), templateData)
+    if err := renderer.Render(); err != nil {
+        return fmt.Errorf("failed to render local templates: %w", err)
+    }
+
+    return nil
+}
+```
+
+This will process all files from the embedded `templates/my_skeleton` directory and write them to the project's target directory.
 
 ### Raw content
 
