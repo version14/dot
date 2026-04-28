@@ -1,0 +1,99 @@
+// Package {{.PackageName}} implements the "{{.PluginID}}" DOT plugin.
+//
+// Install with:
+//
+//	dot plugin install {{.ModulePath}}
+//
+// See https://github.com/version14/dot for the plugin authoring guide.
+package {{.PackageName}}
+
+import (
+	"github.com/version14/dot/pkg/dotapi"
+	"github.com/version14/dot/pkg/dotplugin"
+)
+
+// PluginID is the namespace prefix for everything this plugin contributes.
+// Per dot's convention, every contributed ID (generator names, question IDs,
+// option values) MUST start with "{{.PluginID}}.".
+const PluginID dotplugin.PluginID = "{{.PluginID}}"
+
+func init() {
+	dotplugin.RegisterBuiltin(&Provider{})
+}
+
+// Provider is this plugin's loader entry point.
+type Provider struct{}
+
+func (Provider) ID() dotplugin.PluginID { return PluginID }
+
+func (Provider) Generators() []dotplugin.Entry {
+{{- if .IncludeGenerator }}
+	return []dotplugin.Entry{
+		{Manifest: sampleManifest, Generator: &sampleGen{}},
+	}
+{{- else }}
+	return nil
+{{- end }}
+}
+
+func (Provider) Injections() []*dotplugin.Injection {
+{{- if .IncludeInjection }}
+	// Sample InsertAfter: adds an extra confirm question after "use_biome".
+	// Replace this with whatever hooks your plugin actually wants.
+	confirm := &dotplugin.ConfirmQuestion{
+		QuestionBase: dotplugin.QuestionBase{ID_: "{{.PluginID}}.enabled"},
+		Label:        "Enable {{.PluginID}}?",
+		Default:      true,
+		Then:         &dotplugin.Next{End: true},
+		Else:         &dotplugin.Next{End: true},
+	}
+	return []*dotplugin.Injection{
+		{
+			Plugin:   PluginID,
+			TargetID: "use_biome",
+			Kind:     dotplugin.InjectInsertAfter,
+			Question: confirm,
+		},
+	}
+{{- else }}
+	return nil
+{{- end }}
+}
+
+func (Provider) ResolveExtras(s *dotplugin.ProjectSpec) []dotplugin.Invocation {
+{{- if and .IncludeInjection .IncludeGenerator }}
+	if s == nil {
+		return nil
+	}
+	if enabled, _ := s.Answers["{{.PluginID}}.enabled"].(bool); !enabled {
+		return nil
+	}
+	return []dotplugin.Invocation{{"{"}}{Name: "{{.PluginID}}.sample"}}
+{{- else }}
+	return nil
+{{- end }}
+}
+
+{{- if .IncludeGenerator }}
+
+// ── Generator: {{.PluginID}}.sample ─────────────────────────────────────
+
+var sampleManifest = dotapi.Manifest{
+	Name:        "{{.PluginID}}.sample",
+	Version:     "0.1.0",
+	Description: "Sample generator scaffolded by {{.PluginID}}",
+	DependsOn:   []string{"base_project"},
+	Outputs:     []string{"{{.PluginID}}.txt"},
+}
+
+type sampleGen struct{}
+
+func (g *sampleGen) Name() string    { return sampleManifest.Name }
+func (g *sampleGen) Version() string { return sampleManifest.Version }
+
+func (g *sampleGen) Generate(ctx *dotapi.Context) error {
+	ctx.State.WriteFile("{{.PluginID}}.txt", []byte("hello from {{.PluginID}}\n"), dotplugin.ContentRaw)
+	return nil
+}
+{{- end }}
+

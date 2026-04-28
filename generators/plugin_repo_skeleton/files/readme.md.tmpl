@@ -1,0 +1,44 @@
+# {{.PluginID}}
+
+> {{.Description}}
+
+A [DOT](https://github.com/version14/dot) plugin.
+
+## Installation
+
+` + "```" + `bash
+dot plugin install {{.ModulePath}}
+` + "```" + `
+
+To pin a specific version:
+
+` + "```" + `bash
+dot plugin install {{.ModulePath}}@v0.1.0
+` + "```" + `
+
+After install, rebuild ` + "`dot`" + ` (or restart it) so the plugin's ` + "`init()`" + ` runs.
+
+## Development
+
+` + "```" + `bash
+git clone {{.ModulePath}}
+cd $(basename {{.ModulePath}})
+go mod tidy
+` + "```" + `
+
+Iterate locally with:
+
+` + "```" + `bash
+dot plugin install -from .
+` + "```" + `
+
+## What this plugin does
+
+{{ if .IncludeInjection }}- Adds a question after the host flow's ` + "`use_biome`" + ` step (sample InsertAfter injection).
+{{ end }}{{ if .IncludeGenerator }}- Registers a generator that writes ` + "`{{.PluginID}}.txt`" + ` to the project root.
+{{ end }}{{ if not (or .IncludeInjection .IncludeGenerator) }}- Replace this list with what your plugin actually does.
+{{ end }}
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

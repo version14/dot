@@ -1,0 +1,9 @@
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+*.log

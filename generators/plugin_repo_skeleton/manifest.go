@@ -8,7 +8,7 @@ import "github.com/version14/dot/pkg/dotapi"
 // repos want a plugin-shaped README, not the generic project README).
 var Manifest = dotapi.Manifest{
 	Name:        "plugin_repo_skeleton",
-	Version:     "0.1.0",
+	Version:     "0.1.6",
 	Description: "Scaffolds a publishable DOT plugin repository (go.mod + plugin.go + plugin.json + README + LICENSE)",
 	Outputs: []string{
 		"go.mod",
@@ -20,6 +20,7 @@ var Manifest = dotapi.Manifest{
 	},
 	PostGenerationCommands: []dotapi.Command{
 		{Cmd: "go mod tidy"},
+		{Cmd: "git init"},
 	},
 	Validators: []dotapi.Validator{
 		{
