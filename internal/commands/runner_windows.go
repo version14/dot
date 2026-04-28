@@ -5,7 +5,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"time"
 )
@@ -20,7 +19,7 @@ func (r *Runner) runBackground(ctx context.Context, c PlannedCommand, wd string,
 	cmd.Dir = wd
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	cmd.Env = os.Environ()
+	cmd.Env = getEnviron()
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)

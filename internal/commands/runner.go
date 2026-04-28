@@ -5,13 +5,25 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+// getEnviron returns the current environment with the PWD variable removed,
+// as it can interfere with command execution in unexpected ways.
+func getEnviron() []string {
+	out := make([]string, 0, len(os.Environ())-1)
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, "PWD=") {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
+}
 
 // defaultBackgroundReadyDelay is used when a background command has no
 // explicit ReadyDelay — long enough for most dev servers to bind a port
@@ -111,15 +123,6 @@ func (r *Runner) workDir(c PlannedCommand) string {
 		return r.ProjectRoot
 	}
 	return filepath.Join(r.ProjectRoot, c.WorkDir)
-}
-
-func (r *Runner) runForeground(ctx context.Context, c PlannedCommand, wd string, stdout, stderr fileOrBuf) error {
-	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", c.Cmd)
-	cmd.Dir = wd
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	cmd.Env = os.Environ()
-	return cmd.Run()
 }
 
 // fileOrBuf accepts both *os.File (for live streaming) and *bytes.Buffer (for

@@ -14,6 +14,9 @@ BINARY_NAME=dot
 BIN_DIR=bin
 GO=go
 GOFLAGS=-v
+GIT_VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS = -ldflags="-X main.toolVersion=$(GIT_VERSION)"
+
 
 # Helper functions
 define print_header
@@ -79,7 +82,7 @@ build: fmt vet ## Build the dot binary into bin/
 	$(call print_header,"BUILD","                            ")
 	$(call print_info,"Building $(BINARY_NAME)...")
 	@mkdir -p $(BIN_DIR)
-	@$(GO) build $(GOFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/dot 2>&1 | grep -v "^$(BIN_DIR)" || true
+	@$(GO) build -buildvcs=false $(GOFLAGS) $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/dot 2>&1 | grep -v "^$(BIN_DIR)" || true
 	$(call print_success,"Binary built: $(BIN_DIR)/$(BINARY_NAME)")
 	@echo ""
 

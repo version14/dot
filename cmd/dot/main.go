@@ -13,7 +13,7 @@ import (
 	_ "github.com/version14/dot/plugins/biome_extras"
 )
 
-const toolVersion = "0.1.0-dev"
+var toolVersion string
 
 func main() {
 	// Cancel ctx on Ctrl-C so long-running scaffolds + post-gen commands

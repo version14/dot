@@ -5,7 +5,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"syscall"
 	"time"
@@ -23,7 +22,7 @@ func (r *Runner) runBackground(ctx context.Context, c PlannedCommand, wd string,
 	cmd.Dir = wd
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	cmd.Env = os.Environ()
+	cmd.Env = getEnviron()
 	// Put the child in its own process group so we can kill its descendants.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
