@@ -43,6 +43,7 @@ func MonorepoFlow() *FlowDef {
 		Options: []*flow.Option{
 			{Label: "Clean Architecture", Value: "clean-architecture", Next: &flow.Next{Question: formatter}},
 			{Label: "MVC", Value: "mvc-architecture", Next: &flow.Next{Question: formatter}},
+			// {Label: "Hexagonal", Value: "hexagonal-architecture", Next: &flow.Next{Question: formatter}},
 		},
 	}
 

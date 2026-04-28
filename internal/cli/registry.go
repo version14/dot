@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	backendArchitectureCleanArchitecture "github.com/version14/dot/generators/backend_architecture_clean_architecture"
+	backendArchitectureHexagonal "github.com/version14/dot/generators/backend_architecture_hexagonal_architecture"
 	backendArchitectureMVC "github.com/version14/dot/generators/backend_architecture_mvc_architecture"
 	baseproject "github.com/version14/dot/generators/base_project"
 	biomeconfig "github.com/version14/dot/generators/biome_config"
@@ -27,6 +28,7 @@ func builtinGeneratorEntries() []generator.Entry {
 		{Manifest: pluginreposkeleton.Manifest, Generator: pluginreposkeleton.New()},
 		{Manifest: backendArchitectureCleanArchitecture.Manifest, Generator: backendArchitectureCleanArchitecture.New()},
 		{Manifest: backendArchitectureMVC.Manifest, Generator: backendArchitectureMVC.New()},
+		{Manifest: backendArchitectureHexagonal.Manifest, Generator: backendArchitectureHexagonal.New()},
 	}
 }
 
