@@ -11,30 +11,48 @@ import (
 // Question IDs are kept stable: re-runs of `dot scaffold` reuse the persisted
 // answers from .dot/spec.json keyed by these IDs.
 func MonorepoFlow() *FlowDef {
-	// ── Tail nodes built first so we can wire Next pointers upward ──────────
-
 	confirmGenerate := &flow.ConfirmQuestion{
-		QuestionBase: flow.QuestionBase{ID_: "confirm_generate"},
+		QuestionBase: flow.QuestionBase{ID_: "confirm-generate"},
 		Label:        "Generate the project now?",
 		Default:      true,
 		Then:         &flow.Next{End: true},
 		Else:         &flow.Next{End: true},
 	}
 
-	useBiome := &flow.ConfirmQuestion{
-		QuestionBase: flow.QuestionBase{ID_: "use_biome"},
-		Label:        "Add Biome (lint + format)?",
-		Default:      true,
-		Then:         &flow.Next{Question: confirmGenerate},
-		Else:         &flow.Next{Question: confirmGenerate},
+	linter := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-linter"},
+		Label:        "Choose a linter.",
+		Options: []*flow.Option{
+			{Label: "Biome", Value: "biome", Next: &flow.Next{Question: confirmGenerate}},
+			{Label: "Prettier", Value: "prettier", Next: &flow.Next{Question: confirmGenerate}},
+		},
 	}
 
-	useReact := &flow.ConfirmQuestion{
-		QuestionBase: flow.QuestionBase{ID_: "use_react"},
-		Label:        "Set up a React app?",
-		Default:      true,
-		Then:         &flow.Next{Question: useBiome},
-		Else:         &flow.Next{Question: useBiome},
+	formatter := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-formatter"},
+		Label:        "Choose a formatter.",
+		Options: []*flow.Option{
+			{Label: "Biome", Value: "biome", Next: &flow.Next{Question: linter}},
+			{Label: "Prettier", Value: "prettier", Next: &flow.Next{Question: linter}},
+		},
+	}
+
+	architecture := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-architecture"},
+		Label:        "Choose your architecture.",
+		Options: []*flow.Option{
+			{Label: "Clean Architecture", Value: "clean-architecture", Next: &flow.Next{Question: formatter}},
+			{Label: "MVC", Value: "mvc-architecture", Next: &flow.Next{Question: formatter}},
+		},
+	}
+
+	framework := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-framework"},
+		Label:        "Library / Framework",
+		Description:  "Choose a library or framework to scaffold your backend.",
+		Options: []*flow.Option{
+			{Label: "Express", Value: "express", Next: &flow.Next{Question: architecture}},
+		},
 	}
 
 	stack := &flow.OptionQuestion{
@@ -42,9 +60,8 @@ func MonorepoFlow() *FlowDef {
 		Label:        "Primary language stack",
 		Description:  "DOT will scaffold the matching toolchain.",
 		Options: []*flow.Option{
-			{Label: "TypeScript", Value: "typescript", Next: &flow.Next{Question: useReact}},
-			{Label: "Go", Value: "go", Next: &flow.Next{Question: confirmGenerate}},
-			{Label: "Polyglot (TS + Go)", Value: "polyglot", Next: &flow.Next{Question: useReact}},
+			{Label: "TypeScript", Value: "typescript", Next: &flow.Next{Question: framework}},
+			// {Label: "Go", Value: "go", Next: &flow.Next{Question: confirmGenerate}},
 		},
 	}
 
@@ -53,8 +70,7 @@ func MonorepoFlow() *FlowDef {
 		Label:        "Monorepo style",
 		Options: []*flow.Option{
 			{Label: "Single app (no monorepo)", Value: "single", Next: &flow.Next{Question: stack}},
-			{Label: "Turborepo", Value: "turborepo", Next: &flow.Next{Question: stack}},
-			{Label: "Nx", Value: "nx", Next: &flow.Next{Question: stack}},
+			// {Label: "Turborepo", Value: "turborepo", Next: &flow.Next{Question: stack}},
 		},
 	}
 
@@ -89,18 +105,13 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 		{Name: "base_project"},
 	}
 
-	stack, _ := s.Answers["stack"].(string)
-	wantsTS := stack == "typescript" || stack == "polyglot"
-
-	if wantsTS {
+	if stack, _ := s.Answers["stack"].(string); stack == "typescript" {
 		out = append(out, Invocation{Name: "typescript_base"})
-
-		if useReact, _ := s.Answers["use_react"].(bool); useReact {
-			out = append(out, Invocation{Name: "react_app"})
-		}
-		if useBiome, _ := s.Answers["use_biome"].(bool); useBiome {
-			out = append(out, Invocation{Name: "biome_config"})
-		}
+	}
+	if architecture, _ := s.Answers["ts-backend-architecture"].(string); architecture == "clean-architecture" {
+		out = append(out, Invocation{Name: "backend_architecture_clean_architecture"})
+	} else if architecture == "mvc-architecture" {
+		out = append(out, Invocation{Name: "backend_architecture_mvc"})
 	}
 
 	return out
@@ -113,7 +124,7 @@ func nonEmpty(s string) error {
 	return nil
 }
 
-// errEmpty is reused so we don't allocate per validate call.
+// errEmpty isj reused so we don't allocate per validate call.
 var errEmpty = errString("required")
 
 type errString string

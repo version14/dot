@@ -69,6 +69,7 @@ func Default() *Registry {
 	// _ = r.Register(MonorepoFlow())
 	// _ = r.Register(FullstackFlow())
 	// _ = r.Register(MicroservicesFlow())
+	_ = r.Register(MonorepoFlow())
 	_ = r.Register(PluginTemplateFlow())
 	return r
 }
