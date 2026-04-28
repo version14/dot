@@ -1,0 +1,26 @@
+{
+  "name": "backend_clean_architecture",
+  "flow_id": "monorepo",
+  "answers": {
+    "project_name": "my-plugin",
+    "monorepo_type": "single",
+    "stack": "typescript",
+    "ts-backend-framework": "express",
+    "ts-backend-architecture": "clean-architecture",
+    "ts-backend-linter": "biome",
+    "ts-backend-formatter": "biome",
+    "confirm-generate": true
+  },
+  "expected_visited": [
+    "project_name",
+    "monorepo_type",
+    "stack",
+    "ts-backend-framework",
+    "ts-backend-architecture",
+    "ts-backend-formatter",
+    "ts-backend-linter",
+    "confirm-generate"
+  ],
+  "skip_post_commands": true,
+  "skip_test_commands": true
+}
