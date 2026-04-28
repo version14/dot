@@ -22,19 +22,19 @@ None. `base_project` is the root of the dependency graph — every other generat
 
 ## Answers consumed
 
-| Key | Type | Notes |
-|-----|------|-------|
-| `project_name` | string | Used as the heading in `README.md` and in the LICENSE copyright line. Falls back to `spec.Metadata.ProjectName`, then `"my-project"`. |
+None.
 
 ---
 
 ## Files written
 
+This generator fetches the content from the [github-template](https://github.com/mathieusouflis/github-template.git) repository and writes the following files to the project's root:
+
 | Path | Description |
 |------|-------------|
-| `README.md` | Minimal project README with project name |
-| `.gitignore` | Common ignores: `.DS_Store`, `node_modules/`, `dist/`, `vendor/`, `*.log` |
-| `LICENSE` | MIT License text using `project_name` |
+| `README.md` | Project README template. |
+| `.gitignore` | A standard `.gitignore` file for Go projects. |
+| `LICENSE` | MIT License template. |
 
 Later generators (e.g. `typescript_base`) may append lines to `.gitignore` or rewrite `README.md` — this is safe because all writes are cooperative via the virtual filesystem.
 

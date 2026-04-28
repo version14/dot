@@ -9,7 +9,7 @@ Scaffolds a complete, publishable DOT plugin repository. Used exclusively by the
 | Field | Value |
 |-------|-------|
 | Name | `plugin_repo_skeleton` |
-| Version | `0.1.0` |
+| Version | `0.1.6` |
 | Package | `generators/plugin_repo_skeleton` |
 
 ---
@@ -38,7 +38,7 @@ None.
 
 | Path | Description |
 |------|-------------|
-| `go.mod` | Module declaration pinned to `github.com/version14/dot v0.1.0` |
+| `go.mod` | Module declaration pinned to `github.com/version14/dot v0.1.6` |
 | `plugin.json` | Identity file: `id`, `version`, `description`, `entry_point` |
 | `plugin.go` | `Provider` implementation + `init()` + optional injection + optional generator |
 | `README.md` | Install instructions + description of what the plugin does |
@@ -64,6 +64,7 @@ None.
 | Command | WorkDir | Notes |
 |---------|---------|-------|
 | `go mod tidy` | project root | Resolves and pins dependencies after scaffold |
+| `git init` | project root | Initializes a new git repository |
 
 ## Test commands
 
