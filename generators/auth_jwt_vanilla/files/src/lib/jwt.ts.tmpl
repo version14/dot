@@ -1,0 +1,24 @@
+import jwt from 'jsonwebtoken';
+import 'dotenv/config';
+
+function getRequiredEnv(key: string): string {
+  const val = process.env[key];
+  if (!val) throw new Error(`${key} environment variable is not set`);
+  return val;
+}
+
+const JWT_SECRET = getRequiredEnv('JWT_SECRET');
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '7d';
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN ?? '30d';
+
+export function signToken(payload: object): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
+}
+
+export function signRefreshToken(payload: object): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions);
+}
+
+export function verifyToken<T = object>(token: string): T {
+  return jwt.verify(token, JWT_SECRET) as T;
+}
