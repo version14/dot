@@ -1,8 +1,8 @@
 {
-  "name": "backend_mvc_architecture",
+  "name": "express_mvc_no_db_jwt",
   "flow_id": "monorepo",
   "answers": {
-    "project_name": "my-plugin",
+    "project_name": "my-app",
     "monorepo_type": "single",
     "stack": "typescript",
     "ts-backend-framework": "express",
@@ -10,7 +10,8 @@
     "ts-backend-formatter": "biome",
     "ts-backend-linter": "biome",
     "enable-db": false,
-    "enable-auth": false,
+    "enable-auth": true,
+    "ts-backend-auth-method": "jwt",
     "confirm-generate": true
   },
   "expected_visited": [
@@ -23,6 +24,7 @@
     "ts-backend-linter",
     "enable-db",
     "enable-auth",
+    "ts-backend-auth-method",
     "confirm-generate"
   ],
   "skip_post_commands": false,

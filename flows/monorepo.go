@@ -6,7 +6,7 @@ import (
 )
 
 // MonorepoFlow is the default DOT scaffolding flow. It walks the user through
-// project name → monorepo structure → language stack → linting choices.
+// project name → monorepo structure → language stack → linting → database → auth.
 //
 // Question IDs are kept stable: re-runs of `dot scaffold` reuse the persisted
 // answers from .dot/spec.json keyed by these IDs.
@@ -19,12 +19,53 @@ func MonorepoFlow() *FlowDef {
 		Else:         &flow.Next{End: true},
 	}
 
+	authMethod := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-auth-method"},
+		Label:        "Choose an auth method.",
+		Options: []*flow.Option{
+			{Label: "BetterAuth (sessions + Drizzle adapter)", Value: "better-auth", Next: &flow.Next{Question: confirmGenerate}},
+			{Label: "Vanilla JWT", Value: "jwt", Next: &flow.Next{Question: confirmGenerate}},
+		},
+	}
+
+	enableAuth := &flow.ConfirmQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "enable-auth"},
+		Label:        "Enable authentication?",
+		Default:      false,
+		Then:         &flow.Next{Question: authMethod},
+		Else:         &flow.Next{Question: confirmGenerate},
+	}
+
+	orm := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-orm"},
+		Label:        "Choose an ORM.",
+		Options: []*flow.Option{
+			{Label: "Drizzle", Value: "drizzle", Next: &flow.Next{Question: enableAuth}},
+		},
+	}
+
+	dbType := &flow.OptionQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "ts-backend-db-type"},
+		Label:        "Choose a database.",
+		Options: []*flow.Option{
+			{Label: "PostgreSQL", Value: "postgres", Next: &flow.Next{Question: orm}},
+		},
+	}
+
+	enableDb := &flow.ConfirmQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "enable-db"},
+		Label:        "Link a database to this project?",
+		Default:      false,
+		Then:         &flow.Next{Question: dbType},
+		Else:         &flow.Next{Question: enableAuth},
+	}
+
 	linter := &flow.OptionQuestion{
 		QuestionBase: flow.QuestionBase{ID_: "ts-backend-linter"},
 		Label:        "Choose a linter.",
 		Options: []*flow.Option{
-			{Label: "Biome", Value: "biome", Next: &flow.Next{Question: confirmGenerate}},
-			{Label: "Prettier", Value: "prettier", Next: &flow.Next{Question: confirmGenerate}},
+			{Label: "Biome", Value: "biome", Next: &flow.Next{Question: enableDb}},
+			{Label: "Prettier", Value: "prettier", Next: &flow.Next{Question: enableDb}},
 		},
 	}
 
@@ -106,13 +147,90 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 		{Name: "base_project"},
 	}
 
-	if stack, _ := s.Answers["stack"].(string); stack == "typescript" {
+	stack, _ := s.Answers["stack"].(string)
+	framework, _ := s.Answers["ts-backend-framework"].(string)
+	architecture, _ := s.Answers["ts-backend-architecture"].(string)
+	formatter, _ := s.Answers["ts-backend-formatter"].(string)
+	dbEnabled, _ := s.Answers["enable-db"].(bool)
+	dbType, _ := s.Answers["ts-backend-db-type"].(string)
+	orm, _ := s.Answers["ts-backend-orm"].(string)
+	authEnabled, _ := s.Answers["enable-auth"].(bool)
+	authMethod, _ := s.Answers["ts-backend-auth-method"].(string)
+
+	if stack == "typescript" {
 		out = append(out, Invocation{Name: "typescript_base"})
 	}
-	if architecture, _ := s.Answers["ts-backend-architecture"].(string); architecture == "clean-architecture" {
+
+	if framework == "express" {
+		out = append(out,
+			Invocation{Name: "express_server_entrypoint"},
+			Invocation{Name: "express_server_typescript_deps"},
+			Invocation{Name: "express_node_tsconfig"},
+		)
+	}
+
+	switch architecture {
+	case "clean-architecture":
 		out = append(out, Invocation{Name: "backend_architecture_clean_architecture"})
-	} else if architecture == "mvc-architecture" {
+	case "mvc-architecture":
 		out = append(out, Invocation{Name: "backend_architecture_mvc"})
+	}
+
+	if formatter == "prettier" {
+		out = append(out,
+			Invocation{Name: "prettier_config"},
+			Invocation{Name: "prettier_typescript_deps"},
+			Invocation{Name: "prettier_express_rules"},
+		)
+	} else if formatter == "biome" {
+		out = append(out, Invocation{Name: "biome_config"})
+	}
+
+	if dbEnabled {
+		if dbType == "postgres" {
+			out = append(out,
+				Invocation{Name: "postgres_docker_compose"},
+				Invocation{Name: "postgres_env_example"},
+			)
+		}
+		if orm == "drizzle" {
+			out = append(out,
+				Invocation{Name: "drizzle_config_base"},
+				Invocation{Name: "drizzle_typescript_deps"},
+				Invocation{Name: "drizzle_postgres_adapter"},
+			)
+		}
+	}
+
+	if authEnabled {
+		switch authMethod {
+		case "better-auth":
+			// BetterAuth needs Drizzle + Postgres; add them if not already included
+			if !dbEnabled {
+				out = append(out,
+					Invocation{Name: "postgres_docker_compose"},
+					Invocation{Name: "postgres_env_example"},
+					Invocation{Name: "drizzle_config_base"},
+					Invocation{Name: "drizzle_typescript_deps"},
+					Invocation{Name: "drizzle_postgres_adapter"},
+				)
+			}
+			out = append(out, Invocation{Name: "auth_better_auth"})
+			out = append(out, Invocation{Name: "auth_better_auth_schema"})
+		case "jwt":
+			out = append(out, Invocation{Name: "auth_jwt_vanilla"})
+			if dbEnabled && orm == "drizzle" {
+				out = append(out, Invocation{Name: "auth_jwt_users_schema"})
+			}
+			switch architecture {
+			case "mvc-architecture":
+				out = append(out, Invocation{Name: "auth_jwt_mvc_route"})
+			case "clean-architecture":
+				if dbEnabled && orm == "drizzle" {
+					out = append(out, Invocation{Name: "auth_jwt_clean_arch_module"})
+				}
+			}
+		}
 	}
 
 	return out
@@ -125,7 +243,7 @@ func nonEmpty(s string) error {
 	return nil
 }
 
-// errEmpty isj reused so we don't allocate per validate call.
+// errEmpty is reused so we don't allocate per validate call.
 var errEmpty = errString("required")
 
 type errString string
