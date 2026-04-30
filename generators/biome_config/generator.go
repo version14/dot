@@ -26,6 +26,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"indentStyle": "space",
 				"indentWidth": 2,
 			},
+			"files": map[string]interface{}{
+				"ignore": []interface{}{".dot/"},
+			},
 		})
 		return nil
 	}); err != nil {

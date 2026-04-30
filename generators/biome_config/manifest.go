@@ -16,6 +16,7 @@ var Manifest = dotapi.Manifest{
 	},
 	PostGenerationCommands: []dotapi.Command{
 		{Cmd: "pnpm install"},
+		{Cmd: "pnpm exec biome check --write ."},
 	},
 	TestCommands: []dotapi.Command{
 		{Cmd: "pnpm install"},
