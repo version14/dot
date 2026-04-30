@@ -75,18 +75,19 @@ func (Provider) ResolveExtras(s *dotplugin.ProjectSpec) []dotplugin.Invocation {
 }
 
 // ── Generator: biome_extras.strict_writer ──────────────────────────────────
+const biomeStrictWriterFileName = "biome.json"
 
 var strictWriterManifest = dotapi.Manifest{
 	Name:        "biome_extras.strict_writer",
 	Version:     "0.1.0",
 	Description: "Promotes selected Biome lint rules to errors when strict mode is on",
 	DependsOn:   []string{"biome_config"},
-	Outputs:     []string{"biome.json"},
+	Outputs:     []string{biomeStrictWriterFileName},
 	Validators: []dotapi.Validator{
 		{
 			Name: "biome-strict",
 			Checks: []dotapi.Check{
-				{Type: dotapi.CheckJSONKeyExists, Path: "biome.json", Key: "linter.rules.style"},
+				{Type: dotapi.CheckJSONKeyExists, Path: biomeStrictWriterFileName, Key: "linter.rules.style"},
 			},
 		},
 	},

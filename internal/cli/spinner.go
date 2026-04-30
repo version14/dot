@@ -17,10 +17,12 @@ import (
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
+const gray = "#888888"
+
 var (
 	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
-	cmdStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
-	timeStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	cmdStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color(gray))
+	timeStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color(gray))
 	dimDivider   = lipgloss.NewStyle().Foreground(lipgloss.Color("#444444")).Render(" │ ")
 )
 

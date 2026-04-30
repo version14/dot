@@ -2,6 +2,8 @@ package typescriptbase
 
 import "github.com/version14/dot/pkg/dotapi"
 
+const packageJSONFileName = "package.json"
+
 // Manifest declares typescript_base. It runs after base_project and writes
 // the package.json + tsconfig.json that any TypeScript project needs.
 var Manifest = dotapi.Manifest{
@@ -10,7 +12,7 @@ var Manifest = dotapi.Manifest{
 	Description: "TypeScript foundation: package.json + tsconfig.json",
 	DependsOn:   []string{"base_project"},
 	Outputs: []string{
-		"package.json",
+		packageJSONFileName,
 		"tsconfig.json",
 	},
 	PostGenerationCommands: []dotapi.Command{
@@ -24,9 +26,9 @@ var Manifest = dotapi.Manifest{
 		{
 			Name: "ts-foundations",
 			Checks: []dotapi.Check{
-				{Type: dotapi.CheckFileExists, Path: "package.json"},
+				{Type: dotapi.CheckFileExists, Path: packageJSONFileName},
 				{Type: dotapi.CheckFileExists, Path: "tsconfig.json"},
-				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "devDependencies.typescript"},
+				{Type: dotapi.CheckJSONKeyExists, Path: packageJSONFileName, Key: "devDependencies.typescript"},
 			},
 		},
 	},

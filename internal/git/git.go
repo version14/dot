@@ -7,7 +7,9 @@ import (
 
 type Repository struct{}
 
-func (r *Repository) Close() {}
+func (r *Repository) Close() {
+	// No resources to clean up for now, but this allows us to add some in the future without changing the API.
+}
 
 func Init(path, defaultBranch string) (*Repository, error) {
 	cmd := exec.Command("git", "init", "-b", defaultBranch)

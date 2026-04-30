@@ -145,22 +145,24 @@ func runScaffold(ctx context.Context, args []string, toolVersion string) int {
 
 	PrintBanner()
 
+	const ctxKey = "cli-scaffold:"
+
 	flowReg := flows.Default()
 	def, err := pickFlow(flowReg, flowID)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "dot scaffold:", err)
+		fmt.Fprintln(os.Stderr, ctxKey, err)
 		return 1
 	}
 
 	rt, err := DefaultRuntime()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "dot scaffold:", err)
+		fmt.Fprintln(os.Stderr, ctxKey, err)
 		return 1
 	}
 
 	absOut, err := filepath.Abs(*out)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "dot scaffold:", err)
+		fmt.Fprintln(os.Stderr, ctxKey, err)
 		return 1
 	}
 

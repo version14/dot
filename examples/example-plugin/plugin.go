@@ -91,17 +91,19 @@ func (Provider) ResolveExtras(s *dotplugin.ProjectSpec) []dotplugin.Invocation {
 
 // ── Generator: example.editorconfig_writer ─────────────────────────────────
 
+const editorConfigFileName = ".editorconfig"
+
 var editorConfigManifest = dotapi.Manifest{
 	Name:        "example.editorconfig_writer",
 	Version:     "0.1.0",
 	Description: "Writes a sensible .editorconfig at project root",
 	DependsOn:   []string{"base_project"},
-	Outputs:     []string{".editorconfig"},
+	Outputs:     []string{editorConfigFileName},
 	Validators: []dotapi.Validator{
 		{
 			Name: "editorconfig-present",
 			Checks: []dotapi.Check{
-				{Type: dotapi.CheckFileExists, Path: ".editorconfig"},
+				{Type: dotapi.CheckFileExists, Path: editorConfigFileName},
 			},
 		},
 	},

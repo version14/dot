@@ -31,6 +31,12 @@ type Logger interface {
 // DiscardLogger drops all log output. Useful in tests.
 type DiscardLogger struct{}
 
-func (DiscardLogger) Infof(string, ...interface{})  {}
-func (DiscardLogger) Warnf(string, ...interface{})  {}
-func (DiscardLogger) Errorf(string, ...interface{}) {}
+func (DiscardLogger) Infof(string, ...interface{}) {
+	// Any log calls in tests are probably mistakes, so Info also discards.
+}
+func (DiscardLogger) Warnf(string, ...interface{}) {
+	// Any log calls in tests are probably mistakes, so Warn also discards.
+}
+func (DiscardLogger) Errorf(string, ...interface{}) {
+	// Any log calls in tests are probably mistakes, so Error also discards.
+}

@@ -31,9 +31,9 @@ OS=""
 case "$(uname -s)" in
   Darwin) OS="macos" ;;
   Linux)
-    if   [ -f /etc/debian_version ]; then OS="debian"
-    elif [ -f /etc/fedora-release ];  then OS="fedora"
-    elif [ -f /etc/alpine-release ];  then OS="alpine"
+    if   [[ -f /etc/debian_version ]]; then OS="debian"
+    elif [[ -f /etc/fedora-release ]];  then OS="fedora"
+    elif [[ -f /etc/alpine-release ]];  then OS="alpine"
     else                                   OS="linux"
     fi ;;
   *) error "Unsupported OS: $(uname -s). Use scripts/setup-dev.ps1 on Windows." ;;
@@ -44,7 +44,7 @@ info "Detected OS: ${OS}"
 
 # Returns 0 if $1 >= $2 (both as X.Y.Z strings).
 version_ge() {
-  [ "$(printf '%s\n' "$1" "$2" | sort -V | head -1)" = "$2" ]
+  [[ "$(printf '%s\n' "$1" "$2" | sort -V | head -1)" = "$2" ]]
 }
 
 REQUIRED_GO="1.26"

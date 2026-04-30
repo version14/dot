@@ -2,6 +2,8 @@ package pluginreposkeleton
 
 import "github.com/version14/dot/pkg/dotapi"
 
+const pluginRepoSkeletonFileName = "plugin.json"
+
 // Manifest declares plugin_repo_skeleton — the generator that scaffolds a
 // brand-new git-publishable DOT plugin repository. The plugin-template flow
 // invokes this exclusively (no DependsOn on base_project, because plugin
@@ -13,7 +15,7 @@ var Manifest = dotapi.Manifest{
 	Outputs: []string{
 		"go.mod",
 		"plugin.go",
-		"plugin.json",
+		pluginRepoSkeletonFileName,
 		"README.md",
 		"LICENSE",
 		".gitignore",
@@ -27,10 +29,10 @@ var Manifest = dotapi.Manifest{
 			Name: "plugin-skeleton",
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckFileExists, Path: "plugin.go"},
-				{Type: dotapi.CheckFileExists, Path: "plugin.json"},
+				{Type: dotapi.CheckFileExists, Path: pluginRepoSkeletonFileName},
 				{Type: dotapi.CheckFileExists, Path: "go.mod"},
-				{Type: dotapi.CheckJSONKeyExists, Path: "plugin.json", Key: "id"},
-				{Type: dotapi.CheckJSONKeyExists, Path: "plugin.json", Key: "version"},
+				{Type: dotapi.CheckJSONKeyExists, Path: pluginRepoSkeletonFileName, Key: "id"},
+				{Type: dotapi.CheckJSONKeyExists, Path: pluginRepoSkeletonFileName, Key: "version"},
 			},
 		},
 	},
