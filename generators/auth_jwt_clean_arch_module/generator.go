@@ -277,17 +277,17 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
 
 func (g *Generator) Generate(ctx *dotapi.Context) error {
 	files := map[string]string{
-		"src/modules/auth/domain/entities/user.entity.ts":                                         userEntity,
-		"src/modules/auth/domain/interfaces/user.repository.interface.ts":                         userRepositoryInterface,
-		"src/modules/auth/domain/interfaces/refresh-token.repository.interface.ts":                refreshTokenRepositoryInterface,
-		"src/modules/auth/application/use-cases/login.use-case.ts":                               loginUseCase,
-		"src/modules/auth/application/use-cases/register.use-case.ts":                            registerUseCase,
-		"src/modules/auth/application/use-cases/refresh.use-case.ts":                             refreshUseCase,
-		"src/modules/auth/application/use-cases/logout.use-case.ts":                              logoutUseCase,
-		"src/modules/auth/application/controllers/auth.controller.ts":                            authController,
-		"src/routes/auth.route.ts":                                                                authRouteCleanArch,
-		"src/modules/auth/infrastructure/database/repositories/user.repository.ts":               userRepositoryImpl,
-		"src/modules/auth/infrastructure/database/repositories/refresh-token.repository.ts":      refreshTokenRepositoryImpl,
+		"src/modules/auth/domain/entities/user.entity.ts":                                   userEntity,
+		"src/modules/auth/domain/interfaces/user.repository.interface.ts":                   userRepositoryInterface,
+		"src/modules/auth/domain/interfaces/refresh-token.repository.interface.ts":          refreshTokenRepositoryInterface,
+		"src/modules/auth/application/use-cases/login.use-case.ts":                          loginUseCase,
+		"src/modules/auth/application/use-cases/register.use-case.ts":                       registerUseCase,
+		"src/modules/auth/application/use-cases/refresh.use-case.ts":                        refreshUseCase,
+		"src/modules/auth/application/use-cases/logout.use-case.ts":                         logoutUseCase,
+		"src/modules/auth/application/controllers/auth.controller.ts":                       authController,
+		"src/routes/auth.route.ts":                                                          authRouteCleanArch,
+		"src/modules/auth/infrastructure/database/repositories/user.repository.ts":          userRepositoryImpl,
+		"src/modules/auth/infrastructure/database/repositories/refresh-token.repository.ts": refreshTokenRepositoryImpl,
 	}
 
 	for path, content := range files {

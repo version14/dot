@@ -1,15 +1,17 @@
 {
-  "name": "backend_mvc_architecture",
+  "name": "express_mvc_postgres_drizzle",
   "flow_id": "monorepo",
   "answers": {
-    "project_name": "my-plugin",
+    "project_name": "my-app",
     "monorepo_type": "single",
     "stack": "typescript",
     "ts-backend-framework": "express",
     "ts-backend-architecture": "mvc-architecture",
     "ts-backend-formatter": "biome",
     "ts-backend-linter": "biome",
-    "enable-db": false,
+    "enable-db": true,
+    "ts-backend-db-type": "postgres",
+    "ts-backend-orm": "drizzle",
     "enable-auth": false,
     "confirm-generate": true
   },
@@ -22,6 +24,8 @@
     "ts-backend-formatter",
     "ts-backend-linter",
     "enable-db",
+    "ts-backend-db-type",
+    "ts-backend-orm",
     "enable-auth",
     "confirm-generate"
   ],

@@ -7,8 +7,10 @@
     "stack": "typescript",
     "ts-backend-framework": "express",
     "ts-backend-architecture": "clean-architecture",
-    "ts-backend-linter": "biome",
     "ts-backend-formatter": "biome",
+    "ts-backend-linter": "biome",
+    "enable-db": false,
+    "enable-auth": false,
     "confirm-generate": true
   },
   "expected_visited": [
@@ -19,8 +21,10 @@
     "ts-backend-architecture",
     "ts-backend-formatter",
     "ts-backend-linter",
+    "enable-db",
+    "enable-auth",
     "confirm-generate"
   ],
-  "skip_post_commands": true,
-  "skip_test_commands": true
+  "skip_post_commands": false,
+  "skip_test_commands": false
 }

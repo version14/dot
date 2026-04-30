@@ -1,16 +1,19 @@
 {
-  "name": "backend_mvc_architecture",
+  "name": "express_clean_arch_postgres_drizzle_better_auth",
   "flow_id": "monorepo",
   "answers": {
-    "project_name": "my-plugin",
+    "project_name": "my-app",
     "monorepo_type": "single",
     "stack": "typescript",
     "ts-backend-framework": "express",
-    "ts-backend-architecture": "mvc-architecture",
+    "ts-backend-architecture": "clean-architecture",
     "ts-backend-formatter": "biome",
     "ts-backend-linter": "biome",
-    "enable-db": false,
-    "enable-auth": false,
+    "enable-db": true,
+    "ts-backend-db-type": "postgres",
+    "ts-backend-orm": "drizzle",
+    "enable-auth": true,
+    "ts-backend-auth-method": "better-auth",
     "confirm-generate": true
   },
   "expected_visited": [
@@ -22,7 +25,10 @@
     "ts-backend-formatter",
     "ts-backend-linter",
     "enable-db",
+    "ts-backend-db-type",
+    "ts-backend-orm",
     "enable-auth",
+    "ts-backend-auth-method",
     "confirm-generate"
   ],
   "skip_post_commands": false,

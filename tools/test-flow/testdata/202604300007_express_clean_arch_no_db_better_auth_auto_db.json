@@ -1,16 +1,17 @@
 {
-  "name": "backend_mvc_architecture",
+  "name": "express_clean_arch_no_db_better_auth_auto_db",
   "flow_id": "monorepo",
   "answers": {
-    "project_name": "my-plugin",
+    "project_name": "my-app",
     "monorepo_type": "single",
     "stack": "typescript",
     "ts-backend-framework": "express",
-    "ts-backend-architecture": "mvc-architecture",
+    "ts-backend-architecture": "clean-architecture",
     "ts-backend-formatter": "biome",
     "ts-backend-linter": "biome",
     "enable-db": false,
-    "enable-auth": false,
+    "enable-auth": true,
+    "ts-backend-auth-method": "better-auth",
     "confirm-generate": true
   },
   "expected_visited": [
@@ -23,6 +24,7 @@
     "ts-backend-linter",
     "enable-db",
     "enable-auth",
+    "ts-backend-auth-method",
     "confirm-generate"
   ],
   "skip_post_commands": false,
