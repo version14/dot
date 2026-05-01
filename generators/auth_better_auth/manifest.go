@@ -11,9 +11,6 @@ var Manifest = dotapi.Manifest{
 		"src/lib/auth.ts",
 		"src/routes/auth.route.ts",
 	},
-	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
-	},
 	Validators: []dotapi.Validator{
 		{
 			Name: "auth-better-auth",

@@ -19,9 +19,7 @@ var Manifest = dotapi.Manifest{
 		"src/routes/auth.route.ts",
 		"src/modules/auth/infrastructure/database/repositories/user.repository.ts",
 		"src/modules/auth/infrastructure/database/repositories/refresh-token.repository.ts",
-	},
-	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
+		"src/__tests__/auth.db.test.ts",
 	},
 	Validators: []dotapi.Validator{
 		{

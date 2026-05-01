@@ -3,6 +3,7 @@ package authjwtvanilla
 import (
 	"embed"
 	"fmt"
+	"strings"
 
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
@@ -28,10 +29,12 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"jsonwebtoken": "^9.0.2",
+				"jsonwebtoken":  "^9.0.2",
+				"cookie-parser": "^1.4.7",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/jsonwebtoken": "^9.0.7",
+				"@types/jsonwebtoken":  "^9.0.7",
+				"@types/cookie-parser": "^1.4.8",
 			},
 		})
 		return nil
@@ -46,6 +49,16 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	}
 	updated := existing + fmt.Sprintf("\n# Auth (JWT)\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nJWT_REFRESH_EXPIRES_IN=30d\n", "change-me-to-a-random-secret")
 	ctx.State.WriteFile(".env.example", []byte(updated), state.ContentRaw)
+
+	// Inject cookie-parser middleware into app.ts
+	if f, ok := ctx.State.GetFile("src/app.ts"); ok {
+		content := string(f.Content)
+		if !strings.Contains(content, "cookieParser") {
+			content = "import cookieParser from 'cookie-parser';\n" + content
+			content = strings.Replace(content, "app.use(express.json());", "app.use(express.json());\napp.use(cookieParser());", 1)
+			ctx.State.WriteFile("src/app.ts", []byte(content), state.ContentRaw)
+		}
+	}
 
 	return nil
 }

@@ -16,7 +16,11 @@ export function signToken(payload: object): string {
 }
 
 export function signRefreshToken(payload: object): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions);
+  return jwt.sign(
+    { ...payload, jti: crypto.randomUUID() },
+    JWT_SECRET,
+    { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions,
+  );
 }
 
 export function verifyToken<T = object>(token: string): T {
