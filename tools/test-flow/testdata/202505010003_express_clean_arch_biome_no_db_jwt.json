@@ -1,8 +1,8 @@
 {
-  "name": "backend_clean_architecture",
+  "name": "express_clean_arch_biome_no_db_no_auth",
   "flow_id": "monorepo",
   "answers": {
-    "project_name": "my-plugin",
+    "project_name": "my-app",
     "monorepo_type": "single",
     "stack": "typescript",
     "ts-backend-framework": "express",

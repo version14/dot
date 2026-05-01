@@ -10,7 +10,6 @@
     "ts-backend-formatter": "biome",
     "ts-backend-linter": "biome",
     "enable-db": false,
-    "enable-auth": false,
     "confirm-generate": true
   },
   "expected_visited": [
@@ -22,7 +21,6 @@
     "ts-backend-formatter",
     "ts-backend-linter",
     "enable-db",
-    "enable-auth",
     "confirm-generate"
   ],
   "skip_post_commands": false,
