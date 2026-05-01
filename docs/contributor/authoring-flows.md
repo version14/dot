@@ -390,7 +390,7 @@ Every flow should have a fixture in `tools/test-flow/testdata/`. See [test-flow.
     "confirm_generate"
   ],
   "skip_post_commands": true,
-  "skip_test_commands": true
+  "skip_test_commands": false
 }
 ```
 

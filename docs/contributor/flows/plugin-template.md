@@ -88,8 +88,8 @@ The resolver (`resolvePluginTemplateGenerators`) unconditionally returns one `In
     "plugin_include_injection", "plugin_include_generator",
     "confirm_generate"
   ],
-  "skip_post_commands": true,
-  "skip_test_commands": true
+  "skip_post_commands": false,
+  "skip_test_commands": false
 }
 ```
 
