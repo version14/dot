@@ -23,7 +23,6 @@ var Manifest = dotapi.Manifest{
 		{Cmd: "pnpm install"},
 	},
 	TestCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
 		{Cmd: "pnpm exec tsc --noEmit"},
 		{Cmd: "pnpm exec vite build"},
 		// Smoke-start the dev server in background to confirm it boots.
