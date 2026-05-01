@@ -17,9 +17,14 @@ import (
 	drizzleconfigbase "github.com/version14/dot/generators/drizzle_config_base"
 	drizzlepostgresadapter "github.com/version14/dot/generators/drizzle_postgres_adapter"
 	drizzletypescriptdeps "github.com/version14/dot/generators/drizzle_typescript_deps"
+	expressauthvalidators "github.com/version14/dot/generators/express_auth_validators"
+	expresserrormiddleware "github.com/version14/dot/generators/express_error_middleware"
 	expressnodetsconfig "github.com/version14/dot/generators/express_node_tsconfig"
+	expressratelimit "github.com/version14/dot/generators/express_rate_limit"
 	expressserverentrypoint "github.com/version14/dot/generators/express_server_entrypoint"
 	expressservertypescriptdeps "github.com/version14/dot/generators/express_server_typescript_deps"
+	expresssharederrors "github.com/version14/dot/generators/express_shared_errors"
+	expresstestsetup "github.com/version14/dot/generators/express_test_setup"
 	pluginreposkeleton "github.com/version14/dot/generators/plugin_repo_skeleton"
 	postgresdockercompose "github.com/version14/dot/generators/postgres_docker_compose"
 	postgresenvexample "github.com/version14/dot/generators/postgres_env_example"
@@ -27,7 +32,6 @@ import (
 	prettierexpressrules "github.com/version14/dot/generators/prettier_express_rules"
 	prettiertypescriptdeps "github.com/version14/dot/generators/prettier_typescript_deps"
 	reactapp "github.com/version14/dot/generators/react_app"
-	servicewriter "github.com/version14/dot/generators/service_writer"
 	typescriptbase "github.com/version14/dot/generators/typescript_base"
 	"github.com/version14/dot/internal/generator"
 )
@@ -42,7 +46,6 @@ func builtinGeneratorEntries() []generator.Entry {
 		{Manifest: typescriptbase.Manifest, Generator: typescriptbase.New()},
 		{Manifest: reactapp.Manifest, Generator: reactapp.New()},
 		{Manifest: biomeconfig.Manifest, Generator: biomeconfig.New()},
-		{Manifest: servicewriter.Manifest, Generator: servicewriter.New()},
 		{Manifest: pluginreposkeleton.Manifest, Generator: pluginreposkeleton.New()},
 
 		// Backend architecture
@@ -54,6 +57,11 @@ func builtinGeneratorEntries() []generator.Entry {
 		{Manifest: expressserverentrypoint.Manifest, Generator: expressserverentrypoint.New()},
 		{Manifest: expressservertypescriptdeps.Manifest, Generator: expressservertypescriptdeps.New()},
 		{Manifest: expressnodetsconfig.Manifest, Generator: expressnodetsconfig.New()},
+		{Manifest: expresssharederrors.Manifest, Generator: expresssharederrors.New()},
+		{Manifest: expresserrormiddleware.Manifest, Generator: expresserrormiddleware.New()},
+		{Manifest: expressratelimit.Manifest, Generator: expressratelimit.New()},
+		{Manifest: expresstestsetup.Manifest, Generator: expresstestsetup.New()},
+		{Manifest: expressauthvalidators.Manifest, Generator: expressauthvalidators.New()},
 
 		// Prettier
 		{Manifest: prettierconfig.Manifest, Generator: prettierconfig.New()},

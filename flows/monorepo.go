@@ -57,7 +57,7 @@ func MonorepoFlow() *FlowDef {
 		Label:        "Link a database to this project?",
 		Default:      false,
 		Then:         &flow.Next{Question: dbType},
-		Else:         &flow.Next{Question: enableAuth},
+		Else:         &flow.Next{Question: confirmGenerate},
 	}
 
 	linter := &flow.OptionQuestion{
@@ -166,6 +166,10 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 			Invocation{Name: "express_server_entrypoint"},
 			Invocation{Name: "express_server_typescript_deps"},
 			Invocation{Name: "express_node_tsconfig"},
+			Invocation{Name: "express_shared_errors"},
+			Invocation{Name: "express_error_middleware"},
+			Invocation{Name: "express_rate_limit"},
+			Invocation{Name: "express_test_setup"},
 		)
 	}
 
@@ -203,6 +207,7 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 	}
 
 	if authEnabled {
+		out = append(out, Invocation{Name: "express_auth_validators"})
 		switch authMethod {
 		case "better-auth":
 			// BetterAuth needs Drizzle + Postgres; add them if not already included
