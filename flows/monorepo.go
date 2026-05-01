@@ -5,6 +5,9 @@ import (
 	"github.com/version14/dot/internal/spec"
 )
 
+const CLEAN_ARCHITECTURE = "clean-architecture"
+const MVC_ARCHITECTURE = "mvc-architecture"
+
 // MonorepoFlow is the default DOT scaffolding flow. It walks the user through
 // project name → monorepo structure → language stack → linting → database → auth.
 //
@@ -82,8 +85,8 @@ func MonorepoFlow() *FlowDef {
 		QuestionBase: flow.QuestionBase{ID_: "ts-backend-architecture"},
 		Label:        "Choose your architecture.",
 		Options: []*flow.Option{
-			{Label: "Clean Architecture", Value: "clean-architecture", Next: &flow.Next{Question: formatter}},
-			{Label: "MVC", Value: "mvc-architecture", Next: &flow.Next{Question: formatter}},
+			{Label: "Clean Architecture", Value: CLEAN_ARCHITECTURE, Next: &flow.Next{Question: formatter}},
+			{Label: "MVC", Value: MVC_ARCHITECTURE, Next: &flow.Next{Question: formatter}},
 			// {Label: "Hexagonal", Value: "hexagonal-architecture", Next: &flow.Next{Question: formatter}},
 		},
 	}
@@ -174,9 +177,9 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 	}
 
 	switch architecture {
-	case "clean-architecture":
+	case CLEAN_ARCHITECTURE:
 		out = append(out, Invocation{Name: "backend_architecture_clean_architecture"})
-	case "mvc-architecture":
+	case MVC_ARCHITECTURE:
 		out = append(out, Invocation{Name: "backend_architecture_mvc"})
 	}
 
@@ -228,9 +231,9 @@ func resolveMonorepoGenerators(s *spec.ProjectSpec) []Invocation {
 				out = append(out, Invocation{Name: "auth_jwt_users_schema"})
 			}
 			switch architecture {
-			case "mvc-architecture":
+			case MVC_ARCHITECTURE:
 				out = append(out, Invocation{Name: "auth_jwt_mvc_route"})
-			case "clean-architecture":
+			case CLEAN_ARCHITECTURE:
 				if dbEnabled && orm == "drizzle" {
 					out = append(out, Invocation{Name: "auth_jwt_clean_arch_module"})
 				}
