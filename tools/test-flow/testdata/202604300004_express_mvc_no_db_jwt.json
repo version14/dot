@@ -1,5 +1,5 @@
 {
-  "name": "express_mvc_no_db_jwt",
+  "name": "express_mvc_prettier_postgres_drizzle_jwt",
   "flow_id": "monorepo",
   "answers": {
     "project_name": "my-app",
@@ -7,9 +7,11 @@
     "stack": "typescript",
     "ts-backend-framework": "express",
     "ts-backend-architecture": "mvc-architecture",
-    "ts-backend-formatter": "biome",
-    "ts-backend-linter": "biome",
-    "enable-db": false,
+    "ts-backend-formatter": "prettier",
+    "ts-backend-linter": "prettier",
+    "enable-db": true,
+    "ts-backend-db-type": "postgres",
+    "ts-backend-orm": "drizzle",
     "enable-auth": true,
     "ts-backend-auth-method": "jwt",
     "confirm-generate": true
@@ -23,6 +25,8 @@
     "ts-backend-formatter",
     "ts-backend-linter",
     "enable-db",
+    "ts-backend-db-type",
+    "ts-backend-orm",
     "enable-auth",
     "ts-backend-auth-method",
     "confirm-generate"
