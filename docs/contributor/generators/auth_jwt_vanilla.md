@@ -1,6 +1,6 @@
 # Generator: `auth_jwt_vanilla`
 
-Vanilla JWT authentication. Creates `src/lib/jwt.ts` (sign/verify helpers) and `src/middleware/auth.middleware.ts` (Bearer token guard). Adds `jsonwebtoken` + `@types/jsonwebtoken` to `package.json` and appends `JWT_SECRET`/`JWT_EXPIRES_IN` to `.env.example`.
+Vanilla JWT authentication. Creates `src/shared/services/jwt.ts` (sign/verify helpers) and `src/shared/middlewares/auth.middleware.ts` (Bearer token guard). Adds `jsonwebtoken` + `@types/jsonwebtoken` to `package.json` and appends `JWT_SECRET`/`JWT_EXPIRES_IN` to `.env.example`.
 
 ---
 
@@ -32,8 +32,8 @@ None.
 
 | Path | Description |
 |------|-------------|
-| `src/lib/jwt.ts` | `signToken` and `verifyToken<T>` helpers backed by `process.env.JWT_SECRET` |
-| `src/middleware/auth.middleware.ts` | Express middleware that validates `Authorization: Bearer <token>` headers |
+| `src/shared/services/jwt.ts` | `signToken`, `signRefreshToken`, and `verifyToken<T>` helpers backed by `process.env.JWT_SECRET` |
+| `src/shared/middlewares/auth.middleware.ts` | Express middleware that validates `Authorization: Bearer <token>` headers |
 | `.env.example` | Appends `JWT_SECRET` and `JWT_EXPIRES_IN` |
 
 Also merges into:
@@ -48,8 +48,8 @@ Also merges into:
 
 | Check | Type | Passes when |
 |-------|------|-------------|
-| `src/lib/jwt.ts` | `file_exists` | — |
-| `src/middleware/auth.middleware.ts` | `file_exists` | — |
+| `src/shared/services/jwt.ts` | `file_exists` | — |
+| `src/shared/middlewares/auth.middleware.ts` | `file_exists` | — |
 | `dependencies.jsonwebtoken` in `package.json` | `json_key_exists` | — |
 
 ---
