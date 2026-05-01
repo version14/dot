@@ -9,7 +9,7 @@ var Manifest = dotapi.Manifest{
 	DependsOn:   []string{"drizzle_config_base"},
 	Outputs:     []string{},
 	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
+		{Cmd: "pnpm db:generate"},
 	},
 	Validators: []dotapi.Validator{
 		{
