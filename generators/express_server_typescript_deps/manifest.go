@@ -8,9 +8,6 @@ var Manifest = dotapi.Manifest{
 	Description: "Express + CORS + dotenv npm dependencies and dev/build/start scripts for TypeScript projects",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs:     []string{},
-	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
-	},
 	Validators: []dotapi.Validator{
 		{
 			Name: "express-typescript-deps",
