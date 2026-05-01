@@ -25,7 +25,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		existing = string(f.Content)
 	}
 
-	dbURL := fmt.Sprintf("postgresql://postgres:postgres@localhost:5432/%s", projectName)
+	dbURL := fmt.Sprintf("postgresql://postgres:postgres@localhost:5433/%s", projectName)
 	updated := existing + fmt.Sprintf("\n# PostgreSQL\nDATABASE_URL=%s\n", dbURL)
 
 	ctx.State.WriteFile(".env.example", []byte(updated), state.ContentRaw)

@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "postgres_docker_compose",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "Docker Compose service for PostgreSQL development environment",
 	DependsOn:   []string{},
 	Outputs: []string{
