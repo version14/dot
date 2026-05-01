@@ -2,6 +2,8 @@ package drizzletypescriptdeps
 
 import "github.com/version14/dot/pkg/dotapi"
 
+const PACKAGE_JSON = "package.json"
+
 var Manifest = dotapi.Manifest{
 	Name:        "drizzle_typescript_deps",
 	Version:     "0.1.0",
@@ -15,9 +17,9 @@ var Manifest = dotapi.Manifest{
 		{
 			Name: "drizzle-typescript-deps",
 			Checks: []dotapi.Check{
-				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "dependencies.drizzle-orm"},
-				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "devDependencies.drizzle-kit"},
-				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "scripts.db:push"},
+				{Type: dotapi.CheckJSONKeyExists, Path: PACKAGE_JSON, Key: "dependencies.drizzle-orm"},
+				{Type: dotapi.CheckJSONKeyExists, Path: PACKAGE_JSON, Key: "devDependencies.drizzle-kit"},
+				{Type: dotapi.CheckJSONKeyExists, Path: PACKAGE_JSON, Key: "scripts.db:push"},
 			},
 		},
 	},
