@@ -40,6 +40,9 @@ This guide answers the question **"where do I look?"** for any change you might 
 | Task | Primary file(s) | Read first |
 |------|----------------|------------|
 | Add a new generator | Create `generators/<name>/` + register in `internal/cli/registry.go` | [authoring-generators.md](authoring-generators.md), then copy [generators/_template.md](generators/_template.md) |
+| Understand the Express generator family | `generators/express_*`, `generators/auth_jwt_*`, `flows/monorepo.go` | [express-backend-guide.md](express-backend-guide.md) — read this first |
+| Understand the auth module (JWT) | `generators/auth_jwt_vanilla/`, `auth_jwt_users_schema/`, `auth_jwt_mvc_route/`, `auth_jwt_clean_arch_module/` | [auth_jwt_vanilla.md](generators/auth_jwt_vanilla.md), [auth_jwt_mvc_route.md](generators/auth_jwt_mvc_route.md), [auth_jwt_clean_arch_module.md](generators/auth_jwt_clean_arch_module.md) |
+| Understand the shared infrastructure generators | `generators/express_shared_errors/`, `express_error_middleware/`, `express_rate_limit/`, `express_auth_validators/` | [express_shared_errors.md](generators/express_shared_errors.md), [express_error_middleware.md](generators/express_error_middleware.md) |
 | Fix a generator's file output | `generators/<name>/generator.go` | [generators/<name>.md](generators/) |
 | Add a validator to a generator | `generators/<name>/manifest.go` — `Validators` field | [authoring-generators.md — validators](authoring-generators.md#validators) |
 | Add a post-gen or test command | `generators/<name>/manifest.go` — `PostGenerationCommands` / `TestCommands` | [authoring-generators.md — commands](authoring-generators.md#postgenerationcommands-and-testcommands) |
