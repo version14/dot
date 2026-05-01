@@ -43,8 +43,6 @@ func (r *LocalFolderRenderer) Render(embed embed.FS, data interface{}) error {
 		part1Path := strings.Split(path, "/")
 		destPath := strings.Join(part1Path[1:], "/")
 
-		fmt.Println(destPath)
-
 		if d.IsDir() {
 			return nil
 		}
