@@ -10,9 +10,6 @@ var Manifest = dotapi.Manifest{
 	Outputs: []string{
 		"src/db/index.ts",
 	},
-	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
-	},
 	Validators: []dotapi.Validator{
 		{
 			Name: "drizzle-postgres-adapter",
