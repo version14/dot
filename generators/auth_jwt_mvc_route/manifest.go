@@ -10,9 +10,7 @@ var Manifest = dotapi.Manifest{
 	Outputs: []string{
 		"src/routes/auth.route.ts",
 		"src/controllers/auth.controller.ts",
-	},
-	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
+		"src/__tests__/auth.db.test.ts",
 	},
 	Validators: []dotapi.Validator{
 		{

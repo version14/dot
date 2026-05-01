@@ -1,19 +1,19 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../lib/jwt';
+import type { NextFunction, Request, Response } from 'express';
+import { verifyToken } from '../services/jwt';
 
 export interface AuthRequest extends Request {
   user?: object;
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
 
   try {
-    const token = authHeader.slice(7);
     req.user = verifyToken(token);
     next();
   } catch {
