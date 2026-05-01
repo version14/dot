@@ -10,16 +10,14 @@ var Manifest = dotapi.Manifest{
 	Name:        "biome_config",
 	Version:     "0.1.0",
 	Description: "Biome lint + format configuration",
-	DependsOn:   []string{"typescript_base"},
+	DependsOn:   []string{"typescript_base", "*"},
 	Outputs: []string{
 		biomeConfigFileName,
 	},
 	PostGenerationCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
 		{Cmd: "pnpm exec biome check --write ."},
 	},
 	TestCommands: []dotapi.Command{
-		{Cmd: "pnpm install"},
 		{Cmd: "pnpm exec biome check ."},
 	},
 	Validators: []dotapi.Validator{
