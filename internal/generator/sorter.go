@@ -53,15 +53,72 @@ func SortInvocations(invs []Invocation, registry *Registry) ([]Invocation, error
 	for name, m := range mans {
 		indeg[name] = 0
 		for _, d := range m.DependsOn {
+			if d == "*" {
+				continue
+			}
 			if _, ok := mans[d]; !ok {
 				return nil, fmt.Errorf("generator %q depends on %q which is not in the invocation set", name, d)
 			}
 		}
 	}
+	// Identify "end-generators": those that have a wildcard dependency "*"
+	// OR (transitively) depend on one that does.
+	isEndGen := make(map[string]bool)
 	for name, m := range mans {
 		for _, d := range m.DependsOn {
+			if d == "*" {
+				isEndGen[name] = true
+				break
+			}
+		}
+	}
+
+	// Propagate end-gen status: if A depends on B and B is an end-gen, A is too.
+	// Since the number of generators is small, a simple fixed-point is fine.
+	changed := true
+	for changed {
+		changed = false
+		for name, m := range mans {
+			if isEndGen[name] {
+				continue
+			}
+			for _, d := range m.DependsOn {
+				if d == "*" {
+					continue
+				}
+				if isEndGen[d] {
+					isEndGen[name] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+
+	for name, m := range mans {
+		seenDeps := make(map[string]struct{}, len(m.DependsOn)+len(mans))
+		for _, d := range m.DependsOn {
+			if d == "*" {
+				continue
+			}
+			seenDeps[d] = struct{}{}
+		}
+
+		// If this is an end-generator, it must run after ALL non-end-generators.
+		// This still participates in normal topological sorting, so wildcard
+		// generators are correctly ordered with each other and with any
+		// explicit dependency chains.
+		if isEndGen[name] {
+			for other := range mans {
+				if !isEndGen[other] {
+					seenDeps[other] = struct{}{}
+				}
+			}
+		}
+
+		for dep := range seenDeps {
 			indeg[name]++
-			dependents[d] = append(dependents[d], name)
+			dependents[dep] = append(dependents[dep], name)
 		}
 	}
 

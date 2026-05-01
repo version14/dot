@@ -44,6 +44,9 @@ func ResolveInvocations(requested []Invocation, registry *Registry) ([]Invocatio
 			return fmt.Errorf("generator: unknown %q", name)
 		}
 		for _, dep := range entry.Manifest.DependsOn {
+			if dep == "*" {
+				continue
+			}
 			if err := visit(dep); err != nil {
 				return err
 			}
