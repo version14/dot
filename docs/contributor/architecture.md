@@ -390,7 +390,7 @@ Written by `dotdir.SaveSpec`, read by `dotdir.LoadSpec`. Safe to commit; contain
 
 ```json
 {
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "created_at": "2026-04-27T14:00:00Z",
   "metadata": {
     "project_name": "my-app",

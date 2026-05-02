@@ -66,10 +66,7 @@ func (r *Registry) All() []*FlowDef {
 // Default returns a Registry pre-loaded with all built-in flows.
 func Default() *Registry {
 	r := NewRegistry()
-	// _ = r.Register(MonorepoFlow())
-	// _ = r.Register(FullstackFlow())
-	// _ = r.Register(MicroservicesFlow())
-	_ = r.Register(MonorepoFlow())
+	_ = r.Register(InitFlow())
 	_ = r.Register(PluginTemplateFlow())
 	return r
 }
