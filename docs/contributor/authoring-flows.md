@@ -347,7 +347,7 @@ Add your flow to `flows/registry.go`:
 ```go
 func Default() *Registry {
     r := NewRegistry()
-    _ = r.Register(MonorepoFlow())
+    _ = r.Register(InitFlow())
     _ = r.Register(FullstackFlow())
     _ = r.Register(MicroservicesFlow())
     _ = r.Register(PluginTemplateFlow())

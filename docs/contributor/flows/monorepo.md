@@ -70,7 +70,7 @@ project_name
 ```json
 {
   "name": "turborepo_ts_react",
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "answers": {
     "project_name": "demo-app",
     "monorepo_type": "turborepo",
@@ -92,7 +92,7 @@ project_name
 ```json
 {
   "name": "single_go",
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "answers": {
     "project_name": "go-svc",
     "monorepo_type": "single",

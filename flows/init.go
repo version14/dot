@@ -8,12 +8,12 @@ import (
 const CLEAN_ARCHITECTURE = "clean-architecture"
 const MVC_ARCHITECTURE = "mvc-architecture"
 
-// MonorepoFlow is the default DOT scaffolding flow. It walks the user through
+// InitFlow is the default DOT scaffolding flow. It walks the user through
 // project name → monorepo structure → language stack → linting → database → auth.
 //
 // Question IDs are kept stable: re-runs of `dot scaffold` reuse the persisted
 // answers from .dot/spec.json keyed by these IDs.
-func MonorepoFlow() *FlowDef {
+func InitFlow() *FlowDef {
 	confirmGenerate := &flow.ConfirmQuestion{
 		QuestionBase: flow.QuestionBase{ID_: "confirm-generate"},
 		Label:        "Generate the project now?",
@@ -131,8 +131,8 @@ func MonorepoFlow() *FlowDef {
 	}
 
 	return &FlowDef{
-		ID:          "monorepo",
-		Title:       "Monorepo / Project Wizard",
+		ID:          "init",
+		Title:       "Init / Project Wizard",
 		Description: "Scaffold a new project with optional monorepo, language, and tooling.",
 		Root:        projectName,
 		Generators:  resolveMonorepoGenerators,

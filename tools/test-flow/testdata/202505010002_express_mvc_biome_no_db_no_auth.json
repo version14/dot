@@ -1,6 +1,6 @@
 {
   "name": "express_mvc_biome_no_db_no_auth",
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "answers": {
     "project_name": "my-app",
     "monorepo_type": "single",

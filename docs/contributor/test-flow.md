@@ -206,7 +206,7 @@ If active plugins inject questions into the flow, the fixture must include answe
 ```json
 {
   "name": "turborepo_ts_react",
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "answers": {
     "project_name": "demo-app",
     "monorepo_type": "turborepo",
