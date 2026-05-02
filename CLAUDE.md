@@ -20,3 +20,4 @@ Key routing rules:
 - Code quality, health check → invoke health
 - Add a flow, scaffold a flow, generate a flow, work in flows/ → invoke dot-flow
 - Add a generator, edit a generator, scaffold a generator, work in generators/ → invoke dot-generator
+- Sync skills, update cursor skills, propagate skill changes, mirror skills → invoke sync-skills
