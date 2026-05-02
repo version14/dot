@@ -1,6 +1,10 @@
 package cli
 
-import "github.com/version14/dot/internal/flow"
+import (
+	"fmt"
+
+	"github.com/version14/dot/internal/flow"
+)
 
 // ----------------------------------------------------------------------------
 // pathCond — AND of condClauses, OR of pathConds per slot
@@ -14,6 +18,18 @@ type pathCond []condClause
 func (pc pathCond) satisfied(store *liveStore) bool {
 	for _, c := range pc {
 		if !c.satisfied(store) {
+			return false
+		}
+	}
+	return true
+}
+
+func (pc pathCond) equals(other pathCond) bool {
+	if len(pc) != len(other) {
+		return false
+	}
+	for i := range pc {
+		if !pc[i].equals(other[i]) {
 			return false
 		}
 	}
@@ -50,6 +66,25 @@ func (c condClause) satisfied(store *liveStore) bool {
 		}
 		ctx := store.partialContext()
 		return c.ifCond(ctx) == c.boolVal
+	}
+	return false
+}
+
+func (c condClause) equals(other condClause) bool {
+	if c.kind != other.kind || c.questionID != other.questionID {
+		return false
+	}
+	switch c.kind {
+	case clauseSelectEq:
+		return c.value == other.value
+	case clauseConfirmEq, clauseIfEq:
+		if c.boolVal != other.boolVal {
+			return false
+		}
+		if c.kind == clauseIfEq {
+			return fmt.Sprintf("%p", c.ifCond) == fmt.Sprintf("%p", other.ifCond)
+		}
+		return true
 	}
 	return false
 }
@@ -198,8 +233,10 @@ type loopBarrier struct {
 //     walked (handled as sub-forms in HuhFormRunner.Run).
 //   - InsertAfter injections: spliced between the target and its natural next,
 //     sharing the target's path condition.
-//   - Already-visited nodes: merge the new pathCond (OR); children not re-walked
-//     (safe for tree-shaped flows; diamond convergence merges gracefully).
+//   - Already-visited nodes: merge the new pathCond (OR) and re-walk children
+//     to propagate the updated visibility condition down the graph.
+//   - Cycle detection: re-walking only occurs if the new condition is not
+//     already registered for that node.
 type formWalker struct {
 	hooks     *flow.HookRegistry
 	fragments *flow.FragmentRegistry
@@ -210,6 +247,7 @@ type formWalker struct {
 }
 
 func newFormWalker(hooks *flow.HookRegistry, fragments *flow.FragmentRegistry) *formWalker {
+
 	return &formWalker{
 		hooks:     hooks,
 		fragments: fragments,
@@ -248,20 +286,29 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 
 	id := q.ID()
 
-	// Merge condition if already visited; do not re-walk children.
-	if idx, exists := w.visited[id]; exists {
+	// Merge condition if already visited.
+	idx, alreadyVisited := w.visited[id]
+	if alreadyVisited {
+		// Avoid redundant re-walks if we already have this exact condition.
+		for _, existing := range w.slots[idx].conditions {
+			if existing.equals(cond) {
+				return
+			}
+		}
 		w.slots[idx].conditions = append(w.slots[idx].conditions, cond)
-		return
+	} else {
+		// Register slot.
+		idx = len(w.slots)
+		w.visited[id] = idx
+		slot := &formSlot{question: q, conditions: []pathCond{cond}}
+		w.slots = append(w.slots, slot)
 	}
 
-	// Register slot.
-	idx := len(w.slots)
-	w.visited[id] = idx
-	slot := &formSlot{question: q, conditions: []pathCond{cond}}
-	w.slots = append(w.slots, slot)
-
 	// Collect InsertAfter injections for this node.
-	_, _, inserts := w.hooks.ForKind(id)
+	var inserts []flow.Question
+	if w.hooks != nil {
+		_, _, inserts = w.hooks.ForKind(id)
+	}
 
 	switch typed := q.(type) {
 
@@ -301,8 +348,10 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 		w.walkNext(typed.Next_, cond)
 
 	case *flow.LoopQuestion:
-		// Record the barrier so the runner can execute body sub-forms later.
-		w.loops = append(w.loops, &loopBarrier{slotIdx: idx, question: typed})
+		// Record the barrier only once.
+		if !alreadyVisited {
+			w.loops = append(w.loops, &loopBarrier{slotIdx: idx, question: typed})
+		}
 		// Walk what comes after the loop with the same condition.
 		w.walkNext(typed.Continue, cond)
 		// Do NOT walk typed.Body — those run as sub-forms.
