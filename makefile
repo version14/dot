@@ -100,6 +100,13 @@ run: ## Run dot directly (without building)
 	@$(GO) run ./cmd/dot
 	@echo ""
 
+debug: ## Run dot with delve debugger (CLI)
+	$(call print_header,"DEBUG","                             ")
+	$(call print_info,"Starting debugger...")
+	@echo ""
+	@$(GO) run ./cmd/dot/main.go scaffold monorepo
+	@echo ""
+
 clean: ## Remove build artifacts
 	$(call print_header,"CLEAN","                            ")
 	$(call print_info,"Removing build artifacts...")
@@ -124,6 +131,8 @@ install-tools: ## Install required development tools
 	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest > /dev/null 2>&1
 	@echo "  • Installing goimports..."
 	@$(GO) install golang.org/x/tools/cmd/goimports@latest > /dev/null 2>&1
+	@echo "  • Installing delve..."
+	@$(GO) install github.com/go-delve/delve/cmd/dlv@latest > /dev/null 2>&1
 	$(call print_success,"Tools installed")
 	@echo ""
 
