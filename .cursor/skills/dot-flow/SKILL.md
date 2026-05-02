@@ -1,3 +1,4 @@
+<!-- Mirror of .claude/skills/dot-flow/SKILL.md — update both files together -->
 ---
 name: dot-flow
 description: Create or AI-generate a dot scaffolding flow (question graph plus generator resolver). Always asks the user a structured set of questions first, then generates the flow file, registers it, writes the doc, and adds a fixture. Use when the user wants to add a flow, scaffold a flow from a description, or otherwise work in flows/.
@@ -13,6 +14,7 @@ This skill never writes anything before completing the structured question pass 
 
 - Build the question graph bottom-up (declare terminal questions first; root last).
 - Every flow MUST end through a `confirm_generate` `ConfirmQuestion` whose `Then` and `Else` both point to `&flow.Next{End: true}`.
+- The ID `confirm_generate` is reserved for the terminal question of every flow. No other question may use this ID.
 - Question IDs MUST be unique within a flow.
 - Loop body questions use `&flow.Next{End: true}` to end the iteration, NOT the flow.
 - Read but do NOT duplicate `[docs/contributor/authoring-flows.md](../../../docs/contributor/authoring-flows.md)`.
@@ -37,12 +39,11 @@ Common (both modes):
 2. `title` — human-readable, shown in `dot flows`.
 3. `description` — one line, shown in `dot flows`.
 4. `root_question_id` — snake_case, used as the first question's `ID_`.
-5. `placement` — `branch` or `standalone`. The main flow does not exist yet, so `branch` falls back to `standalone` and the generated file gets a `// TODO(main-flow): rewire this flow to branch off the main flow once it exists` comment at the top.
 
 Generate-mode only:
 
-6. `scaffold_summary` — one-line description of what the flow scaffolds (e.g. "Next.js app with optional Prisma and Tailwind").
-7. `generators` — list of generator names the resolver should invoke. For each, mark `existing` (already in `[generators/](../../../generators)`) or `new`. New ones MUST be created via the `dot-generator` skill BEFORE this skill writes the resolver.
+5. `scaffold_summary` — one-line description of what the flow scaffolds (e.g. "Next.js app with optional Prisma and Tailwind").
+6. `generators` — list of generator names the resolver should invoke. For each, mark `existing` (already in `[generators/](../../../generators)`) or `new`. New ones MUST be created via the `dot-generator` skill BEFORE this skill writes the resolver.
 
 Validation rules (apply BEFORE writing):
 
@@ -59,13 +60,13 @@ Runs only AFTER Step 2 succeeds.
 3. Copy `[docs/contributor/flows/_template.md](../../../docs/contributor/flows/_template.md)` to `docs/contributor/flows/<flow_id>.md`. Prefill the Identity table (ID, Title, File, Root question), and replace every other `<!-- TODO -->` with a placeholder pointing back at the generated `flows/<flow_id_underscored>.go`.
 4. Add a row to the "Built-in flows" table in `[docs/contributor/authoring-flows.md](../../../docs/contributor/authoring-flows.md)` and to the flows index in `[docs/README.md](../../../docs/README.md)`.
 5. Create `tools/test-flow/testdata/<flow_id_underscored>_full.json` with `skip_post_commands: true` and `skip_test_commands: true`. Answers cover the root question and `confirm_generate: true`. `expected_visited` lists every question id in the stub.
-6. Run `make test` and report the result. If it fails, surface the failure and stop — do NOT auto-fix.
+6. Run `make test` and report the result. If it fails, print the failing output and suggest the user run `make test 2>&1 | head -80` to investigate. Do NOT auto-fix. Stop and wait for user input.
 
 ## Step 3b — `generate` workflow
 
 Runs only AFTER Step 2 succeeds.
 
-1. For every generator in `generators[*]` that is marked `new`, invoke the `dot-generator` skill in a focused subtask and wait for it to finish before continuing.
+1. For every generator in `generators[*]` that is marked `new`, execute the full `dot-generator` skill workflow inline (Steps 1–3c of `dot-generator/SKILL.md`) before continuing. Do not proceed to the next generator until the current one is created and `go build ./...` passes. Only continue to step 2 below once ALL generators are successfully created.
 2. Produce `flows/<flow_id_underscored>.go` end-to-end:
    - Bottom-up question graph using the patterns documented in `[docs/contributor/authoring-flows.md](../../../docs/contributor/authoring-flows.md)` (`TextQuestion`, `ConfirmQuestion`, `OptionQuestion`, `LoopQuestion`, `IfQuestion`).
    - Validators on text inputs: reuse `nonEmpty`, `validateModulePath`, `validatePluginID` from `[flows/plugin_template.go](../../../flows/plugin_template.go)` when applicable; otherwise add new validators in the same file.

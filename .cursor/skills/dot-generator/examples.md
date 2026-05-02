@@ -1,3 +1,4 @@
+<!-- Mirror of .claude/skills/dot-generator/examples.md — update both files together -->
 # dot-generator examples
 
 One fully-worked example per mode, plus one example per writing strategy.

@@ -1,3 +1,4 @@
+<!-- Mirror of .claude/skills/dot-flow/examples.md — update both files together -->
 # dot-flow examples
 
 One fully-worked example per mode. Use these as the source of truth for diffs the skill produces.
