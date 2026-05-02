@@ -56,7 +56,7 @@ Common to `init` and `generate`:
 
 Validation rules (apply BEFORE writing):
 
-- `name`: matches `^[a-z][a-z0-9_]*$`, unique across `builtinGeneratorEntries()`.
+- `name`: matches `^[a-z][a-z0-9_]*$`, unique across (1) `builtinGeneratorEntries()` in `internal/cli/registry.go` AND (2) existing directories under `generators/` — check both before validating.
 - `version`: parses cleanly through `internal/versioning` (semver `MAJOR.MINOR.PATCH`).
 - Each `outputs[*].path`: relative, no leading `/`, no `..` segments.
 - Each `depends_on[*]`: must be an existing generator name in the same registry list.
@@ -72,7 +72,59 @@ Runs only AFTER Step 2 succeeds.
    - Append `{Manifest: <pkg>.Manifest, Generator: <pkg>.New()}` to `builtinGeneratorEntries()`.
 4. Copy `[docs/contributor/generators/_template.md](../../../docs/contributor/generators/_template.md)` to `docs/contributor/generators/<name>.md`. Prefill the Identity table (Name, Version, Package), the Files written table (one row per output), the Validators table, and Post-generation commands.
 5. Add a row to the "Built-in generators" table in `[docs/contributor/authoring-generators.md](../../../docs/contributor/authoring-generators.md)` and to the generators index in `[docs/README.md](../../../docs/README.md)`.
-6. Run `go build ./...` and report. If it fails, surface the failure and stop — do NOT auto-fix.
+6. Run `go build ./...` and report. If it fails, print the compiler output and suggest the user run `go build ./... 2>&1 | head -80` to investigate. Do NOT auto-fix. Stop and wait for user input.
+
+### Stub templates for `init`
+
+Use these exact files for mode `init` (replace `<…>` with values from Step 2):
+
+**`generators/<name>/manifest.go`**
+
+```go
+package <pkg>
+
+import "github.com/version14/dot/pkg/dotapi"
+
+var Manifest = dotapi.Manifest{
+	Name:        "<name>",
+	Version:     "<version>",
+	Description: "<description>",
+	DependsOn:   []string{<depends_on>},
+	Outputs:     []string{<outputs_paths>},
+	Validators: []dotapi.Validator{
+		{
+			Name: "<name>",
+			Checks: []dotapi.Check{
+				// TODO: one CheckFileExists per declared output is auto-added here.
+			},
+		},
+	},
+}
+```
+
+**`generators/<name>/generator.go`**
+
+```go
+// Package <pkg> <description>.
+package <pkg>
+
+import "github.com/version14/dot/pkg/dotapi"
+
+type Generator struct{}
+
+func New() *Generator { return &Generator{} }
+
+func (g *Generator) Name() string    { return Manifest.Name }
+func (g *Generator) Version() string { return Manifest.Version }
+
+func (g *Generator) Generate(ctx *dotapi.Context) error {
+	// TODO: implement — write <outputs_paths>.
+	_ = ctx
+	return nil
+}
+```
+
+`<pkg>` is `<name>` with underscores removed and lowercased (e.g. `hello_world` → `helloworld`).
 
 ## Step 3b — `edit` workflow
 
@@ -87,7 +139,7 @@ Runs only AFTER Step 2 (including target + change_kind + follow-ups) succeeds.
    - `add post-gen command` — append to `Manifest.PostGenerationCommands`.
    - `change generate behavior` — apply the user-described change inside `Generate` only; do NOT touch `Name()`, `Version()`, or `Manifest`.
 3. Update the matching tables in `docs/contributor/generators/<target>.md` (Files written / Validators / Post-generation commands / Dependencies). Bump the Version row in Identity if `Manifest.Version` changed.
-4. Run `go build ./...` then `make test` and report.
+4. Run `go build ./...` then `make test` and report. If either fails, print the output and suggest the user run the failing command with `2>&1 | head -80`. Do NOT auto-fix. Stop and wait for user input.
 
 ## Step 3c — `generate` workflow
 
