@@ -1,6 +1,6 @@
 {
   "name": "express_clean_arch_prettier_postgres_drizzle_jwt",
-  "flow_id": "monorepo",
+  "flow_id": "init",
   "answers": {
     "project_name": "my-app",
     "monorepo_type": "single",
