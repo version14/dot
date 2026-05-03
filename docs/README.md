@@ -30,6 +30,7 @@ The docs are split into two audiences. If you are **using** DOT to scaffold proj
 | [contributor/authoring-flows.md](contributor/authoring-flows.md) | Writing flow graphs: questions, branching, loops |
 | [contributor/authoring-generators.md](contributor/authoring-generators.md) | Writing generators: VirtualProjectState, Manifest, validators, semver |
 | [contributor/authoring-plugins.md](contributor/authoring-plugins.md) | Writing plugins: injections, fragments, publishing |
+| [contributor/authoring-skills.md](contributor/authoring-skills.md) | Writing AI skills: structure, sync, CLAUDE.md routing |
 | [contributor/test-flow.md](contributor/test-flow.md) | End-to-end fixture testing with test-flow |
 
 ### Flow reference (`docs/contributor/flows/`)
@@ -42,6 +43,7 @@ One file per built-in flow. Each covers: question IDs, branching diagram, genera
 | [contributor/flows/fullstack.md](contributor/flows/fullstack.md) | `fullstack` — TypeScript + optional React + optional Go backend |
 | [contributor/flows/microservices.md](contributor/flows/microservices.md) | `microservices` — N services via LoopQuestion |
 | [contributor/flows/plugin-template.md](contributor/flows/plugin-template.md) | `plugin-template` — publishable plugin repository |
+| [contributor/flows/test-flow.md](contributor/flows/test-flow.md) | `test-flow` — test flow to validate the dot-flow skill |
 
 ### Generator reference (`docs/contributor/generators/`)
 
@@ -94,6 +96,7 @@ These rules keep the docs accurate as the codebase evolves.
 | New flow in `flows/` | Create `docs/contributor/flows/<id>.md` (from template) + update table above |
 | New CLI command | Add to `docs/user/cli-reference.md` |
 | New major subsystem | Add a section to `docs/contributor/architecture.md` |
+| New skill in `.claude/skills/` | Create `docs/contributor/authoring-skills.md` entry + run `sync-skills` |
 
 ### Which code changes require a doc update
 
@@ -106,6 +109,7 @@ These rules keep the docs accurate as the codebase evolves.
 | New injection kind | `docs/contributor/authoring-plugins.md` |
 | New exported type in `pkg/dotapi` or `pkg/dotplugin` | `authoring-generators.md` or `authoring-plugins.md` |
 | Generator manifest fields change | `docs/contributor/generators/<name>.md` |
+| Skill created or modified in `.claude/skills/` | Run `sync-skills` + update `docs/contributor/authoring-skills.md` Built-in skills table |
 | Plugin injection IDs change | `docs/contributor/plugins/<name>.md` + affected fixtures |
 | Pipeline step added/removed | `docs/contributor/architecture.md` |
 | `.dot/` schema changes | `docs/contributor/architecture.md` (spec/manifest sections) |

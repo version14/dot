@@ -1,0 +1,12 @@
+{
+  "name": "test_flow_full",
+  "flow_id": "test-flow",
+  "answers": {
+    "project_name": "test-value"
+  },
+  "expected_visited": [
+    "project_name"
+  ],
+  "skip_post_commands": true,
+  "skip_test_commands": true
+}
