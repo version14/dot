@@ -5,7 +5,7 @@ One fully-worked example per mode. Use these as the source of truth for diffs th
 
 ---
 
-## Example 1 — `init` (standalone)
+## Example 1 — `init`
 
 User invokes the skill. After Step 1 (`init` selected) and Step 2 the answers are:
 
@@ -14,7 +14,6 @@ flow_id          = my-stack
 title            = My Stack
 description      = Scaffolds a barebones My Stack project.
 root_question_id = project_name
-placement        = standalone
 ```
 
 ### File created: `flows/my_stack.go`
@@ -30,18 +29,10 @@ import (
 
 // MyStackFlow scaffolds a barebones My Stack project.
 func MyStackFlow() *FlowDef {
-	confirmGenerate := &flow.ConfirmQuestion{
-		QuestionBase: flow.QuestionBase{ID_: "confirm_generate"},
-		Label:        "Generate now?",
-		Default:      true,
-		Then:         &flow.Next{End: true},
-		Else:         &flow.Next{End: true},
-	}
-
 	root := &flow.TextQuestion{
 		QuestionBase: flow.QuestionBase{
 			ID_:   "project_name",
-			Next_: &flow.Next{Question: confirmGenerate},
+			Next_: &flow.Next{End: true},
 		},
 		Label:    "Project name",
 		Validate: nonEmpty,
@@ -67,6 +58,7 @@ func resolveMyStackFlowGenerators(_ *spec.ProjectSpec) []Invocation {
 ```go
 func Default() *Registry {
 	r := NewRegistry()
+	_ = r.Register(InitFlow())
 	_ = r.Register(MyStackFlow())
 	_ = r.Register(PluginTemplateFlow())
 	return r
@@ -101,12 +93,10 @@ Scaffolds a barebones My Stack project.
   "name": "my_stack_full",
   "flow_id": "my-stack",
   "answers": {
-    "project_name": "test-value",
-    "confirm_generate": true
+    "project_name": "test-value"
   },
   "expected_visited": [
-    "project_name",
-    "confirm_generate"
+    "project_name"
   ],
   "skip_post_commands": true,
   "skip_test_commands": true
@@ -120,24 +110,7 @@ Scaffolds a barebones My Stack project.
 
 ---
 
-## Example 2 — `init` (branch fallback)
-
-Same as Example 1 but `placement = branch`. The only difference: the file gets a TODO header because the main flow does not exist yet.
-
-### File created: `flows/my_stack.go` (top of file only)
-
-```go
-// Package flows registers the My Stack flow.
-//
-// TODO(main-flow): rewire this flow to branch off the main flow once it exists.
-package flows
-```
-
-Everything else is identical to Example 1.
-
----
-
-## Example 3 — `generate`
+## Example 2 — `generate`
 
 Step 2 answers:
 
@@ -146,7 +119,6 @@ flow_id          = next-stack
 title            = Next.js Stack
 description      = Next.js app with optional Prisma and Tailwind.
 root_question_id = project_name
-placement        = standalone
 scaffold_summary = Next.js app with optional Prisma and Tailwind
 generators       = [
   { name: "base_project",    status: "existing" },
@@ -171,20 +143,12 @@ import (
 )
 
 func NextStackFlow() *FlowDef {
-	confirmGenerate := &flow.ConfirmQuestion{
-		QuestionBase: flow.QuestionBase{ID_: "confirm_generate"},
-		Label:        "Generate now?",
-		Default:      true,
-		Then:         &flow.Next{End: true},
-		Else:         &flow.Next{End: true},
-	}
-
 	includePrisma := &flow.ConfirmQuestion{
 		QuestionBase: flow.QuestionBase{ID_: "include_prisma"},
 		Label:        "Include Prisma ORM?",
 		Default:      false,
-		Then:         &flow.Next{Question: confirmGenerate},
-		Else:         &flow.Next{Question: confirmGenerate},
+		Then:         &flow.Next{End: true},
+		Else:         &flow.Next{End: true},
 	}
 
 	includeTailwind := &flow.ConfirmQuestion{
@@ -234,14 +198,12 @@ func resolveNextStackGenerators(s *spec.ProjectSpec) []Invocation {
   "answers": {
     "project_name": "demo",
     "include_tailwind": true,
-    "include_prisma": true,
-    "confirm_generate": true
+    "include_prisma": true
   },
   "expected_visited": [
     "project_name",
     "include_tailwind",
-    "include_prisma",
-    "confirm_generate"
+    "include_prisma"
   ],
   "skip_post_commands": true,
   "skip_test_commands": true
@@ -263,4 +225,5 @@ Created flow: flows/next_stack.go
   Fixture: tools/test-flow/testdata/next_stack_full.json
   Registered in: flows/registry.go
   make test: PASS
+  make test-flows: PASS
 ```
