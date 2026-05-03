@@ -43,6 +43,7 @@ One file per built-in flow. Each covers: question IDs, branching diagram, genera
 | [contributor/flows/fullstack.md](contributor/flows/fullstack.md) | `fullstack` — TypeScript + optional React + optional Go backend |
 | [contributor/flows/microservices.md](contributor/flows/microservices.md) | `microservices` — N services via LoopQuestion |
 | [contributor/flows/plugin-template.md](contributor/flows/plugin-template.md) | `plugin-template` — publishable plugin repository |
+| [contributor/flows/test-flow.md](contributor/flows/test-flow.md) | `test-flow` — test flow to validate the dot-flow skill |
 
 ### Generator reference (`docs/contributor/generators/`)
 

@@ -68,5 +68,6 @@ func Default() *Registry {
 	r := NewRegistry()
 	_ = r.Register(InitFlow())
 	_ = r.Register(PluginTemplateFlow())
+	_ = r.Register(TestFlowFlow())
 	return r
 }

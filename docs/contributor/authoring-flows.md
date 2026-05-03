@@ -368,6 +368,7 @@ The flow immediately appears in `dot flows` and `dot scaffold`.
 | `fullstack` | `flows/fullstack.go` | `project_name`, `api_language`, `frontend_framework` |
 | `microservices` | `flows/microservices.go` | `project_name`, `services` (loop: `service_name`, `service_port`) |
 | `plugin-template` | `flows/plugin_template.go` | `project_name`, `module_path`, `plugin_description`, `plugin_author`, `plugin_year`, `plugin_include_injection`, `plugin_include_generator` |
+| `test-flow` | `flows/test_flow.go` | `project_name` |
 
 ---
 
