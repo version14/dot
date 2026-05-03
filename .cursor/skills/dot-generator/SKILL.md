@@ -169,6 +169,7 @@ Report:
 - Created files (`generators/<name>/manifest.go`, `generators/<name>/generator.go`, optional `generators/<name>/files/...`, `docs/contributor/generators/<name>.md`).
 - Modified files (`internal/cli/registry.go`, `docs/contributor/authoring-generators.md`, `docs/README.md`).
 - `go build ./...` (and, in edit mode, `make test`) outcome.
+- `make test-flows` outcome.
 - Strategy chosen (raw / json / yaml / gomod / embed).
 
 For end-to-end worked examples per mode and per strategy, see [examples.md](examples.md).
