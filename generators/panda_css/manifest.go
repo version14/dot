@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "panda_css",
-	Version:       "0.1.0",
+	Version:       "0.1.1",
 	Description:   "Panda CSS v1 with styled-system code generation",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"tailwind_v4", "shadcn_ui"},

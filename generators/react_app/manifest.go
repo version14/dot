@@ -16,6 +16,7 @@ var Manifest = dotapi.Manifest{
 	Outputs: []string{
 		"src/main.tsx",
 		"src/App.tsx",
+		"src/vite-env.d.ts",
 		"index.html",
 		"vite.config.ts",
 	},
@@ -36,6 +37,7 @@ var Manifest = dotapi.Manifest{
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckFileExists, Path: "src/main.tsx"},
 				{Type: dotapi.CheckFileExists, Path: "src/App.tsx"},
+				{Type: dotapi.CheckFileExists, Path: "src/vite-env.d.ts"},
 				{Type: dotapi.CheckFileExists, Path: "index.html"},
 				{Type: dotapi.CheckFileExists, Path: "vite.config.ts"},
 				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "dependencies.react"},

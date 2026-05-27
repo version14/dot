@@ -25,11 +25,22 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"indentStyle": "space",
 				"indentWidth": 2,
 			},
-			"files": map[string]interface{}{
-				"experimentalScannerIgnores": []interface{}{".dot/"},
-			},
+			"files": map[string]interface{}{},
 		})
-		return nil
+		// Biome 2.x: files.ignore and experimentalScannerIgnores were removed.
+		// Use files.includes with negation patterns instead. AppendStringSet so
+		// other generators (e.g. panda_css) can safely add entries.
+		return d.AppendStringSet("files.includes",
+			"**",
+			"!!**/.dot/",
+			"!.dot/**",
+			"!.next/**",
+			"!coverage/**",
+			"!dist/**",
+			"!node_modules/**",
+			"!storybook-static/**",
+			"!src/routeTree.gen.ts",
+		)
 	}); err != nil {
 		return err
 	}

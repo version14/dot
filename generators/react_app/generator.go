@@ -65,6 +65,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	}
 
 	ctx.State.WriteFile("vite.config.ts", []byte(viteConfig), state.ContentRaw)
+	ctx.State.WriteFile("src/vite-env.d.ts", []byte(viteEnvDTS), state.ContentRaw)
 	ctx.State.WriteFile("src/main.tsx", []byte(mainTSX), state.ContentRaw)
 
 	if out, err := render.Render(appTSX, data); err == nil {
@@ -98,11 +99,20 @@ export default defineConfig({
 });
 `
 
+const viteEnvDTS = `/// <reference types="vite/client" />
+`
+
 const mainTSX = `import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element #root not found");
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

@@ -54,7 +54,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	// AppendStringSet call will merge rather than overwrite this entry.
 	if linter == "biome" {
 		if err := ctx.State.UpdateJSON("biome.json", func(d *state.JSONDoc) error {
-			return d.AppendStringSet("files.ignore", "styled-system/**")
+			return d.AppendStringSet("files.includes", "!styled-system/**")
 		}); err != nil {
 			return err
 		}
