@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/huh"
 	"github.com/version14/dot/flows"
 	"github.com/version14/dot/internal/commands"
 	"github.com/version14/dot/internal/generator"
@@ -141,8 +142,6 @@ func runScaffold(ctx context.Context, args []string, toolVersion string) int {
 	flowID := ""
 	if fs.NArg() > 0 {
 		flowID = fs.Arg(0)
-	} else {
-		flowID = "init"
 	}
 
 	PrintBanner()
@@ -203,7 +202,8 @@ func runScaffold(ctx context.Context, args []string, toolVersion string) int {
 	return 0
 }
 
-// pickFlow resolves a flow ID, listing options when ambiguous or empty.
+// pickFlow resolves a flow ID. When id is empty and multiple flows are
+// registered, it shows an interactive selector via huh.
 func pickFlow(reg *flows.Registry, id string) (*flows.FlowDef, error) {
 	if id != "" {
 		def, ok := reg.Get(id)
@@ -217,13 +217,35 @@ func pickFlow(reg *flows.Registry, id string) (*flows.FlowDef, error) {
 	if len(all) == 1 {
 		return all[0], nil
 	}
-	// Multiple flows + no explicit pick: show a list and let the user choose
-	// by re-running with an explicit flow-id. (Keeps the CLI deterministic.)
-	fmt.Fprintln(os.Stderr, "Multiple flows available — re-run with one of:")
-	for _, f := range all {
-		fmt.Fprintf(os.Stderr, "  dot scaffold %s\n", f.ID)
+
+	var selected string
+	opts := make([]huh.Option[string], len(all))
+	for i, f := range all {
+		label := f.ID
+		if f.Title != "" {
+			label = fmt.Sprintf("%-20s %s", f.ID, f.Title)
+		}
+		opts[i] = huh.NewOption(label, f.ID)
 	}
-	return nil, fmt.Errorf("flow not specified")
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Which scaffold flow?").
+				Options(opts...).
+				Value(&selected),
+		),
+	)
+	if err := form.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil, ErrAborted
+		}
+		return nil, fmt.Errorf("flow picker: %w", err)
+	}
+	def, ok := reg.Get(selected)
+	if !ok {
+		return nil, fmt.Errorf("unknown flow %q", selected)
+	}
+	return def, nil
 }
 
 func joinNames(names []string) string {
