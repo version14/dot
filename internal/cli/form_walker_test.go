@@ -3,6 +3,7 @@ package cli
 import (
 	"testing"
 
+	"github.com/version14/dot/flows"
 	"github.com/version14/dot/internal/flow"
 )
 
@@ -45,11 +46,35 @@ func TestFormWalkerDiamondConvergence(t *testing.T) {
 		t.Fatal("Question C not found in walker slots")
 	}
 
-	// C should be reachable via (A=a1 AND B=b1) OR (A=a2 AND B=b1)
-	if len(cSlot.conditions) < 2 {
-		t.Errorf("Expected at least 2 conditions for C, got %d", len(cSlot.conditions))
-		for i, cond := range cSlot.conditions {
-			t.Logf("Condition %d: %v", i, cond)
-		}
+	// Both A options and B's single option converge to C, so C remains
+	// unconditionally visible after same-target branch collapse.
+	if len(cSlot.conditions) != 1 {
+		t.Fatalf("Expected 1 collapsed condition for C, got %d", len(cSlot.conditions))
+	}
+	if buildHideFunc(cSlot.conditions, newLiveStore())() {
+		t.Fatalf("Expected collapsed condition to keep C visible, got %+v", cSlot.conditions[0])
+	}
+}
+
+func TestFormWalkerFrontendStylingBeforeState(t *testing.T) {
+	def := flows.FrontendFlow()
+	walker := newFormWalker(nil, nil)
+	walker.walk(def.Root)
+
+	index := make(map[string]int, len(walker.slots))
+	for i, slot := range walker.slots {
+		index[slot.question.ID()] = i
+	}
+
+	stylingIdx, ok := index["frontend-styling"]
+	if !ok {
+		t.Fatal("frontend-styling not found in walker slots")
+	}
+	stateIdx, ok := index["frontend-state"]
+	if !ok {
+		t.Fatal("frontend-state not found in walker slots")
+	}
+	if stylingIdx > stateIdx {
+		t.Fatalf("frontend-styling should be before frontend-state, got styling=%d state=%d", stylingIdx, stateIdx)
 	}
 }

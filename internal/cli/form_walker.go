@@ -207,9 +207,12 @@ func (s *liveStore) partialContext() *flow.FlowContext {
 
 // formSlot is one node collected during the pre-walk. It pairs a question with
 // the set of pathConditions (OR-ed) that determine when it is visible.
+// orderDeps are separate: they only constrain display order and never affect
+// whether the slot is visible.
 type formSlot struct {
 	question   flow.Question
 	conditions []pathCond
+	orderDeps  []string
 }
 
 // loopBarrier marks a LoopQuestion in the slot list so the runner can find it
@@ -217,6 +220,11 @@ type formSlot struct {
 type loopBarrier struct {
 	slotIdx  int
 	question *flow.LoopQuestion
+}
+
+type walkVisit struct {
+	cond      pathCond
+	orderDeps []string
 }
 
 // ----------------------------------------------------------------------------
@@ -243,7 +251,11 @@ type formWalker struct {
 
 	slots   []*formSlot
 	visited map[string]int // questionID → slot index
-	loops   []*loopBarrier
+	// ifVisited tracks walk states already expanded for non-UI IfQuestion nodes.
+	// Without this, the same IfQuestion can be re-expanded many times from merged
+	// upstream branches, causing path explosion even when downstream nodes are deduped.
+	ifVisited map[string][]walkVisit
+	loops     []*loopBarrier
 }
 
 func newFormWalker(hooks *flow.HookRegistry, fragments *flow.FragmentRegistry) *formWalker {
@@ -252,23 +264,38 @@ func newFormWalker(hooks *flow.HookRegistry, fragments *flow.FragmentRegistry) *
 		hooks:     hooks,
 		fragments: fragments,
 		visited:   make(map[string]int),
+		ifVisited: make(map[string][]walkVisit),
 	}
 }
 
 func (w *formWalker) walk(root flow.Question) {
-	w.walkQ(root, nil)
+	w.walkQ(root, nil, nil)
+	w.orderSlotsByDeps()
 }
 
-func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
+func (w *formWalker) walkQ(q flow.Question, cond pathCond, orderDeps []string) {
 	if q == nil {
 		return
 	}
 
 	// Apply Replace injection (first registered Replace wins).
 	q = w.applyReplace(q)
+	id := q.ID()
 
 	// IfQuestion has no UI: thread its condition into downstream nodes and return.
 	if ifq, ok := q.(*flow.IfQuestion); ok {
+		// Deduplicate non-UI IfQuestion expansion by (questionID, condition).
+		// This mirrors slot-level dedupe for visible questions.
+		for _, existing := range w.ifVisited[id] {
+			if existing.cond.equals(cond) && stringSlicesEqual(existing.orderDeps, orderDeps) {
+				return
+			}
+		}
+		w.ifVisited[id] = append(w.ifVisited[id], walkVisit{
+			cond:      cloneCond(cond),
+			orderDeps: cloneStringSlice(orderDeps),
+		})
+
 		thenCond := appendCond(cond, condClause{
 			kind:    clauseIfEq,
 			boolVal: true,
@@ -279,12 +306,10 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 			boolVal: false,
 			ifCond:  ifq.Condition,
 		})
-		w.walkNext(ifq.Then, thenCond)
-		w.walkNext(ifq.Else, elseCond)
+		w.walkNext(ifq.Then, thenCond, orderDeps)
+		w.walkNext(ifq.Else, elseCond, orderDeps)
 		return
 	}
-
-	id := q.ID()
 
 	// Merge condition if already visited.
 	idx, alreadyVisited := w.visited[id]
@@ -292,15 +317,21 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 		// Avoid redundant re-walks if we already have this exact condition.
 		for _, existing := range w.slots[idx].conditions {
 			if existing.equals(cond) {
+				w.slots[idx].orderDeps = appendOrderDeps(w.slots[idx].orderDeps, orderDeps...)
 				return
 			}
 		}
 		w.slots[idx].conditions = append(w.slots[idx].conditions, cond)
+		w.slots[idx].orderDeps = appendOrderDeps(w.slots[idx].orderDeps, orderDeps...)
 	} else {
 		// Register slot.
 		idx = len(w.slots)
 		w.visited[id] = idx
-		slot := &formSlot{question: q, conditions: []pathCond{cond}}
+		slot := &formSlot{
+			question:   q,
+			conditions: []pathCond{cond},
+			orderDeps:  cloneStringSlice(orderDeps),
+		}
 		w.slots = append(w.slots, slot)
 	}
 
@@ -315,37 +346,55 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 	case *flow.OptionQuestion:
 		// Walk inserts first (same condition as target — always shown after target).
 		for _, ins := range inserts {
-			w.walkQ(ins, cloneCond(cond))
+			w.walkQ(ins, cloneCond(cond), appendOrderDep(orderDeps, id))
 		}
+		nextOrderDeps := appendOrderDep(orderDeps, id)
 		if typed.Multiple {
-			w.walkNext(typed.Next_, cond)
+			w.walkNext(typed.Next_, cond, nextOrderDeps)
 		} else {
 			// Merge plugin-added options so we walk their branches too.
 			merged := w.mergeOptions(typed)
+			// When every option lands on the same next target, downstream reachability
+			// is independent of the selected value. Walking one branch avoids
+			// exponential condition growth without changing visibility semantics.
+			if sameOptionsNextTarget(merged) {
+				if len(merged) > 0 {
+					w.walkNext(merged[0].Next, cond, nextOrderDeps)
+				}
+				return
+			}
 			for _, opt := range merged {
 				branchCond := appendCond(cond, condClause{
 					kind:       clauseSelectEq,
 					questionID: id,
 					value:      opt.Value,
 				})
-				w.walkNext(opt.Next, branchCond)
+				w.walkNext(opt.Next, branchCond, nextOrderDeps)
 			}
 		}
 
 	case *flow.ConfirmQuestion:
 		for _, ins := range inserts {
-			w.walkQ(ins, cloneCond(cond))
+			w.walkQ(ins, cloneCond(cond), appendOrderDep(orderDeps, id))
+		}
+		nextOrderDeps := appendOrderDep(orderDeps, id)
+		// If both branches land on the same next target, branching is
+		// condition-independent. Walking both sides would duplicate downstream
+		// conditions exponentially (true/false clauses for the same path).
+		if sameNextTarget(typed.Then, typed.Else) {
+			w.walkNext(typed.Then, cond, nextOrderDeps)
+			return
 		}
 		thenCond := appendCond(cond, condClause{kind: clauseConfirmEq, questionID: id, boolVal: true})
 		elseCond := appendCond(cond, condClause{kind: clauseConfirmEq, questionID: id, boolVal: false})
-		w.walkNext(typed.Then, thenCond)
-		w.walkNext(typed.Else, elseCond)
+		w.walkNext(typed.Then, thenCond, nextOrderDeps)
+		w.walkNext(typed.Else, elseCond, nextOrderDeps)
 
 	case *flow.TextQuestion:
 		for _, ins := range inserts {
-			w.walkQ(ins, cloneCond(cond))
+			w.walkQ(ins, cloneCond(cond), appendOrderDep(orderDeps, id))
 		}
-		w.walkNext(typed.Next_, cond)
+		w.walkNext(typed.Next_, cond, appendOrderDep(orderDeps, id))
 
 	case *flow.LoopQuestion:
 		// Record the barrier only once.
@@ -360,12 +409,12 @@ func (w *formWalker) walkQ(q flow.Question, cond pathCond) {
 	}
 }
 
-func (w *formWalker) walkNext(next *flow.Next, cond pathCond) {
+func (w *formWalker) walkNext(next *flow.Next, cond pathCond, orderDeps []string) {
 	if next == nil || next.End {
 		return
 	}
 	if next.Question != nil {
-		w.walkQ(next.Question, cond)
+		w.walkQ(next.Question, cond, orderDeps)
 		return
 	}
 	if next.Fragment != "" && w.fragments != nil {
@@ -373,7 +422,88 @@ func (w *formWalker) walkNext(next *flow.Next, cond pathCond) {
 		// handle nil gracefully (they cannot branch on live answers here).
 		resolved := w.fragments.Resolve(next.Fragment, nil)
 		if resolved != nil {
-			w.walkNext(resolved, cond)
+			w.walkNext(resolved, cond, orderDeps)
+		}
+	}
+}
+
+// orderSlotsByDeps keeps the pre-built form in a usable prompt order.
+//
+// DFS can discover a converged downstream question through an early branch before
+// it has discovered questions from later branches. Huh does not naturally jump
+// backward to newly visible earlier groups, so each slot carries explicit
+// ordering dependencies gathered from the graph edges used to reach it.
+func (w *formWalker) orderSlotsByDeps() {
+	if len(w.slots) < 2 {
+		return
+	}
+
+	idToIndex := make(map[string]int, len(w.slots))
+	for i, slot := range w.slots {
+		idToIndex[slot.question.ID()] = i
+	}
+
+	deps := make([]map[int]bool, len(w.slots))
+	for i, slot := range w.slots {
+		for _, depID := range slot.orderDeps {
+			depIdx, ok := idToIndex[depID]
+			if !ok || depIdx == i {
+				continue
+			}
+			if deps[i] == nil {
+				deps[i] = make(map[int]bool)
+			}
+			deps[i][depIdx] = true
+		}
+	}
+
+	done := make([]bool, len(w.slots))
+	ordered := make([]*formSlot, 0, len(w.slots))
+	oldToNew := make(map[int]int, len(w.slots))
+
+	for len(ordered) < len(w.slots) {
+		nextIdx := -1
+		for i := range w.slots {
+			if done[i] {
+				continue
+			}
+			ready := true
+			for depIdx := range deps[i] {
+				if !done[depIdx] {
+					ready = false
+					break
+				}
+			}
+			if ready {
+				nextIdx = i
+				break
+			}
+		}
+
+		// A cycle should not be possible in a valid question graph, but keep the
+		// original relative order instead of dropping slots if a plugin creates one.
+		if nextIdx == -1 {
+			for i := range w.slots {
+				if !done[i] {
+					nextIdx = i
+					break
+				}
+			}
+		}
+
+		done[nextIdx] = true
+		oldToNew[nextIdx] = len(ordered)
+		ordered = append(ordered, w.slots[nextIdx])
+	}
+
+	w.slots = ordered
+	w.visited = make(map[string]int, len(w.slots))
+	for i, slot := range w.slots {
+		w.visited[slot.question.ID()] = i
+	}
+	for _, barrier := range w.loops {
+		if newIdx, ok := oldToNew[barrier.slotIdx]; ok {
+			barrier.slotIdx = newIdx
 		}
 	}
 }
@@ -423,4 +553,80 @@ func appendCond(c pathCond, clause condClause) pathCond {
 	copy(out, c)
 	out[len(c)] = clause
 	return out
+}
+
+func cloneStringSlice(in []string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]string, len(in))
+	copy(out, in)
+	return out
+}
+
+func appendOrderDep(deps []string, dep string) []string {
+	return appendOrderDeps(deps, dep)
+}
+
+func appendOrderDeps(deps []string, additions ...string) []string {
+	out := cloneStringSlice(deps)
+	for _, addition := range additions {
+		if addition == "" || stringSliceContains(out, addition) {
+			continue
+		}
+		out = append(out, addition)
+	}
+	return out
+}
+
+func stringSliceContains(items []string, target string) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
+func stringSlicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sameNextTarget reports whether two Next edges resolve to the same target.
+// It is intentionally conservative: if we cannot prove equivalence, it returns false.
+func sameNextTarget(a, b *flow.Next) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.End || b.End {
+		return a.End == b.End
+	}
+	if a.Fragment != "" || b.Fragment != "" {
+		return a.Fragment != "" && b.Fragment != "" && a.Fragment == b.Fragment
+	}
+	if a.Question == nil || b.Question == nil {
+		return a.Question == b.Question
+	}
+	return a.Question.ID() == b.Question.ID()
+}
+
+func sameOptionsNextTarget(opts []*flow.Option) bool {
+	if len(opts) <= 1 {
+		return true
+	}
+	base := opts[0].Next
+	for i := 1; i < len(opts); i++ {
+		if !sameNextTarget(base, opts[i].Next) {
+			return false
+		}
+	}
+	return true
 }
