@@ -67,6 +67,7 @@ func (r *Registry) All() []*FlowDef {
 func Default() *Registry {
 	r := NewRegistry()
 	_ = r.Register(InitFlow())
+	_ = r.Register(FrontendFlow())
 	_ = r.Register(PluginTemplateFlow())
 	return r
 }
