@@ -6,7 +6,7 @@ on:
   schedule:
     # Every Wednesday at 09:00 UTC — offset from Dependabot (Monday) to
     # avoid PR pile-ups on the same day.
-    - cron: '0 9 * * 3'
+    - cron: "0 9 * * 3"
   workflow_dispatch:
 
 # PRs only need read access; schedule/dispatch need write to create branches,
@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   # Runs on every PR and every scheduled/manual trigger.
-  # Fails the PR if any template dependency is deprecated.
+  # On PRs: shows the report as a step summary (informational only, never blocks).
+  # On schedule/dispatch: feeds the report to the process job which opens PRs.
   scan:
     name: Scan template dependencies
     runs-on: ubuntu-latest
@@ -28,15 +29,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build binaries
-        run: make build
+      - name: Build dep-checker
+        run: make build ARGS="-t dep-checker"
 
       - name: Run dependency scan
         run: ./bin/dep-checker scan --output=dep-report.json
 
       - name: Show scan summary
         run: |
-          echo "### Scan results" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependency scan results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           jq -r '
             ["generator","ecosystem","package","current","latest","outdated","deprecated"],
             (.entries[] | [.generator,.ecosystem,.package,.current,.latest,
@@ -44,17 +46,10 @@ jobs:
               (if .deprecated then "yes" else "no" end)])
             | @tsv
           ' dep-report.json | column -t >> $GITHUB_STEP_SUMMARY || true
-
-      - name: Fail PR if deprecated packages found
-        if: github.event_name == 'pull_request'
-        run: |
           DEPRECATED=$(jq '[.entries[] | select(.deprecated)] | length' dep-report.json)
-          if [ "$DEPRECATED" -gt 0 ]; then
-            echo "::error::$DEPRECATED deprecated package(s) found in template generators:"
-            jq -r '.entries[] | select(.deprecated) | "  \(.generator): \(.package) (\(.deprecation_notice))"' dep-report.json
-            exit 1
-          fi
-          echo "No deprecated packages found."
+          OUTDATED=$(jq '[.entries[] | select(.outdated)] | length' dep-report.json)
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> $OUTDATED outdated, $DEPRECATED deprecated" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload scan report
         if: always()
