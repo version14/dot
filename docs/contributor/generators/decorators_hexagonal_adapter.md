@@ -9,7 +9,7 @@ Wires the decorator runtime into a Hexagonal project. Emits a sample `ExampleCon
 | Field | Value |
 |-------|-------|
 | Name | `decorators_hexagonal_adapter` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/decorators_hexagonal_adapter` |
 
 ---

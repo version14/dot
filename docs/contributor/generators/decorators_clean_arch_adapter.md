@@ -9,7 +9,7 @@ Wires the decorator runtime into a Clean Architecture project. Emits a sample `E
 | Field | Value |
 |-------|-------|
 | Name | `decorators_clean_arch_adapter` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/decorators_clean_arch_adapter` |
 
 ---

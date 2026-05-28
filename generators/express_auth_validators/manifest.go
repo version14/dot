@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_auth_validators",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Zod schemas for auth endpoint input validation: register, login, refresh",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs:     []string{"src/shared/validators/auth.validators.ts"},

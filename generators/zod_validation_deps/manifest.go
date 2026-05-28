@@ -6,7 +6,7 @@ var packageFileName = "package.json"
 
 var Manifest = dotapi.Manifest{
 	Name:        "zod_validation_deps",
-	Version:     "0.2.0",
+	Version:     "0.3.0",
 	Description: "Adds Zod, zod-to-openapi, swagger-ui-express, and reflect-metadata dependencies plus tsconfig flags for decorator metadata",
 	DependsOn:   []string{"typescript_base"},
 	Outputs:     []string{},

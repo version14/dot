@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "decorators_hexagonal_adapter",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Wires the decorator router into a Hexagonal project: sample primary HTTP adapter controller, schemas, OpenAPI mount in app.ts",
 	DependsOn: []string{
 		"backend_architecture_hexagonal",
