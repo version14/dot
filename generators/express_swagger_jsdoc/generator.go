@@ -31,7 +31,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"swagger-jsdoc":      "^6.2.8",
+				"swagger-jsdoc":      "^6.3.0",
 				"swagger-ui-express": "^5.0.1",
 			},
 			"devDependencies": map[string]interface{}{
