@@ -18,9 +18,10 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|patch> [flags]")
-		fmt.Fprintln(os.Stderr, "  scan  --output=dep-report.json")
-		fmt.Fprintln(os.Stderr, "  patch --generator=<name> --package=<pkg> --current=<ver> --latest=<ver>")
+		fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|patch|report> [flags]")
+		fmt.Fprintln(os.Stderr, "  scan   --output=dep-report.json")
+		fmt.Fprintln(os.Stderr, "  patch  --generator=<name> --package=<pkg> --current=<ver> --latest=<ver>")
+		fmt.Fprintln(os.Stderr, "  report --input=dep-report.json --output=-")
 		os.Exit(2)
 	}
 
@@ -43,6 +44,16 @@ func main() {
 		fs.Parse(os.Args[2:])
 		if err := runPatch(*generator, *pkg, *current, *latest); err != nil {
 			fmt.Fprintln(os.Stderr, "dep-checker patch:", err)
+			os.Exit(1)
+		}
+
+	case "report":
+		fs := flag.NewFlagSet("report", flag.ExitOnError)
+		input := fs.String("input", "dep-report.json", "path to read the JSON report")
+		output := fs.String("output", "-", "path to write the markdown report (use '-' for stdout)")
+		fs.Parse(os.Args[2:])
+		if err := runReport(*input, *output); err != nil {
+			fmt.Fprintln(os.Stderr, "dep-checker report:", err)
 			os.Exit(1)
 		}
 

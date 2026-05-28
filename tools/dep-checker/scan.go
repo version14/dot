@@ -205,6 +205,7 @@ func checkAll(raw []ScanResult) ([]DepEntry, error) {
 			Package:           r.Package,
 			Current:           r.Current,
 			Latest:            info.Latest,
+			UpdateType:        updateType(r.Current, info.Latest),
 			Outdated:          isOutdated(r.Current, info.Latest),
 			Deprecated:        info.Deprecated,
 			DeprecationNotice: info.Notice,

@@ -58,6 +58,24 @@ func isOutdated(currentConstraint, latestVersion string) bool {
 	return lPatch > cPatch
 }
 
+func updateType(currentConstraint, latestVersion string) string {
+	cMaj, cMin, cPatch, ok1 := parseSemver(currentConstraint)
+	lMaj, lMin, lPatch, ok2 := parseSemver(latestVersion)
+	if !ok1 || !ok2 {
+		return "unknown"
+	}
+	if lMaj > cMaj {
+		return "major"
+	}
+	if lMin > cMin {
+		return "minor"
+	}
+	if lPatch > cPatch {
+		return "patch"
+	}
+	return "none"
+}
+
 func stripConstraintPrefix(v string) string {
 	return strings.TrimLeft(v, "^~>=<v")
 }
@@ -77,7 +95,11 @@ func parseSemver(v string) (major, minor, patch int, ok bool) {
 	if len(parts) == 3 {
 		patchStr := strings.SplitN(parts[2], "-", 2)[0]
 		patchStr = strings.SplitN(patchStr, "+", 2)[0]
-		pat, _ = strconv.Atoi(patchStr)
+		parsedPatch, err := strconv.Atoi(patchStr)
+		if err != nil {
+			return 0, 0, 0, false
+		}
+		pat = parsedPatch
 	}
 	return maj, min, pat, true
 }

@@ -37,19 +37,16 @@ jobs:
 
       - name: Show scan summary
         run: |
-          echo "### Dependency scan results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          jq -r '
-            ["generator","ecosystem","package","current","latest","outdated","deprecated"],
-            (.entries[] | [.generator,.ecosystem,.package,.current,.latest,
-              (if .outdated then "yes" else "no" end),
-              (if .deprecated then "yes" else "no" end)])
-            | @tsv
-          ' dep-report.json | column -t >> $GITHUB_STEP_SUMMARY || true
-          DEPRECATED=$(jq '[.entries[] | select(.deprecated)] | length' dep-report.json)
-          OUTDATED=$(jq '[.entries[] | select(.outdated)] | length' dep-report.json)
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> $OUTDATED outdated, $DEPRECATED deprecated" >> $GITHUB_STEP_SUMMARY
+          ./bin/dep-checker report --input=dep-report.json --output=dep-report.md
+          cat dep-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail PR on major/minor updates
+        if: github.event_name == 'pull_request'
+        run: |
+          if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' dep-report.json > /dev/null; then
+            echo "Major/minor dependency updates detected. Failing PR check." >&2
+            exit 1
+          fi
 
       - name: Upload scan report
         if: always()
@@ -115,12 +112,122 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Process one (ecosystem, package) pair at a time.
+          # Helper: map @types/<name> -> <name>
+          base_package() {
+            local pkg="$1"
+            if [[ "$pkg" == @types/* ]]; then
+              echo "${pkg#@types/}"
+            else
+              echo "$pkg"
+            fi
+          }
+
+          update_rank() {
+            case "$1" in
+              major) echo 3 ;;
+              minor) echo 2 ;;
+              patch) echo 1 ;;
+              *) echo 0 ;;
+            esac
+          }
+
+          max_update_type() {
+            local entries="${1-}"
+            if [ -z "$entries" ]; then
+              entries=$(cat)
+            fi
+            local max=0
+            local max_type="unknown"
+            while IFS= read -r t; do
+              local rank
+              rank=$(update_rank "$t")
+              if [ "$rank" -gt "$max" ]; then
+                max="$rank"
+                max_type="$t"
+              fi
+            done <<< "$entries"
+            echo "$max_type"
+          }
+
+          # Track which logical groups have already been processed.
+          declare -A GROUP_SEEN
+          MINOR_PATCH_GROUPED=false
+
+          # Process one (ecosystem, package, latest) tuple at a time, but
+          # combine @types/<name> with <name> when both exist for npm.
           while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
             echo ""
             echo "=== $ECOSYSTEM/$PACKAGE (latest: $LATEST) ==="
 
-            BRANCH="deps/${ECOSYSTEM}/${PACKAGE}"
+            base="$(base_package "$PACKAGE")"
+            if [ "$ECOSYSTEM" = "npm" ]; then
+              GROUP_ENTRIES=$(jq -c \
+                --arg eco "$ECOSYSTEM" \
+                --arg pkg "$PACKAGE" \
+                --arg base "$base" \
+                '.entries[]
+                 | select(.ecosystem == $eco and (
+                     .package == $pkg or
+                     .package == ("@types/" + $base) or
+                     .package == $base
+                   ))' \
+                dep-report.json)
+              ENTRY_UPDATE_TYPE=$(max_update_type "$(echo "$GROUP_ENTRIES" | jq -r '.update_type')")
+            else
+              ENTRY_UPDATE_TYPE=$(max_update_type "$(jq -r \
+                --arg eco "$ECOSYSTEM" \
+                --arg pkg "$PACKAGE" \
+                '.entries[] | select(.ecosystem == $eco and .package == $pkg) | .update_type' \
+                dep-report.json)")
+            fi
+
+            if [ "$ECOSYSTEM" = "npm" ] && { [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; }; then
+              GROUP_KEY="npm|minor-patch"
+            else
+              GROUP_KEY="${ECOSYSTEM}|${base}|${ENTRY_UPDATE_TYPE}"
+            fi
+            if [ "${GROUP_SEEN[$GROUP_KEY]+_}" ]; then
+              echo "  Group ${GROUP_KEY} already processed — skipping."
+              continue
+            fi
+            GROUP_SEEN[$GROUP_KEY]=1
+
+            BRANCH=""
+            if [ "$ECOSYSTEM" = "npm" ]; then
+              if [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; then
+                if [ "$MINOR_PATCH_GROUPED" = "true" ]; then
+                  echo "  Minor/patch npm group already processed — skipping."
+                  continue
+                fi
+                MINOR_PATCH_GROUPED=true
+                ENTRIES=$(jq -c '
+                  .entries[]
+                  | select(.ecosystem == "npm" and (.update_type == "minor" or .update_type == "patch"))
+                ' dep-report.json)
+                BRANCH="deps/npm/minor-and-patch"
+              else
+                ENTRIES="$GROUP_ENTRIES"
+              fi
+            else
+              ENTRIES=$(jq -c \
+                --arg eco "$ECOSYSTEM" \
+                --arg pkg "$PACKAGE" \
+                '.entries[] | select(.ecosystem == $eco and .package == $pkg)' \
+                dep-report.json)
+            fi
+
+            if [ -z "$ENTRIES" ]; then
+              echo "  No entries found for group $GROUP_KEY — skipping."
+              continue
+            fi
+
+            if [ -z "$BRANCH" ]; then
+              if [ "$ECOSYSTEM" = "npm" ]; then
+                BRANCH="deps/${ECOSYSTEM}/${base}"
+              else
+                BRANCH="deps/${ECOSYSTEM}/${PACKAGE}"
+              fi
+            fi
 
             # Idempotency: skip if an open PR already targets this branch.
             OPEN_PRS=$(gh pr list \
@@ -134,31 +241,26 @@ jobs:
               continue
             fi
 
-            # Collect every generator+current for this package.
-            ENTRIES=$(jq -c \
-              --arg eco "$ECOSYSTEM" \
-              --arg pkg "$PACKAGE" \
-              '.entries[] | select(.ecosystem == $eco and .package == $pkg)' \
-              dep-report.json)
-
             IS_DEPRECATED=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecated' | head -1)
             NOTICE=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecation_notice // ""' | head -1)
 
             # Create a fresh branch from main.
             git checkout -B "$BRANCH" origin/main
 
-            # Patch every generator that declares this package.
+            # Patch every generator that declares this package group.
             PATCH_FAILED=false
             while IFS= read -r entry; do
               GENERATOR=$(echo "$entry" | jq -r '.generator')
+              ENTRY_PACKAGE=$(echo "$entry" | jq -r '.package')
               CURRENT=$(echo  "$entry" | jq -r '.current')
+              ENTRY_LATEST=$(echo "$entry" | jq -r '.latest')
 
-              echo "  Patching $GENERATOR: $PACKAGE $CURRENT → ^$LATEST"
+              echo "  Patching $GENERATOR: $ENTRY_PACKAGE $CURRENT → ^$ENTRY_LATEST"
               if ./bin/dep-checker patch \
                   --generator="$GENERATOR" \
-                  --package="$PACKAGE" \
+                  --package="$ENTRY_PACKAGE" \
                   --current="$CURRENT" \
-                  --latest="$LATEST" > /dev/null; then
+                  --latest="$ENTRY_LATEST" > /dev/null; then
                 echo "  OK: $GENERATOR patched"
               else
                 echo "  ERROR: patch failed for $GENERATOR"
@@ -174,16 +276,17 @@ jobs:
 
             # Commit, push, open PR.
             CHANGED_GENS=$(echo "$ENTRIES" | jq -r '.generator' | sed 's/^/- `/' | sed 's/$/ `/')
+            PACKAGE_LABEL=$(echo "$ENTRIES" | jq -r '.package' | sort -u | paste -sd ", " -)
             git add generators/
-            git commit -m "chore(deps): bump ${PACKAGE} to ^${LATEST} in templates"
+            git commit -m "chore(deps): bump ${PACKAGE_LABEL} in templates"
             git push origin "$BRANCH" --force-with-lease
 
             PR_BODY=$(printf \
-              '## Dependency bump\n\nBumps `%s` (%s) to `^%s` in template generators.\n\n### Affected generators\n\n%s\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
-              "$PACKAGE" "$ECOSYSTEM" "$LATEST" "$CHANGED_GENS")
+              '## Dependency bump\n\nBumps `%s` (%s) in template generators.\n\n### Affected generators\n\n%s\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
+              "$PACKAGE_LABEL" "$ECOSYSTEM" "$CHANGED_GENS")
 
             gh pr create \
-              --title  "chore(deps): bump ${PACKAGE} to ^${LATEST} in templates" \
+              --title  "chore(deps): bump ${PACKAGE_LABEL} in templates" \
               --body   "$PR_BODY" \
               --base   main \
               --head   "$BRANCH" \
@@ -192,7 +295,7 @@ jobs:
 
             # For deprecated packages, also open/reopen a tracking issue.
             if [ "$IS_DEPRECATED" = "true" ]; then
-              ISSUE_TITLE="deprecated: ${PACKAGE} (${ECOSYSTEM}) used in templates"
+              ISSUE_TITLE="deprecated: ${PACKAGE_LABEL} (${ECOSYSTEM}) used in templates"
 
               EXISTING=$(gh issue list \
                 --search  "\"$ISSUE_TITLE\" in:title" \
@@ -213,7 +316,7 @@ jobs:
               else
                 ISSUE_BODY=$(printf \
                   '## Deprecated package\n\n`%s` (%s) is marked deprecated on its registry.\n\n**Deprecation notice:** %s\n\n### Affected generators\n\n%s\n\n### What to do\n\n- Check whether there is a recommended replacement package\n- Update all affected generators to use the replacement\n- Close this issue once resolved\n\nA version-bump PR has been opened — review whether it resolves the deprecation or whether a package rename is needed.' \
-                  "$PACKAGE" "$ECOSYSTEM" "$NOTICE" "$CHANGED_GENS")
+                  "$PACKAGE_LABEL" "$ECOSYSTEM" "$NOTICE" "$CHANGED_GENS")
 
                 gh issue create \
                   --title  "$ISSUE_TITLE" \

@@ -82,13 +82,13 @@ go run ./tools/dep-checker patch \
 The GitHub Action at `.github/workflows/dep-checker.yml` runs every **Wednesday at 09:00 UTC**
 (offset from Dependabot's Monday to avoid PR pile-ups) and on `workflow_dispatch`.
 
-For each unique `(ecosystem, package)` pair in the report:
+For each dependency group in the report:
 
 ```
 scan
- └─ for each (ecosystem, package):
-     ├─ open PR already exists on deps/<ecosystem>/<package>? → skip
-     ├─ patch all generators that declare this package
+ └─ for each group:
+     ├─ open PR already exists on deps/<ecosystem>/<group>? → skip
+     ├─ patch all generators in the group
      ├─ make test-flows  (cache handles unaffected generators)
      │   ├─ PASS → push branch, open PR
      │   └─ FAIL → open issue with test output (no PR)
@@ -99,8 +99,8 @@ scan
 
 ### PR format
 
-- **Branch:** `deps/<ecosystem>/<package>` (e.g. `deps/npm/express`)
-- **Title:** `chore(deps): bump <package> to ^<latest> in templates`
+- **Branch:** `deps/<ecosystem>/<group>` (e.g. `deps/npm/express`, `deps/npm/minor-and-patch`)
+- **Title:** `chore(deps): bump <package>` (or multiple packages) `in templates`
 - **Body:** lists affected generators, confirms test-flows passed, links to dep-checker
 
 ### Issue format

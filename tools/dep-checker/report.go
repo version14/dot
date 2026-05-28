@@ -20,6 +20,7 @@ type DepEntry struct {
 	Package           string    `json:"package"`
 	Current           string    `json:"current"`
 	Latest            string    `json:"latest"`
+	UpdateType        string    `json:"update_type,omitempty"`
 	Outdated          bool      `json:"outdated"`
 	Deprecated        bool      `json:"deprecated"`
 	DeprecationNotice string    `json:"deprecation_notice,omitempty"`
