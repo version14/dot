@@ -36,8 +36,13 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
+	envContent := envExampleVite
+	if framework == "next" {
+		envContent = envExampleNext
+	}
+
 	ctx.State.WriteFile("src/lib/sentry.ts", []byte(sentryContent), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envExample), state.ContentRaw)
+	ctx.State.WriteFile(".env.example", []byte(envContent), state.ContentRaw)
 
 	return nil
 }
@@ -68,6 +73,10 @@ export function initSentry() {
 export { Sentry };
 `
 
-const envExample = `# Sentry
+const envExampleVite = `# Sentry
 VITE_SENTRY_DSN=https://your_dsn@sentry.io/your_project_id
+`
+
+const envExampleNext = `# Sentry
+NEXT_PUBLIC_SENTRY_DSN=https://your_dsn@sentry.io/your_project_id
 `

@@ -37,9 +37,14 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
+	envContent := envExampleVite
+	if framework == "next" {
+		envContent = envExampleNext
+	}
+
 	ctx.State.WriteFile("src/providers/ClerkProvider.tsx", []byte(providerContent), state.ContentRaw)
 	ctx.State.WriteFile("src/hooks/useAuth.ts", []byte(hookContent), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envExample), state.ContentRaw)
+	ctx.State.WriteFile(".env.example", []byte(envContent), state.ContentRaw)
 
 	return nil
 }
@@ -76,6 +81,10 @@ const clerkHookReact = `export {
 } from "@clerk/clerk-react";
 `
 
-const envExample = `# Clerk
+const envExampleVite = `# Clerk
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+`
+
+const envExampleNext = `# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 `

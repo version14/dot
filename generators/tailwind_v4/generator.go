@@ -19,12 +19,12 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		"tailwindcss": "^4.0.0",
 	}
 	devDeps := map[string]interface{}{
-		"@tailwindcss/vite": "^4.0.0",
+		"@tailwindcss/vite":    "^4.0.0",
+		"@tailwindcss/postcss": "^4.0.0",
 	}
 
 	var postcssContent string
 	if framework == "next" {
-		devDeps["@tailwindcss/postcss"] = "^4.0.0"
 		postcssContent = postcssNext
 	} else {
 		postcssContent = postcssVite
@@ -52,7 +52,7 @@ const globalCSS = `@import "tailwindcss";
 
 const postcssVite = `export default {
   plugins: {
-    tailwindcss: {},
+    "@tailwindcss/postcss": {},
   },
 };
 `

@@ -30,8 +30,13 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
+	envContent := envExampleVite
+	if framework == "next" {
+		envContent = envExampleNext
+	}
+
 	ctx.State.WriteFile("src/lib/plausible.ts", []byte(plausibleContent), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envExample), state.ContentRaw)
+	ctx.State.WriteFile(".env.example", []byte(envContent), state.ContentRaw)
 
 	return nil
 }
@@ -79,7 +84,12 @@ export function trackEvent(
 }
 `
 
-const envExample = `# Plausible Analytics
+const envExampleVite = `# Plausible Analytics
 VITE_PLAUSIBLE_DOMAIN=yourdomain.com
 VITE_PLAUSIBLE_API_HOST=https://plausible.io
+`
+
+const envExampleNext = `# Plausible Analytics
+NEXT_PUBLIC_PLAUSIBLE_DOMAIN=yourdomain.com
+NEXT_PUBLIC_PLAUSIBLE_API_HOST=https://plausible.io
 `
