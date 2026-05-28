@@ -9,7 +9,7 @@ Overrides tsconfig.json compiler options for a Node.js/CommonJS Express backend 
 | Field | Value |
 |-------|-------|
 | Name | `express_node_tsconfig` |
-| Version | `0.1.0` |
+| Version | `0.1.1` |
 | Package | `generators/express_node_tsconfig` |
 
 ---
