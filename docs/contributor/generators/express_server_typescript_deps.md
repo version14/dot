@@ -9,7 +9,7 @@ Merges Express, CORS, dotenv runtime dependencies plus types, tsx, nodemon devDe
 | Field   | Value                                       |
 | ------- | ------------------------------------------- |
 | Name    | `express_server_typescript_deps`            |
-| Version | `0.1.5`                                     |
+| Version | `0.2.0`                                     |
 | Package | `generators/express_server_typescript_deps` |
 
 ---
