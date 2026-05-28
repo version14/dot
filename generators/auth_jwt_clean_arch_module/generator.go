@@ -62,10 +62,10 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	return ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"bcryptjs": "^2.4.3",
+				"bcryptjs": "^3.0.3",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/bcryptjs": "^2.4.6",
+				"@types/bcryptjs": "^3.0.0",
 			},
 		})
 		return nil
