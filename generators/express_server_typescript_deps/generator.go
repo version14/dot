@@ -28,7 +28,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			"devDependencies": map[string]interface{}{
 				"@types/cors":    "^2.8.19",
 				"@types/express": "^5.0.6",
-				"@types/node":    "^22.0.0",
+				"@types/node":    "^25.9.1",
 				"nodemon":        "^3.1.14",
 				"tsx":            "^4.22.3",
 			},
