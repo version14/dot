@@ -29,7 +29,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"@types/cors":    "^2.8.17",
 				"@types/express": "^5.0.0",
 				"@types/node":    "^22.0.0",
-				"nodemon":        "^3.1.0",
+				"nodemon":        "^3.1.14",
 				"tsx":            "^4.19.0",
 			},
 		})
