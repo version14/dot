@@ -1,0 +1,208 @@
+name: Template Dependency Check
+
+on:
+  schedule:
+    # Every Wednesday at 09:00 UTC — offset from Dependabot (Monday) to
+    # avoid PR pile-ups on the same day.
+    - cron: '0 9 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Node.js (for test-flows post-gen commands)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Run dependency scan
+        run: go run ./tools/dep-checker scan --output=dep-report.json
+
+      - name: Show scan summary
+        run: |
+          echo "### Scan results" >> $GITHUB_STEP_SUMMARY
+          jq -r '
+            ["generator","ecosystem","package","current","latest","outdated","deprecated"],
+            (.entries[] | [.generator,.ecosystem,.package,.current,.latest,
+              (if .outdated then "yes" else "no" end),
+              (if .deprecated then "yes" else "no" end)])
+            | @tsv
+          ' dep-report.json | column -t >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Ensure labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "dependencies" --color "0075ca" --description "Dependency updates" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh label create "deprecated"   --color "e4e669" --description "Deprecated package" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh label create "test-failure" --color "d93f0b" --description "test-flow gate failed" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+
+      - name: Process outdated and deprecated dependencies
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          NEEDS_WORK=$(jq -r '
+            .entries[] | select(.outdated or .deprecated)
+            | .ecosystem + "|" + .package + "|" + .latest
+          ' dep-report.json | sort -u)
+
+          if [ -z "$NEEDS_WORK" ]; then
+            echo "All template dependencies are up to date."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Process one (ecosystem, package) pair at a time.
+          while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
+            echo ""
+            echo "=== $ECOSYSTEM/$PACKAGE (latest: $LATEST) ==="
+
+            BRANCH="deps/${ECOSYSTEM}/${PACKAGE}"
+
+            # Idempotency: skip if an open PR already targets this branch.
+            OPEN_PRS=$(gh pr list \
+              --head "$BRANCH" \
+              --state open \
+              --json number \
+              --jq 'length' \
+              --repo "$GITHUB_REPOSITORY")
+            if [ "$OPEN_PRS" -gt 0 ]; then
+              echo "  Open PR already exists on $BRANCH — skipping."
+              continue
+            fi
+
+            # Collect every generator+current for this package.
+            ENTRIES=$(jq -c \
+              --arg eco "$ECOSYSTEM" \
+              --arg pkg "$PACKAGE" \
+              '.entries[] | select(.ecosystem == $eco and .package == $pkg)' \
+              dep-report.json)
+
+            IS_DEPRECATED=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecated' | head -1)
+            NOTICE=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecation_notice // ""' | head -1)
+
+            # Create a fresh branch from main.
+            git checkout -B "$BRANCH" origin/main
+
+            # Patch every generator that declares this package.
+            PATCH_FAILED=false
+            while IFS= read -r entry; do
+              GENERATOR=$(echo "$entry" | jq -r '.generator')
+              CURRENT=$(echo  "$entry" | jq -r '.current')
+
+              echo "  Patching $GENERATOR: $PACKAGE $CURRENT → ^$LATEST"
+              if ! go run ./tools/dep-checker patch \
+                  --generator="$GENERATOR" \
+                  --package="$PACKAGE" \
+                  --current="$CURRENT" \
+                  --latest="$LATEST"; then
+                echo "  ERROR: patch failed for $GENERATOR"
+                PATCH_FAILED=true
+                break
+              fi
+            done <<< "$ENTRIES"
+
+            if [ "$PATCH_FAILED" = "true" ]; then
+              git checkout main
+              continue
+            fi
+
+            # Gate: run test-flows. Cache handles unaffected generators.
+            echo "  Running test-flows..."
+            TESTFLOW_LOG=$(mktemp)
+            if ! make test-flows 2>&1 | tee "$TESTFLOW_LOG"; then
+              echo "  test-flows FAILED — opening issue."
+
+              FAIL_TITLE="chore(deps): test-flow failure bumping ${PACKAGE} to ${LATEST}"
+              FAIL_BODY=$(printf \
+                '## test-flow gate failure\n\nBumping `%s` (%s) to `%s` failed the test-flow gate.\n\nA human needs to investigate before merging.\n\n<details><summary>test-flow output</summary>\n\n```\n%s\n```\n\n</details>' \
+                "$PACKAGE" "$ECOSYSTEM" "$LATEST" "$(cat "$TESTFLOW_LOG")")
+
+              gh issue create \
+                --title  "$FAIL_TITLE" \
+                --body   "$FAIL_BODY" \
+                --label  "dependencies,test-failure" \
+                --repo   "$GITHUB_REPOSITORY" || true
+
+              rm -f "$TESTFLOW_LOG"
+              git checkout main
+              continue
+            fi
+            rm -f "$TESTFLOW_LOG"
+
+            # Commit, push, open PR.
+            CHANGED_GENS=$(echo "$ENTRIES" | jq -r '.generator' | sed 's/^/- `/' | sed 's/$/ `/')
+            git add generators/
+            git commit -m "chore(deps): bump ${PACKAGE} to ^${LATEST} in templates"
+            git push origin "$BRANCH" --force-with-lease
+
+            PR_BODY=$(printf \
+              '## Dependency bump\n\nBumps `%s` (%s) to `^%s` in template generators.\n\n### Affected generators\n\n%s\n\n### Verification\n\n`make test-flows` passed before this PR was opened.\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
+              "$PACKAGE" "$ECOSYSTEM" "$LATEST" "$CHANGED_GENS")
+
+            gh pr create \
+              --title  "chore(deps): bump ${PACKAGE} to ^${LATEST} in templates" \
+              --body   "$PR_BODY" \
+              --base   main \
+              --head   "$BRANCH" \
+              --label  "dependencies" \
+              --repo   "$GITHUB_REPOSITORY"
+
+            # For deprecated packages, also open/reopen a tracking issue.
+            if [ "$IS_DEPRECATED" = "true" ]; then
+              ISSUE_TITLE="deprecated: ${PACKAGE} (${ECOSYSTEM}) used in templates"
+
+              EXISTING=$(gh issue list \
+                --search  "\"$ISSUE_TITLE\" in:title" \
+                --state   all \
+                --json    number,state \
+                --jq      '.[0] // empty' \
+                --repo    "$GITHUB_REPOSITORY")
+
+              if [ -n "$EXISTING" ]; then
+                ISSUE_NUM=$(echo   "$EXISTING" | jq -r '.number')
+                ISSUE_STATE=$(echo "$EXISTING" | jq -r '.state')
+                if [ "$ISSUE_STATE" = "CLOSED" ]; then
+                  gh issue reopen "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY"
+                  gh issue comment "$ISSUE_NUM" \
+                    --body "Package is still deprecated as of $(date -u +%Y-%m-%d). Reopening for review." \
+                    --repo "$GITHUB_REPOSITORY"
+                fi
+              else
+                ISSUE_BODY=$(printf \
+                  '## Deprecated package\n\n`%s` (%s) is marked deprecated on its registry.\n\n**Deprecation notice:** %s\n\n### Affected generators\n\n%s\n\n### What to do\n\n- Check whether there is a recommended replacement package\n- Update all affected generators to use the replacement\n- Close this issue once resolved\n\nA version-bump PR has been opened — review whether it resolves the deprecation or whether a package rename is needed.' \
+                  "$PACKAGE" "$ECOSYSTEM" "$NOTICE" "$CHANGED_GENS")
+
+                gh issue create \
+                  --title  "$ISSUE_TITLE" \
+                  --body   "$ISSUE_BODY" \
+                  --label  "dependencies,deprecated" \
+                  --repo   "$GITHUB_REPOSITORY"
+              fi
+            fi
+
+            git checkout main
+
+          done <<< "$NEEDS_WORK"
