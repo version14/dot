@@ -31,7 +31,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			},
 			"devDependencies": map[string]interface{}{
 				"vitest":              "^4.1.7",
-				"@vitest/coverage-v8": "^2.0.0",
+				"@vitest/coverage-v8": "^4.1.7",
 				"supertest":           "^7.2.2",
 				"@types/supertest":    "^6.0.0",
 			},
