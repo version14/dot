@@ -48,7 +48,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"compilerOptions": map[string]interface{}{
 					"target":           "ES2022",
 					"module":           "ESNext",
-					"moduleResolution": "Bundler",
+					"moduleResolution": "bundler",
 					"strict":           true,
 					"esModuleInterop":  true,
 					"skipLibCheck":     true,

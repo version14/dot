@@ -19,8 +19,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		d.Merge(map[string]interface{}{
 			"compilerOptions": map[string]interface{}{
 				"target":            "ES2022",
-				"module":            "CommonJS",
-				"moduleResolution":  "Node",
+				"module":            "nodeNext",
+				"moduleResolution":  "nodeNext",
 				"strict":            true,
 				"esModuleInterop":   true,
 				"skipLibCheck":      true,
