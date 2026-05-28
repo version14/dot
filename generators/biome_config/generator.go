@@ -27,18 +27,20 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			},
 			"files": map[string]interface{}{},
 		})
+
 		// Biome 2.x: files.ignore and experimentalScannerIgnores were removed.
-		// Use files.includes with negation patterns instead. AppendStringSet so
-		// other generators (e.g. panda_css) can safely add entries.
+		// Use files.includes negation patterns. Per the "Valid Folder Ignore
+		// Pattern" docs, directory exclusions must use the **/<dir> form — a
+		// bare name like !dist does not match the directory's contents.
+		// !! is a hard-exclude (skip scanner) for the dot-owned meta dir.
+		// AppendStringSet so other generators (e.g. panda_css) can add entries.
 		return d.AppendStringSet("files.includes",
 			"**",
-			"!!**/.dot/",
-			"!.dot/**",
-			"!.next/**",
-			"!coverage/**",
-			"!dist/**",
-			"!node_modules/**",
-			"!storybook-static/**",
+			"!!**/.dot",
+			"!**/.next",
+			"!**/coverage",
+			"!**/dist",
+			"!**/storybook-static",
 			"!src/routeTree.gen.ts",
 		)
 	}); err != nil {

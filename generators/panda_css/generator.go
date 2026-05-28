@@ -52,7 +52,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if linter == "biome" {
 		if err := ctx.State.UpdateJSON("biome.json", func(d *state.JSONDoc) error {
-			return d.AppendStringSet("files.includes", "!styled-system/**")
+			return d.AppendStringSet("files.includes", "!**/styled-system")
 		}); err != nil {
 			return err
 		}
