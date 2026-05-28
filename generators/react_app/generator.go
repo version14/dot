@@ -38,7 +38,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"@types/react":         "^18.3.0",
 				"@types/react-dom":     "^18.3.0",
 				"@vitejs/plugin-react": "^4.3.0",
-				"vite":                 "^5.4.0",
+				"vite":                 "^8.0.14",
 			},
 		})
 		return nil
