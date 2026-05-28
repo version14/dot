@@ -33,8 +33,11 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
+      - name: Build binaries
+        run: make build
+
       - name: Run dependency scan
-        run: go run ./tools/dep-checker scan --output=dep-report.json
+        run: ./bin/dep-checker scan --output=dep-report.json
 
       - name: Show scan summary
         run: |
@@ -113,7 +116,7 @@ jobs:
               CURRENT=$(echo  "$entry" | jq -r '.current')
 
               echo "  Patching $GENERATOR: $PACKAGE $CURRENT → ^$LATEST"
-              if ! go run ./tools/dep-checker patch \
+              if ! ./bin/dep-checker patch \
                   --generator="$GENERATOR" \
                   --package="$PACKAGE" \
                   --current="$CURRENT" \
@@ -132,7 +135,7 @@ jobs:
             # Gate: run test-flows. Cache handles unaffected generators.
             echo "  Running test-flows..."
             TESTFLOW_LOG=$(mktemp)
-            if ! make test-flows 2>&1 | tee "$TESTFLOW_LOG"; then
+            if ! ./bin/test-flow -dir tools/test-flow/testdata 2>&1 | tee "$TESTFLOW_LOG"; then
               echo "  test-flows FAILED — opening issue."
 
               FAIL_TITLE="chore(deps): test-flow failure bumping ${PACKAGE} to ${LATEST}"
