@@ -65,7 +65,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"bcryptjs": "^2.4.3",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/bcryptjs": "^2.4.6",
+				"@types/bcryptjs": "^3.0.0",
 			},
 		})
 		return nil

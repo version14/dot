@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "auth_jwt_clean_arch_module",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "JWT auth module for Clean Architecture (use-cases, controller, repository, domain)",
 	DependsOn:   []string{"auth_jwt_vanilla", "auth_jwt_users_schema"},
 	Outputs: []string{
