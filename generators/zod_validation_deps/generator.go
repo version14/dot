@@ -16,7 +16,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"zod":                            "^3.23.8",
+				"zod":                            "^4.4.3",
 				"@asteasolutions/zod-to-openapi": "^7.3.0",
 				"reflect-metadata":               "^0.2.2",
 				"swagger-ui-express":             "^5.0.1",
