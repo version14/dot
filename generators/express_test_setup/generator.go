@@ -33,7 +33,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"vitest":              "^2.0.0",
 				"@vitest/coverage-v8": "^2.0.0",
 				"supertest":           "^7.0.0",
-				"@types/supertest":    "^6.0.0",
+				"@types/supertest":    "^7.2.0",
 			},
 		})
 		return nil
