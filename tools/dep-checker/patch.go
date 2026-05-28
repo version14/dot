@@ -15,14 +15,18 @@ import (
 var versionLineRe = regexp.MustCompile(`(Version:\s*)"(\d+\.\d+\.\d+)"`)
 
 // runPatch replaces the pinned version of one package inside a generator's
-// source file and bumps the manifest Version field by the appropriate
-// magnitude:
+// source file. When skipManifestBump is false it also bumps the manifest
+// Version field by the appropriate magnitude:
 //   - dependency major bump → manifest minor bump (0.1.0 → 0.2.0)
 //   - dependency minor/patch bump → manifest patch bump (0.1.0 → 0.1.1)
 //
+// Pass skipManifestBump=true when patching multiple packages for the same
+// generator in one pass; call runBumpManifest separately afterwards so the
+// manifest is only incremented once (from the original base, not compounded).
+//
 // The replacement string preserves the constraint prefix from current
 // (e.g. current="^4.21.0", latest="5.1.0" → new="^5.1.0").
-func runPatch(generatorName, pkg, current, latest string) error {
+func runPatch(generatorName, pkg, current, latest string, skipManifestBump bool) error {
 	if generatorName == "" || pkg == "" || current == "" || latest == "" {
 		return fmt.Errorf("--generator, --package, --current, and --latest are all required")
 	}
@@ -31,11 +35,33 @@ func runPatch(generatorName, pkg, current, latest string) error {
 		return err
 	}
 
+	if skipManifestBump {
+		return nil
+	}
+
 	isMajorBump := depBumpIsMajor(current, latest)
 	if err := patchManifestVersion(generatorName, isMajorBump); err != nil {
 		return err
 	}
 
+	return patchGeneratorDocVersion(generatorName)
+}
+
+// runBumpManifest bumps the manifest version for generatorName by the
+// appropriate amount for depUpdateType ("major", "minor", or "patch") and
+// then syncs the generator's doc page version.
+//
+// Mapping from dep update type to manifest bump:
+//   - "major" or "minor" → manifest minor bump (0.1.0 → 0.2.0)
+//   - "patch"            → manifest patch bump (0.1.0 → 0.1.1)
+func runBumpManifest(generatorName, depUpdateType string) error {
+	if generatorName == "" || depUpdateType == "" {
+		return fmt.Errorf("--generator and --type are required")
+	}
+	isMajorBump := depUpdateType == "major" || depUpdateType == "minor"
+	if err := patchManifestVersion(generatorName, isMajorBump); err != nil {
+		return err
+	}
 	return patchGeneratorDocVersion(generatorName)
 }
 

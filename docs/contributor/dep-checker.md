@@ -48,6 +48,23 @@ Given a generator name, package name, current version, and latest version, the p
 2. Replaces the exact Go string literal pair `"pkg": "^old"` → `"pkg": "^new"`.
 3. Preserves the constraint prefix (`^`, `~`, etc.) from the current version.
 
+### Manifest version bump
+
+After patching, the generator's `manifest.go` `Version` field is bumped according to the
+severity of the dependency update:
+
+| Dep update | Manifest bump | Example |
+|---|---|---|
+| major or minor | minor | `0.1.3` → `0.2.0` |
+| patch | patch | `0.1.3` → `0.1.4` |
+
+When multiple packages from the same generator are patched in a single PR branch, the
+manifest is bumped **once** using the highest-severity update type seen across all those
+packages. This keeps generator versioning independent of how many deps were batched
+together — two patch bumps still result in one `+0.0.1`, not `+0.0.2`.
+
+The doc page at `docs/contributor/generators/<name>.md` is also updated to match.
+
 ### Registry support
 
 | Ecosystem | File detected | Registry API |
@@ -69,12 +86,32 @@ go run ./tools/dep-checker scan --output=dep-report.json
 # Inspect results
 cat dep-report.json | jq '.entries[] | select(.outdated or .deprecated)'
 
-# Patch a single generator (done automatically by CI)
+# Patch a single generator and bump its manifest (done automatically by CI)
 go run ./tools/dep-checker patch \
   --generator=express_server_typescript_deps \
   --package=express \
   --current="^4.21.0" \
   --latest=5.1.0
+
+# Patch multiple packages for the same generator without compounding version bumps:
+go run ./tools/dep-checker patch \
+  --generator=express_server_typescript_deps \
+  --package=express \
+  --current="^4.21.0" \
+  --latest=5.1.0 \
+  --skip-manifest-bump
+
+go run ./tools/dep-checker patch \
+  --generator=express_server_typescript_deps \
+  --package=cors \
+  --current="^2.8.5" \
+  --latest=2.9.0 \
+  --skip-manifest-bump
+
+# Then bump the manifest once for the highest-severity update
+go run ./tools/dep-checker bump-manifest \
+  --generator=express_server_typescript_deps \
+  --type=minor
 ```
 
 ## CI workflow

@@ -18,10 +18,11 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|patch|report> [flags]")
-		fmt.Fprintln(os.Stderr, "  scan   --output=dep-report.json")
-		fmt.Fprintln(os.Stderr, "  patch  --generator=<name> --package=<pkg> --current=<ver> --latest=<ver>")
-		fmt.Fprintln(os.Stderr, "  report --input=dep-report.json --output=-")
+		fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|patch|bump-manifest|report> [flags]")
+		fmt.Fprintln(os.Stderr, "  scan          --output=dep-report.json")
+		fmt.Fprintln(os.Stderr, "  patch         --generator=<name> --package=<pkg> --current=<ver> --latest=<ver> [--skip-manifest-bump]")
+		fmt.Fprintln(os.Stderr, "  bump-manifest --generator=<name> --type=<major|minor|patch>")
+		fmt.Fprintln(os.Stderr, "  report        --input=dep-report.json --output=-")
 		os.Exit(2)
 	}
 
@@ -41,9 +42,20 @@ func main() {
 		pkg := fs.String("package", "", "package name to bump")
 		current := fs.String("current", "", "current version string as it appears in generator.go (e.g. ^4.21.0)")
 		latest := fs.String("latest", "", "latest version from registry (e.g. 5.1.0)")
+		skipManifestBump := fs.Bool("skip-manifest-bump", false, "skip bumping the manifest version (use bump-manifest separately)")
 		fs.Parse(os.Args[2:])
-		if err := runPatch(*generator, *pkg, *current, *latest); err != nil {
+		if err := runPatch(*generator, *pkg, *current, *latest, *skipManifestBump); err != nil {
 			fmt.Fprintln(os.Stderr, "dep-checker patch:", err)
+			os.Exit(1)
+		}
+
+	case "bump-manifest":
+		fs := flag.NewFlagSet("bump-manifest", flag.ExitOnError)
+		generator := fs.String("generator", "", "generator name")
+		bumpType := fs.String("type", "", "dep update type that drives the bump: major, minor, or patch")
+		fs.Parse(os.Args[2:])
+		if err := runBumpManifest(*generator, *bumpType); err != nil {
+			fmt.Fprintln(os.Stderr, "dep-checker bump-manifest:", err)
 			os.Exit(1)
 		}
 

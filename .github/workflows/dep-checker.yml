@@ -248,19 +248,33 @@ jobs:
             git checkout -B "$BRANCH" origin/main
 
             # Patch every generator that declares this package group.
+            # --skip-manifest-bump prevents each patch call from incrementing
+            # the version independently; we do one bump per generator below.
             PATCH_FAILED=false
+            declare -A GEN_MAX_RANK
+            declare -A GEN_MAX_TYPE
             while IFS= read -r entry; do
               GENERATOR=$(echo "$entry" | jq -r '.generator')
               ENTRY_PACKAGE=$(echo "$entry" | jq -r '.package')
               CURRENT=$(echo  "$entry" | jq -r '.current')
               ENTRY_LATEST=$(echo "$entry" | jq -r '.latest')
+              ENTRY_UPDATE_TYPE=$(echo "$entry" | jq -r '.update_type')
+
+              # Track the highest-severity update type seen for each generator.
+              cur_rank="${GEN_MAX_RANK[$GENERATOR]:-0}"
+              new_rank=$(update_rank "$ENTRY_UPDATE_TYPE")
+              if [ "$new_rank" -gt "$cur_rank" ]; then
+                GEN_MAX_RANK[$GENERATOR]="$new_rank"
+                GEN_MAX_TYPE[$GENERATOR]="$ENTRY_UPDATE_TYPE"
+              fi
 
               echo "  Patching $GENERATOR: $ENTRY_PACKAGE $CURRENT → ^$ENTRY_LATEST"
               if ./bin/dep-checker patch \
                   --generator="$GENERATOR" \
                   --package="$ENTRY_PACKAGE" \
                   --current="$CURRENT" \
-                  --latest="$ENTRY_LATEST" > /dev/null; then
+                  --latest="$ENTRY_LATEST" \
+                  --skip-manifest-bump > /dev/null; then
                 echo "  OK: $GENERATOR patched"
               else
                 echo "  ERROR: patch failed for $GENERATOR"
@@ -268,6 +282,20 @@ jobs:
                 break
               fi
             done <<< "$ENTRIES"
+
+            # Bump each generator's manifest exactly once, using the max
+            # update type observed for that generator in this branch.
+            if [ "$PATCH_FAILED" != "true" ]; then
+              for generator in "${!GEN_MAX_TYPE[@]}"; do
+                bump_type="${GEN_MAX_TYPE[$generator]}"
+                echo "  Bumping manifest for $generator ($bump_type)"
+                if ! ./bin/dep-checker bump-manifest \
+                    --generator="$generator" \
+                    --type="$bump_type"; then
+                  echo "  WARN: could not bump manifest for $generator"
+                fi
+              done
+            fi
 
             if [ "$PATCH_FAILED" = "true" ]; then
               git checkout main
