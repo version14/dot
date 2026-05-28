@@ -31,7 +31,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"express-rate-limit": "^7.4.1",
+				"express-rate-limit": "^8.5.2",
 			},
 		})
 		return nil
