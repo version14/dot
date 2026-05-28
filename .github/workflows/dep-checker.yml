@@ -1,40 +1,38 @@
 name: Template Dependency Check
 
 on:
+  pull_request:
+    branches: [main]
   schedule:
     # Every Wednesday at 09:00 UTC — offset from Dependabot (Monday) to
     # avoid PR pile-ups on the same day.
     - cron: '0 9 * * 3'
   workflow_dispatch:
 
+# PRs only need read access; schedule/dispatch need write to create branches,
+# PRs, and issues. Scoped at job level below.
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 
 jobs:
-  check:
+  # Runs on every PR and every scheduled/manual trigger.
+  # Fails the PR if any template dependency is deprecated.
+  scan:
+    name: Scan template dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Install Node.js (for test-flows post-gen commands)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Build binaries
+        run: make build
 
       - name: Run dependency scan
-        run: go run ./tools/dep-checker scan --output=dep-report.json
+        run: ./bin/dep-checker scan --output=dep-report.json
 
       - name: Show scan summary
         run: |
@@ -47,17 +45,65 @@ jobs:
             | @tsv
           ' dep-report.json | column -t >> $GITHUB_STEP_SUMMARY || true
 
+      - name: Fail PR if deprecated packages found
+        if: github.event_name == 'pull_request'
+        run: |
+          DEPRECATED=$(jq '[.entries[] | select(.deprecated)] | length' dep-report.json)
+          if [ "$DEPRECATED" -gt 0 ]; then
+            echo "::error::$DEPRECATED deprecated package(s) found in template generators:"
+            jq -r '.entries[] | select(.deprecated) | "  \(.generator): \(.package) (\(.deprecation_notice))"' dep-report.json
+            exit 1
+          fi
+          echo "No deprecated packages found."
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dep-report
+          path: dep-report.json
+          retention-days: 7
+
+  # Only runs on schedule or workflow_dispatch — creates PRs and issues.
+  process:
+    name: Open PRs and issues
+    runs-on: ubuntu-latest
+    needs: scan
+    if: github.event_name != 'pull_request'
+    environment: ci
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_TOKEN }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build dep-checker
+        run: make build ARGS="-t dep-checker"
+
+      - name: Download scan report
+        uses: actions/download-artifact@v4
+        with:
+          name: dep-report
+
       - name: Ensure labels exist
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
           gh label create "dependencies" --color "0075ca" --description "Dependency updates" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
           gh label create "deprecated"   --color "e4e669" --description "Deprecated package" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-          gh label create "test-failure" --color "d93f0b" --description "test-flow gate failed" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
 
       - name: Process outdated and deprecated dependencies
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -113,11 +159,13 @@ jobs:
               CURRENT=$(echo  "$entry" | jq -r '.current')
 
               echo "  Patching $GENERATOR: $PACKAGE $CURRENT → ^$LATEST"
-              if ! go run ./tools/dep-checker patch \
+              if ./bin/dep-checker patch \
                   --generator="$GENERATOR" \
                   --package="$PACKAGE" \
                   --current="$CURRENT" \
-                  --latest="$LATEST"; then
+                  --latest="$LATEST" > /dev/null; then
+                echo "  OK: $GENERATOR patched"
+              else
                 echo "  ERROR: patch failed for $GENERATOR"
                 PATCH_FAILED=true
                 break
@@ -129,29 +177,6 @@ jobs:
               continue
             fi
 
-            # Gate: run test-flows. Cache handles unaffected generators.
-            echo "  Running test-flows..."
-            TESTFLOW_LOG=$(mktemp)
-            if ! make test-flows 2>&1 | tee "$TESTFLOW_LOG"; then
-              echo "  test-flows FAILED — opening issue."
-
-              FAIL_TITLE="chore(deps): test-flow failure bumping ${PACKAGE} to ${LATEST}"
-              FAIL_BODY=$(printf \
-                '## test-flow gate failure\n\nBumping `%s` (%s) to `%s` failed the test-flow gate.\n\nA human needs to investigate before merging.\n\n<details><summary>test-flow output</summary>\n\n```\n%s\n```\n\n</details>' \
-                "$PACKAGE" "$ECOSYSTEM" "$LATEST" "$(cat "$TESTFLOW_LOG")")
-
-              gh issue create \
-                --title  "$FAIL_TITLE" \
-                --body   "$FAIL_BODY" \
-                --label  "dependencies,test-failure" \
-                --repo   "$GITHUB_REPOSITORY" || true
-
-              rm -f "$TESTFLOW_LOG"
-              git checkout main
-              continue
-            fi
-            rm -f "$TESTFLOW_LOG"
-
             # Commit, push, open PR.
             CHANGED_GENS=$(echo "$ENTRIES" | jq -r '.generator' | sed 's/^/- `/' | sed 's/$/ `/')
             git add generators/
@@ -159,7 +184,7 @@ jobs:
             git push origin "$BRANCH" --force-with-lease
 
             PR_BODY=$(printf \
-              '## Dependency bump\n\nBumps `%s` (%s) to `^%s` in template generators.\n\n### Affected generators\n\n%s\n\n### Verification\n\n`make test-flows` passed before this PR was opened.\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
+              '## Dependency bump\n\nBumps `%s` (%s) to `^%s` in template generators.\n\n### Affected generators\n\n%s\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
               "$PACKAGE" "$ECOSYSTEM" "$LATEST" "$CHANGED_GENS")
 
             gh pr create \
