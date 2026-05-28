@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "auth_jwt_vanilla",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "Vanilla JWT authentication: src/shared/services/jwt.ts utility and src/shared/middlewares/auth.middleware.ts",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs: []string{
