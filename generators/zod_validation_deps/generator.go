@@ -17,7 +17,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
 				"zod":                            "^3.23.8",
-				"@asteasolutions/zod-to-openapi": "^7.3.0",
+				"@asteasolutions/zod-to-openapi": "^8.5.0",
 				"reflect-metadata":               "^0.2.2",
 				"swagger-ui-express":             "^5.0.1",
 			},
