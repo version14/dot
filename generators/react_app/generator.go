@@ -31,7 +31,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"preview": "vite preview",
 			},
 			"dependencies": map[string]interface{}{
-				"react":     "^18.3.0",
+				"react":     "^19.2.6",
 				"react-dom": "^19.2.6",
 			},
 			"devDependencies": map[string]interface{}{
