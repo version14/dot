@@ -32,7 +32,11 @@ func runPatch(generatorName, pkg, current, latest string) error {
 	}
 
 	isMajorBump := depBumpIsMajor(current, latest)
-	return patchManifestVersion(generatorName, isMajorBump)
+	if err := patchManifestVersion(generatorName, isMajorBump); err != nil {
+		return err
+	}
+
+	return patchGeneratorDocVersion(generatorName)
 }
 
 // depBumpIsMajor returns true when latest has a higher major version than the
@@ -112,6 +116,40 @@ func patchManifestVersion(generatorName string, majorBump bool) error {
 	}
 
 	return os.WriteFile(filePath, []byte(updated), 0644)
+}
+
+// patchGeneratorDocVersion updates the generator doc version in
+// docs/contributor/generators/<name>.md to match the manifest version.
+func patchGeneratorDocVersion(generatorName string) error {
+	manifestPath := filepath.Join("generators", generatorName, "manifest.go")
+	manifestContent, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", manifestPath, err)
+	}
+
+	manifestMatch := versionLineRe.FindStringSubmatch(string(manifestContent))
+	if manifestMatch == nil {
+		return fmt.Errorf("manifest version not found in %s", manifestPath)
+	}
+	manifestVersion := manifestMatch[2]
+
+	docPath := filepath.Join("docs", "contributor", "generators", generatorName+".md")
+	docContent, err := os.ReadFile(docPath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", docPath, err)
+	}
+
+	versionRowRe := regexp.MustCompile(`(?m)^\|\s*Version\s*\|\s*` + "`" + `([^` + "`" + `]+)` + "`" + `\s*\|\s*$`)
+	updated := versionRowRe.ReplaceAllString(string(docContent), "| Version | `"+manifestVersion+"` |")
+	if updated == string(docContent) {
+		return fmt.Errorf("doc version row not found in %s", docPath)
+	}
+
+	if err := os.WriteFile(docPath, []byte(updated), 0644); err != nil {
+		return fmt.Errorf("write %s: %w", docPath, err)
+	}
+	fmt.Printf("updated doc version to %s in %s\n", manifestVersion, docPath)
+	return nil
 }
 
 // bumpMinor increments the minor segment and resets patch (e.g. "0.1.3" → "0.2.0").
