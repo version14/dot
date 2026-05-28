@@ -35,7 +35,7 @@ export class ExampleController {
     // Use it to call your repository: `repo.findById(params.id)`.
     const params = req.params as unknown as ExampleParams;
     res.json({
-      id: '11111111-1111-1111-1111-111111111111',
+      id: '11111111-1111-4111-8111-111111111111',
       name: 'sample',
       description: JSON.stringify(params),
     });
@@ -49,7 +49,7 @@ export class ExampleController {
     // Forward it to a CreateExampleUseCase and return the persisted entity.
     const body = req.body as ExampleCreate;
     res.status(201).json({
-      id: '00000000-0000-0000-0000-000000000000',
+      id: '00000000-0000-4000-8000-000000000000',
       name: 'created',
       description: JSON.stringify(body),
     });

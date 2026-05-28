@@ -15,7 +15,7 @@ describe('decorator-driven routes (hexagonal, E2E)', () => {
   });
 
   it('GET /api/example/:id returns 200 with the sample payload when the UUID is valid', async () => {
-    const res = await request(app).get('/api/example/33333333-3333-3333-3333-333333333333');
+    const res = await request(app).get('/api/example/33333333-3333-4333-8333-333333333333');
     expect(res.status).toBe(200);
     // Sample controller does not echo the input (see controller comment).
     expect(typeof res.body.id).toBe('string');

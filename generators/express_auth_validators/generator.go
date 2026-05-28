@@ -27,7 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	return ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"zod": "^3.23.8",
+				"zod": "^4.4.3",
 			},
 		})
 		return nil

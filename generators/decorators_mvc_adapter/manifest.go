@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "decorators_mvc_adapter",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Wires the decorator router into an MVC project: sample controller in src/controllers, schemas in src/shared/validators, OpenAPI mount in app.ts",
 	DependsOn: []string{
 		"backend_architecture_mvc",

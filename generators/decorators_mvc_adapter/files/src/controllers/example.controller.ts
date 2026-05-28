@@ -34,7 +34,7 @@ export class ExampleController {
     // params is validated by @Params and typed as ExampleParams.
     const params = req.params as unknown as ExampleParams;
     res.json({
-      id: '22222222-2222-2222-2222-222222222222',
+      id: '22222222-2222-4222-8222-222222222222',
       name: 'sample',
       description: JSON.stringify(params),
     });
@@ -47,7 +47,7 @@ export class ExampleController {
     // body is validated by @Body and typed as ExampleCreate.
     const body = req.body as ExampleCreate;
     res.status(201).json({
-      id: '00000000-0000-0000-0000-000000000000',
+      id: '00000000-0000-4000-8000-000000000000',
       name: 'created',
       description: JSON.stringify(body),
     });

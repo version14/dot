@@ -9,7 +9,7 @@ Wires the decorator runtime into an MVC project. Emits a sample `ExampleControll
 | Field | Value |
 |-------|-------|
 | Name | `decorators_mvc_adapter` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/decorators_mvc_adapter` |
 
 ---

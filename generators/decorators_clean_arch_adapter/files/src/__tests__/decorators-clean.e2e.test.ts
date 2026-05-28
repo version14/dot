@@ -17,7 +17,7 @@ describe('decorator-driven routes (clean architecture, E2E)', () => {
   });
 
   it('GET /api/example/:id returns 200 with the sample payload when the UUID is valid', async () => {
-    const res = await request(app).get('/api/example/11111111-1111-1111-1111-111111111111');
+    const res = await request(app).get('/api/example/11111111-1111-4111-8111-111111111111');
     expect(res.status).toBe(200);
     // Sample controller does not echo the input (see controller comment).
     // It returns the canned synthetic example so the response shape matches
