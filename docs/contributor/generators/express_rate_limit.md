@@ -9,7 +9,7 @@ Adds `express-rate-limit` with a 100 req / 15-minute window applied globally. Cr
 | Field | Value |
 |-------|-------|
 | Name | `express_rate_limit` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/express_rate_limit` |
 
 ---
