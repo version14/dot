@@ -22,7 +22,7 @@ jobs:
       - name: Validate commit messages
         uses: wagoid/commitlint-github-action@v6
         with:
-          configFile: .commitlintrc.json
+          configFile: commitlint.config.cjs
           failOnWarnings: false
           helpURL: https://www.conventionalcommits.org
           token: ${{ secrets.GITHUB_TOKEN }}
