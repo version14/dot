@@ -22,7 +22,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"swagger-ui-express":             "^5.0.1",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/swagger-ui-express": "^4.1.6",
+				"@types/swagger-ui-express": "^4.1.8",
 			},
 		})
 		return nil

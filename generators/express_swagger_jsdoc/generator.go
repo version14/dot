@@ -36,7 +36,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			},
 			"devDependencies": map[string]interface{}{
 				"@types/swagger-jsdoc":      "^6.0.4",
-				"@types/swagger-ui-express": "^4.1.6",
+				"@types/swagger-ui-express": "^4.1.8",
 			},
 		})
 		return nil
