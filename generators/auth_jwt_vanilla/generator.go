@@ -34,7 +34,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"cookie-parser": "^1.4.7",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/jsonwebtoken":  "^9.0.7",
+				"@types/jsonwebtoken":  "^9.0.10",
 				"@types/cookie-parser": "^1.4.8",
 			},
 		})
