@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_decorators_core",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "Framework-agnostic API decorators (Controller, route, validation, response, auth) with an Express RouterAdapter",
 	DependsOn:   []string{"express_server_entrypoint", "zod_validation_deps"},
 	Outputs: []string{

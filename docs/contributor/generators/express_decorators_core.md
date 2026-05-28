@@ -9,7 +9,7 @@ Framework-agnostic API decorators (`@Controller`, `@Get`/`@Post`/…, `@Body`, `
 | Field | Value |
 |-------|-------|
 | Name | `express_decorators_core` |
-| Version | `0.1.0` |
+| Version | `0.1.1` |
 | Package | `generators/express_decorators_core` |
 
 ---
