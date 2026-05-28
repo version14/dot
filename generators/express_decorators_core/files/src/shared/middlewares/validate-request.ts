@@ -26,7 +26,14 @@ export function validateRequest(schema: ZodSchema, target: ValidationTarget): Re
       });
       return;
     }
-    (req as unknown as Record<string, unknown>)[target] = result.data;
+    // Express 5 defines req.query as a prototype getter (no setter), so a plain
+    // assignment throws. defineProperty shadows it with an own data property.
+    Object.defineProperty(req, target, {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     next();
   };
 }
