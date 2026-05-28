@@ -30,7 +30,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"jsonwebtoken":  "^9.0.2",
+				"jsonwebtoken":  "^9.0.3",
 				"cookie-parser": "^1.4.7",
 			},
 			"devDependencies": map[string]interface{}{
