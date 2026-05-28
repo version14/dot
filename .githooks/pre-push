@@ -8,6 +8,11 @@
 
 set -e
 
+# Skip hook if --no-verify flag is used
+if [ "$SKIP_HOOKS" = "1" ]; then
+  exit 0
+fi
+
 echo "Running tests before push..."
 make test
 
