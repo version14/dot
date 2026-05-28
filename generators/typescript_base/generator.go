@@ -34,7 +34,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"build": "tsc",
 			},
 			"devDependencies": map[string]interface{}{
-				"typescript": "^5.4.0",
+				"typescript": "^6.0.3",
 			},
 		})
 		return nil
