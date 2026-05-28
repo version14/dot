@@ -15,8 +15,7 @@ func (g *Generator) Version() string { return Manifest.Version }
 func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("biome.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"$schema":         "https://biomejs.dev/schemas/1.9.0/schema.json",
-			"organizeImports": map[string]interface{}{"enabled": true},
+			"$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
 			"linter": map[string]interface{}{
 				"enabled": true,
 				"rules":   map[string]interface{}{"recommended": true},
@@ -27,7 +26,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"indentWidth": 2,
 			},
 			"files": map[string]interface{}{
-				"ignore": []interface{}{".dot/"},
+				"experimentalScannerIgnores": []interface{}{".dot/"},
 			},
 		})
 		return nil
