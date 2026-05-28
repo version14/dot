@@ -9,7 +9,7 @@ Adds the runtime dependencies and `tsconfig` flags needed by the decorator-based
 | Field   | Value                            |
 | ------- | -------------------------------- |
 | Name    | `zod_validation_deps`            |
-| Version | `0.1.1`                          |
+| Version | `0.2.0`                          |
 | Package | `generators/zod_validation_deps` |
 
 ---
