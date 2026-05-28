@@ -9,7 +9,7 @@ Full JWT authentication module for Clean Architecture. Generates a complete `src
 | Field | Value |
 |-------|-------|
 | Name | `auth_jwt_clean_arch_module` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/auth_jwt_clean_arch_module` |
 
 ---
