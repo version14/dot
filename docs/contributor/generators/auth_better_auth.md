@@ -6,18 +6,18 @@ BetterAuth session-based authentication. Creates `src/lib/auth.ts` (auth instanc
 
 ## Identity
 
-| Field | Value |
-|-------|-------|
-| Name | `auth_better_auth` |
-| Version | `0.2.0` |
+| Field   | Value                         |
+| ------- | ----------------------------- |
+| Name    | `auth_better_auth`            |
+| Version | `0.2.2`                       |
 | Package | `generators/auth_better_auth` |
 
 ---
 
 ## Dependencies
 
-| Generator | Why |
-|-----------|-----|
+| Generator                  | Why                                                                      |
+| -------------------------- | ------------------------------------------------------------------------ |
 | `drizzle_postgres_adapter` | BetterAuth uses the Drizzle adapter which requires an active `db` export |
 
 ---
@@ -30,26 +30,26 @@ None — selection is driven by `flows/init.go` (`ts-backend-auth-method = bette
 
 ## Files written
 
-| Path | Description |
-|------|-------------|
+| Path              | Description                                                            |
+| ----------------- | ---------------------------------------------------------------------- |
 | `src/lib/auth.ts` | BetterAuth instance with Drizzle PG adapter and email/password enabled |
-| `.env.example` | Appends `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` |
+| `.env.example`    | Appends `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`                     |
 
 Also merges into:
 
-| Path | Keys added / updated |
-|------|---------------------|
-| `package.json` | `dependencies.better-auth`, `dependencies.cookie-parser`, `devDependencies.@types/cookie-parser` |
-| `src/app.ts` | Imports `cookieParser`, `toNodeHandler`, `auth`; adds `app.use(cookieParser())` and `app.all('/api/auth/*', toNodeHandler(auth))` directly (no intermediate route file) |
+| Path           | Keys added / updated                                                                                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json` | `dependencies.better-auth`, `dependencies.cookie-parser`, `devDependencies.@types/cookie-parser`                                                                        |
+| `src/app.ts`   | Imports `cookieParser`, `toNodeHandler`, `auth`; adds `app.use(cookieParser())` and `app.all('/api/auth/*', toNodeHandler(auth))` directly (no intermediate route file) |
 
 ---
 
 ## Validators
 
-| Check | Type | Passes when |
-|-------|------|-------------|
-| `src/lib/auth.ts` | `file_exists` | — |
-| `dependencies.better-auth` in `package.json` | `json_key_exists` | — |
+| Check                                        | Type              | Passes when |
+| -------------------------------------------- | ----------------- | ----------- |
+| `src/lib/auth.ts`                            | `file_exists`     | —           |
+| `dependencies.better-auth` in `package.json` | `json_key_exists` | —           |
 
 ---
 

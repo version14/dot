@@ -8,18 +8,18 @@ OpenAPI is therefore **always** available on a generated Express app: either via
 
 ## Identity
 
-| Field | Value |
-|-------|-------|
-| Name | `express_swagger_jsdoc` |
-| Version | `0.1.0` |
+| Field   | Value                              |
+| ------- | ---------------------------------- |
+| Name    | `express_swagger_jsdoc`            |
+| Version | `0.1.2`                            |
 | Package | `generators/express_swagger_jsdoc` |
 
 ---
 
 ## Dependencies
 
-| Generator | Why |
-|-----------|-----|
+| Generator                   | Why                                                                              |
+| --------------------------- | -------------------------------------------------------------------------------- |
 | `express_server_entrypoint` | `src/app.ts` must exist so the generator can inject the `mountSwagger(app)` call |
 
 ---
@@ -32,18 +32,18 @@ None directly. `flows/init.go` selects this generator when `ts-backend-framework
 
 ## Files written
 
-| Path | Description |
-|------|-------------|
-| `src/shared/swagger/swagger.config.ts` | `swagger-jsdoc` options and `swaggerSpec` (calls `swaggerJSDoc(...)` once at module load) |
-| `src/shared/swagger/index.ts` | `mountSwagger(app, opts?)` — serves `/docs` (UI) and `/docs/openapi.json` (raw) |
+| Path                                                | Description                                                                                                                   |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `src/shared/swagger/swagger.config.ts`              | `swagger-jsdoc` options and `swaggerSpec` (calls `swaggerJSDoc(...)` once at module load)                                     |
+| `src/shared/swagger/index.ts`                       | `mountSwagger(app, opts?)` — serves `/docs` (UI) and `/docs/openapi.json` (raw)                                               |
 | `src/shared/swagger/__tests__/swagger.unit.test.ts` | Vitest test that hits `/docs/openapi.json` and asserts the `/health` path is present (proves JSDoc scanning works end to end) |
 
 Also merges into:
 
-| Path | Keys added / updated |
-|------|---------------------|
+| Path           | Keys added / updated                                                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `package.json` | `dependencies.swagger-jsdoc`, `dependencies.swagger-ui-express`, `devDependencies.@types/swagger-jsdoc`, `devDependencies.@types/swagger-ui-express` |
-| `src/app.ts` | Imports `mountSwagger` and calls `mountSwagger(app)` before `export default app;` |
+| `src/app.ts`   | Imports `mountSwagger` and calls `mountSwagger(app)` before `export default app;`                                                                    |
 
 ---
 
@@ -51,11 +51,11 @@ Also merges into:
 
 `swagger-jsdoc` reads every `.ts`/`.js` file under `src/` looking for `/** @openapi … */` blocks. The dot generators that produce route handlers ship JSDoc OpenAPI annotations on every endpoint:
 
-| Generator | Endpoint(s) documented |
-|-----------|-----------------------|
-| `express_server_entrypoint` | `GET /health` |
+| Generator                                        | Endpoint(s) documented                                                                               |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `express_server_entrypoint`                      | `GET /health`                                                                                        |
 | `auth_jwt_mvc_route` (DB branch, decorators OFF) | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me` |
-| `auth_jwt_clean_arch_module` (decorators OFF) | Same five endpoints |
+| `auth_jwt_clean_arch_module` (decorators OFF)    | Same five endpoints                                                                                  |
 
 When you add new routes, drop a `@openapi` JSDoc block above the handler and `/docs` picks it up at the next boot — no codegen step.
 
@@ -63,12 +63,12 @@ When you add new routes, drop a `@openapi` JSDoc block above the handler and `/d
 
 ## Validators
 
-| Check | Type | Passes when |
-|-------|------|-------------|
-| `src/shared/swagger/swagger.config.ts` | `file_exists` | — |
-| `src/shared/swagger/index.ts` | `file_exists` | — |
-| `dependencies.swagger-jsdoc` in `package.json` | `json_key_exists` | — |
-| `dependencies.swagger-ui-express` in `package.json` | `json_key_exists` | — |
+| Check                                               | Type              | Passes when |
+| --------------------------------------------------- | ----------------- | ----------- |
+| `src/shared/swagger/swagger.config.ts`              | `file_exists`     | —           |
+| `src/shared/swagger/index.ts`                       | `file_exists`     | —           |
+| `dependencies.swagger-jsdoc` in `package.json`      | `json_key_exists` | —           |
+| `dependencies.swagger-ui-express` in `package.json` | `json_key_exists` | —           |
 
 ---
 

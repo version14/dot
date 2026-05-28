@@ -6,18 +6,18 @@ Adds the runtime dependencies and `tsconfig` flags needed by the decorator-based
 
 ## Identity
 
-| Field | Value |
-|-------|-------|
-| Name | `zod_validation_deps` |
-| Version | `0.1.0` |
+| Field   | Value                            |
+| ------- | -------------------------------- |
+| Name    | `zod_validation_deps`            |
+| Version | `0.1.1`                          |
 | Package | `generators/zod_validation_deps` |
 
 ---
 
 ## Dependencies
 
-| Generator | Why |
-|-----------|-----|
+| Generator         | Why                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
 | `typescript_base` | `package.json` and `tsconfig.json` must already exist for the dependency / compiler-option merges |
 
 ---
@@ -34,21 +34,21 @@ None directly — only merges into existing files.
 
 Also merges into:
 
-| Path | Keys added / updated |
-|------|---------------------|
-| `package.json` | `dependencies.zod`, `dependencies.@asteasolutions/zod-to-openapi`, `dependencies.reflect-metadata`, `dependencies.swagger-ui-express`, `devDependencies.@types/swagger-ui-express` |
-| `tsconfig.json` | `compilerOptions.experimentalDecorators = true`, `compilerOptions.emitDecoratorMetadata = true` |
+| Path            | Keys added / updated                                                                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`  | `dependencies.zod`, `dependencies.@asteasolutions/zod-to-openapi`, `dependencies.reflect-metadata`, `dependencies.swagger-ui-express`, `devDependencies.@types/swagger-ui-express` |
+| `tsconfig.json` | `compilerOptions.experimentalDecorators = true`, `compilerOptions.emitDecoratorMetadata = true`                                                                                    |
 
 ---
 
 ## Validators
 
-| Check | Type | Passes when |
-|-------|------|-------------|
-| `dependencies.zod` in `package.json` | `json_key_exists` | — |
-| `dependencies.@asteasolutions/zod-to-openapi` in `package.json` | `json_key_exists` | — |
-| `dependencies.reflect-metadata` in `package.json` | `json_key_exists` | — |
-| `dependencies.swagger-ui-express` in `package.json` | `json_key_exists` | — |
+| Check                                                           | Type              | Passes when |
+| --------------------------------------------------------------- | ----------------- | ----------- |
+| `dependencies.zod` in `package.json`                            | `json_key_exists` | —           |
+| `dependencies.@asteasolutions/zod-to-openapi` in `package.json` | `json_key_exists` | —           |
+| `dependencies.reflect-metadata` in `package.json`               | `json_key_exists` | —           |
+| `dependencies.swagger-ui-express` in `package.json`             | `json_key_exists` | —           |
 
 ---
 
