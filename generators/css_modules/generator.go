@@ -1,9 +1,14 @@
 package cssmodules
 
 import (
-	"github.com/version14/dot/internal/state"
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -13,31 +18,5 @@ func (g *Generator) Name() string    { return Manifest.Name }
 func (g *Generator) Version() string { return Manifest.Version }
 
 func (g *Generator) Generate(ctx *dotapi.Context) error {
-	ctx.State.WriteFile("src/styles/global.css", []byte(globalCSS), state.ContentRaw)
-	ctx.State.WriteFile("src/styles/App.module.css", []byte(appModuleCSS), state.ContentRaw)
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const globalCSS = `*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-}
-`
-
-const appModuleCSS = `.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: bold;
-}
-`

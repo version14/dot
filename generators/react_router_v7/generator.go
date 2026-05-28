@@ -1,9 +1,15 @@
 package reactrouterv7
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -25,40 +31,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/main.tsx", []byte(mainTSX), state.ContentRaw)
-	ctx.State.WriteFile("src/router.tsx", []byte(routerTSX), state.ContentRaw)
-	ctx.State.WriteFile("src/pages/Home.tsx", []byte(homeTSX), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const mainTSX = `import React from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-import { router } from "./router";
-
-const rootElement = document.getElementById("root");
-
-if (!rootElement) {
-  throw new Error("Root element #root not found");
-}
-
-ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>,
-);
-`
-
-const routerTSX = `import { createBrowserRouter } from "react-router-dom";
-import Home from "./pages/Home";
-
-export const router = createBrowserRouter([
-  { path: "/", element: <Home /> },
-]);
-`
-
-const homeTSX = `export default function Home() {
-  return <h1>Home</h1>;
-}
-`

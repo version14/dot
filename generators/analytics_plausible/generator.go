@@ -1,9 +1,18 @@
 package analyticsplausible
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var filesFS embed.FS
+
+//go:embed all:next
+var nextFS embed.FS
 
 type Generator struct{}
 
@@ -14,10 +23,6 @@ func (g *Generator) Version() string { return Manifest.Version }
 
 func (g *Generator) Generate(ctx *dotapi.Context) error {
 	framework, _ := ctx.Answers["framework"].(string)
-	plausibleContent := plausibleViteTS
-	if framework == "next" {
-		plausibleContent = plausibleNextTS
-	}
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
@@ -30,66 +35,16 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	envContent := envExampleVite
-	if framework == "next" {
-		envContent = envExampleNext
+	if err := render.NewLocalFolderRenderer(ctx.State).Render(filesFS, nil); err != nil {
+		return err
 	}
 
-	ctx.State.WriteFile("src/lib/plausible.ts", []byte(plausibleContent), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envContent), state.ContentRaw)
+	if framework == "next" {
+		plausible, _ := nextFS.ReadFile("next/plausible.ts")
+		ctx.State.WriteFile("src/lib/plausible.ts", plausible, state.ContentRaw)
+		env, _ := nextFS.ReadFile("next/.env.example")
+		ctx.State.WriteFile(".env.example", env, state.ContentRaw)
+	}
 
 	return nil
 }
-
-const plausibleViteTS = `import Plausible from "plausible-tracker";
-
-const DOMAIN =
-  import.meta.env.VITE_PLAUSIBLE_DOMAIN ?? window.location.hostname;
-const API_HOST =
-  import.meta.env.VITE_PLAUSIBLE_API_HOST ?? "https://plausible.io";
-
-const plausible = Plausible({ domain: DOMAIN, apiHost: API_HOST });
-
-export function initPlausible() {
-  plausible.enableAutoPageviews();
-}
-
-export function trackEvent(
-  name: string,
-  props?: Record<string, string | number | boolean>,
-) {
-  plausible.trackEvent(name, { props });
-}
-`
-
-const plausibleNextTS = `import Plausible from "plausible-tracker";
-
-const DOMAIN =
-  process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN ??
-  (typeof window !== "undefined" ? window.location.hostname : "");
-const API_HOST =
-  process.env.NEXT_PUBLIC_PLAUSIBLE_API_HOST ?? "https://plausible.io";
-
-const plausible = Plausible({ domain: DOMAIN, apiHost: API_HOST });
-
-export function initPlausible() {
-  plausible.enableAutoPageviews();
-}
-
-export function trackEvent(
-  name: string,
-  props?: Record<string, string | number | boolean>,
-) {
-  plausible.trackEvent(name, { props });
-}
-`
-
-const envExampleVite = `# Plausible Analytics
-VITE_PLAUSIBLE_DOMAIN=yourdomain.com
-VITE_PLAUSIBLE_API_HOST=https://plausible.io
-`
-
-const envExampleNext = `# Plausible Analytics
-NEXT_PUBLIC_PLAUSIBLE_DOMAIN=yourdomain.com
-NEXT_PUBLIC_PLAUSIBLE_API_HOST=https://plausible.io
-`

@@ -1,0 +1,19 @@
+:root {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-border: #e4e4e7;
+}
+
+[data-theme="dark"] {
+  --color-background: #0a0a0a;
+  --color-foreground: #f4f4f5;
+  --color-primary: #60a5fa;
+  --color-primary-foreground: #0a0a0a;
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: #27272a;
+}

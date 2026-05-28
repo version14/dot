@@ -1,9 +1,15 @@
 package zustandsetup
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -24,23 +30,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/stores/counter.store.ts", []byte(counterStore), state.ContentRaw)
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const counterStore = `import { create } from "zustand";
-
-interface CounterState {
-  count: number;
-  increment: () => void;
-  decrement: () => void;
-  reset: () => void;
-}
-
-export const useCounterStore = create<CounterState>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-  decrement: () => set((state) => ({ count: state.count - 1 })),
-  reset: () => set({ count: 0 }),
-}));
-`

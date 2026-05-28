@@ -1,11 +1,19 @@
 package storybooksetup
 
 import (
-	"fmt"
+	"embed"
 
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
+
+type storybookData struct {
+	FrameworkPkg string
+}
 
 type Generator struct{}
 
@@ -39,57 +47,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	mainTS := fmt.Sprintf(mainTSTmpl, frameworkPkg, frameworkPkg)
-	ctx.State.WriteFile(".storybook/main.ts", []byte(mainTS), state.ContentRaw)
-	ctx.State.WriteFile(".storybook/preview.ts", []byte(previewTS), state.ContentRaw)
-	ctx.State.WriteFile("src/stories/Button.stories.tsx", []byte(buttonStories), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, storybookData{FrameworkPkg: frameworkPkg})
 }
-
-const mainTSTmpl = `import type { StorybookConfig } from "%s";
-
-const config: StorybookConfig = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
-  addons: [],
-  framework: { name: "%s", options: {} },
-};
-
-export default config;
-`
-
-const previewTS = `import type { Preview } from "@storybook/react";
-
-const preview: Preview = {
-  parameters: {
-    controls: {
-      matchers: {
-        color: /(background|color)$/i,
-        date: /Date$/i,
-      },
-    },
-  },
-};
-
-export default preview;
-`
-
-const buttonStories = `import type { Meta, StoryObj } from "@storybook/react";
-
-const ButtonComponent = ({ label }: { label: string }) => (
-  <button type="button">{label}</button>
-);
-
-const meta = {
-  title: "Example/Button",
-  component: ButtonComponent,
-  tags: ["autodocs"],
-} satisfies Meta<typeof ButtonComponent>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Primary: Story = {
-  args: { label: "Button" },
-};
-`

@@ -1,9 +1,15 @@
 package jotaisetup
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -24,19 +30,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/atoms/counter.atom.ts", []byte(counterAtom), state.ContentRaw)
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const counterAtom = `import { atom } from "jotai";
-
-export const countAtom = atom(0);
-
-export const incrementAtom = atom(null, (get, set) =>
-  set(countAtom, get(countAtom) + 1),
-);
-
-export const decrementAtom = atom(null, (get, set) =>
-  set(countAtom, get(countAtom) - 1),
-);
-`

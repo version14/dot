@@ -1,9 +1,17 @@
 package sentryfrontend
 
 import (
+	"embed"
+
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var filesFS embed.FS
+
+//go:embed all:next
+var nextFS embed.FS
 
 type Generator struct{}
 
@@ -12,17 +20,24 @@ func New() *Generator { return &Generator{} }
 func (g *Generator) Name() string    { return Manifest.Name }
 func (g *Generator) Version() string { return Manifest.Version }
 
+func mustRead(fs embed.FS, path string) []byte {
+	data, err := fs.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func (g *Generator) Generate(ctx *dotapi.Context) error {
 	framework, _ := ctx.Answers["framework"].(string)
 
-	var sentryPkg, sentryContent string
+	sentryPkg := "@sentry/react"
+	src := filesFS
+	dir := "files"
 	if framework == "next" {
 		sentryPkg = "@sentry/nextjs"
-		sentryContent = sentryNext
-		ctx.State.WriteFile("sentry.client.config.ts", []byte(sentryClientConfig), state.ContentRaw)
-	} else {
-		sentryPkg = "@sentry/react"
-		sentryContent = sentryReact
+		src = nextFS
+		dir = "next"
 	}
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
@@ -36,47 +51,12 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	envContent := envExampleVite
-	if framework == "next" {
-		envContent = envExampleNext
-	}
+	ctx.State.WriteFile("src/lib/sentry.ts", mustRead(src, dir+"/sentry.ts"), state.ContentRaw)
+	ctx.State.WriteFile(".env.example", mustRead(src, dir+"/.env.example"), state.ContentRaw)
 
-	ctx.State.WriteFile("src/lib/sentry.ts", []byte(sentryContent), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envContent), state.ContentRaw)
+	if framework == "next" {
+		ctx.State.WriteFile("sentry.client.config.ts", mustRead(nextFS, "next/sentry.client.config.ts"), state.ContentRaw)
+	}
 
 	return nil
 }
-
-const sentryNext = `// For Next.js, configure Sentry in sentry.client.config.ts and sentry.server.config.ts
-// See: https://docs.sentry.io/platforms/javascript/guides/nextjs/
-export * from "@sentry/nextjs";
-`
-
-const sentryClientConfig = `import * as Sentry from "@sentry/nextjs";
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 0.1,
-});
-`
-
-const sentryReact = `import * as Sentry from "@sentry/react";
-
-export function initSentry() {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    tracesSampleRate: 0.1,
-    environment: import.meta.env.MODE,
-  });
-}
-
-export { Sentry };
-`
-
-const envExampleVite = `# Sentry
-VITE_SENTRY_DSN=https://your_dsn@sentry.io/your_project_id
-`
-
-const envExampleNext = `# Sentry
-NEXT_PUBLIC_SENTRY_DSN=https://your_dsn@sentry.io/your_project_id
-`

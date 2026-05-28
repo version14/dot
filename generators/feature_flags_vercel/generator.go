@@ -1,9 +1,15 @@
 package featureflagsvercel
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -25,40 +31,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/lib/flags.ts", []byte(flagsTS), state.ContentRaw)
-	ctx.State.WriteFile("src/hooks/useFeatureFlag.ts", []byte(useFeatureFlagTS), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", []byte(envExample), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const flagsTS = `// Vercel Edge Config feature flags
-// Configure flags in your Vercel dashboard or edge-config.json
-
-export type FeatureFlag = "new-dashboard" | "beta-features";
-
-export async function getFlag(flag: FeatureFlag): Promise<boolean> {
-  try {
-    const { get } = await import("@vercel/edge-config");
-    return (await get<boolean>(flag)) ?? false;
-  } catch {
-    return false;
-  }
-}
-`
-
-const useFeatureFlagTS = `import { useState, useEffect } from "react";
-import { getFlag, type FeatureFlag } from "../lib/flags";
-
-export function useFeatureFlag(flag: FeatureFlag): boolean {
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    getFlag(flag).then(setEnabled);
-  }, [flag]);
-  return enabled;
-}
-`
-
-const envExample = `# Vercel Edge Config
-EDGE_CONFIG=your_edge_config_connection_string
-`

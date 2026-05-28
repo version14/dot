@@ -1,9 +1,15 @@
 package arkui
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -24,16 +30,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/components/ui/button.tsx", []byte(buttonTSX), state.ContentRaw)
-	ctx.State.WriteFile("src/components/ui/index.ts", []byte(indexTS), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const buttonTSX = `import { ark } from "@ark-ui/react/factory";
-
-export const Button = ark.button;
-`
-
-const indexTS = `export * from "./button";
-`

@@ -1,9 +1,15 @@
 package tanstackrouter
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -27,59 +33,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("vite.config.ts", []byte(viteConfig), state.ContentRaw)
-	ctx.State.WriteFile("src/main.tsx", []byte(mainTSX), state.ContentRaw)
-	ctx.State.WriteFile("src/routes/__root.tsx", []byte(rootTSX), state.ContentRaw)
-	ctx.State.WriteFile("src/routes/index.tsx", []byte(indexTSX), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const viteConfig = `import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-
-export default defineConfig({
-  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react()],
-});
-`
-
-const mainTSX = `import React from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { routeTree } from "./routeTree.gen";
-
-const router = createRouter({ routeTree });
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
-}
-
-const rootElement = document.getElementById("root");
-
-if (!rootElement) {
-  throw new Error("Root element #root not found");
-}
-
-ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>,
-);
-`
-
-const rootTSX = `import { createRootRoute, Outlet } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => <Outlet />,
-});
-`
-
-const indexTSX = `import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/")({
-  component: () => <h1>Home</h1>,
-});
-`

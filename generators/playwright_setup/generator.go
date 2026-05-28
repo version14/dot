@@ -1,11 +1,20 @@
 package playwrightsetup
 
 import (
-	"fmt"
+	"embed"
 
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
+
+type playwrightData struct {
+	DevServerURL     string
+	DevServerCommand string
+}
 
 type Generator struct{}
 
@@ -38,36 +47,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	playwrightConfig := fmt.Sprintf(playwrightConfigTmpl, devServerURL, devServerCommand, devServerURL)
-	ctx.State.WriteFile("playwright.config.ts", []byte(playwrightConfig), state.ContentRaw)
-	ctx.State.WriteFile("e2e/example.spec.ts", []byte(exampleSpec), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, playwrightData{
+		DevServerURL:     devServerURL,
+		DevServerCommand: devServerCommand,
+	})
 }
-
-const playwrightConfigTmpl = `import { defineConfig, devices } from "@playwright/test";
-
-export default defineConfig({
-  testDir: "./e2e",
-  fullyParallel: true,
-  reporter: "html",
-  use: { baseURL: "%s" },
-  webServer: {
-    command: "%s",
-    url: "%s",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-  ],
-});
-`
-
-const exampleSpec = `import { test, expect } from "@playwright/test";
-
-test("homepage renders", async ({ page }) => {
-  await page.goto("/");
-  await expect(page).toHaveTitle(/.*/);
-});
-`

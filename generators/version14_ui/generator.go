@@ -1,9 +1,15 @@
 package version14ui
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -24,17 +30,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("src/components/V14Example.tsx", []byte(exampleTSX), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const exampleTSX = `// Example usage of @version14/ui — replace with your own components.
-export default function V14Example() {
-  return (
-    <div>
-      @version14/ui is installed. Import components from "@version14/ui".
-    </div>
-  );
-}
-`

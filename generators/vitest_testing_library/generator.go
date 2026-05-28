@@ -1,9 +1,15 @@
 package vitesttestinglibrary
 
 import (
+	"embed"
+
+	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+//go:embed all:files
+var fs embed.FS
 
 type Generator struct{}
 
@@ -34,38 +40,5 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	ctx.State.WriteFile("vitest.config.ts", []byte(vitestConfig), state.ContentRaw)
-	ctx.State.WriteFile("src/test/setup.ts", []byte(setupTS), state.ContentRaw)
-	ctx.State.WriteFile("src/test/App.test.tsx", []byte(appTestTSX), state.ContentRaw)
-
-	return nil
+	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
 }
-
-const vitestConfig = `import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: "jsdom",
-    exclude: ["**/e2e/**", "**/node_modules/**"],
-    setupFiles: ["./src/test/setup.ts"],
-  },
-});
-`
-
-const setupTS = `import "@testing-library/jest-dom";
-`
-
-const appTestTSX = `import { render } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import App from "../App";
-
-describe("App", () => {
-  it("renders without crashing", () => {
-    render(<App />);
-    expect(document.body).toBeDefined();
-  });
-});
-`
