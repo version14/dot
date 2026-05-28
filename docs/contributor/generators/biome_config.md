@@ -9,7 +9,7 @@ Biome formatter and linter configuration. Writes `biome.json` and merges `lint`/
 | Field | Value |
 |-------|-------|
 | Name | `biome_config` |
-| Version | `0.1.0` |
+| Version | `0.2.2` |
 | Package | `generators/biome_config` |
 
 ---
@@ -32,7 +32,7 @@ None. `biome_config` writes the same baseline configuration for every project.
 
 | Path | Description |
 |------|-------------|
-| `biome.json` | Biome schema, import organizer, linter (recommended rules), formatter (space, 2-space indent) |
+| `biome.json` | Biome schema, linter (recommended rules), formatter (space, 2-space indent), scanner ignores for `.dot/` |
 
 Also merges into:
 

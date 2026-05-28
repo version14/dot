@@ -8,7 +8,7 @@ const BIOME_FILE = "biome.json"
 // Depends on typescript_base since it modifies package.json scripts.
 var Manifest = dotapi.Manifest{
 	Name:        "biome_config",
-	Version:     "0.2.0",
+	Version:     "0.2.2",
 	Description: "Biome lint + format configuration",
 	DependsOn:   []string{"typescript_base", "*"},
 	Outputs: []string{
