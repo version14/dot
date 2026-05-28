@@ -25,7 +25,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"drizzle-orm": "^0.44.0",
 			},
 			"devDependencies": map[string]interface{}{
-				"drizzle-kit": "^0.30.0",
+				"drizzle-kit": "^0.31.10",
 			},
 		})
 		return nil
