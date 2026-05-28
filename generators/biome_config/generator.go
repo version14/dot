@@ -42,7 +42,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"format": "biome format --write .",
 			},
 			"devDependencies": map[string]interface{}{
-				"@biomejs/biome": "^1.9.0",
+				"@biomejs/biome": "^2.4.16",
 			},
 		})
 		return nil
