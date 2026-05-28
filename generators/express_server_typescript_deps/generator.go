@@ -22,7 +22,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			},
 			"dependencies": map[string]interface{}{
 				"cors":    "^2.8.6",
-				"dotenv":  "^16.4.0",
+				"dotenv":  "^17.4.2",
 				"express": "^4.21.0",
 			},
 			"devDependencies": map[string]interface{}{
