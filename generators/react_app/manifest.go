@@ -10,7 +10,7 @@ import (
 // project needs the TypeScript foundation first.
 var Manifest = dotapi.Manifest{
 	Name:        "react_app",
-	Version:     "0.2.0",
+	Version:     "0.3.0",
 	Description: "React + Vite application setup",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{
