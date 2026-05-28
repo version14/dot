@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_test_setup",
-	Version:     "0.1.1",
+	Version:     "0.2.0",
 	Description: "Vitest configuration and testing dependencies (vitest, supertest) for Express TypeScript projects",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs:     []string{"vitest.config.ts"},
