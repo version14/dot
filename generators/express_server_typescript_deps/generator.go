@@ -21,7 +21,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"start": "node dist/index.js",
 			},
 			"dependencies": map[string]interface{}{
-				"cors":    "^2.8.5",
+				"cors":    "^2.8.6",
 				"dotenv":  "^16.4.0",
 				"express": "^4.21.0",
 			},
