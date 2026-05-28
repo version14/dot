@@ -17,6 +17,7 @@ __pycache__/
 # ── Build outputs ────────────────────────────────────────
 dist/
 build/
+bin/
 out/
 target/
 *.class
@@ -24,6 +25,7 @@ target/
 *.a
 *.so
 *.dylib
+dep-report.json
 
 # ── Logs ─────────────────────────────────────────────────
 *.log
