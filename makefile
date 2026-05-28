@@ -1,4 +1,4 @@
-.PHONY: help fmt lint build dev test clean vet run install-tools validate commit-lint hooks
+.PHONY: help fmt lint build build-dot build-dep-checker dev test clean vet run install-tools validate commit-lint hooks
 
 # Colors
 RED := \033[0;31m
@@ -45,9 +45,13 @@ help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-18s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(YELLOW)Examples:$(RESET)"
-	@echo "  make dev         # Build and run dot"
-	@echo "  make validate    # Run all checks (fmt → vet → lint → test)"
-	@echo "  make clean       # Remove build artifacts"
+	@echo "  make build                       # Build everything (dot + tools)"
+	@echo "  make build ARGS=\"-t dep-checker\" # Build one tool"
+	@echo "  make build ARGS=-d               # Build dot only"
+	@echo "  make build-dot                   # Shorthand for dot only"
+	@echo "  make dev                         # Build and run dot"
+	@echo "  make validate                    # Run all checks (fmt → vet → lint → test)"
+	@echo "  make clean                       # Remove build artifacts"
 	@echo ""
 
 fmt: ## Format Go code
@@ -78,12 +82,19 @@ test: ## Run all tests with race detector
 	$(call print_success,"All tests passed")
 	@echo ""
 
-build: fmt vet ## Build the dot binary into bin/
+build: fmt vet ## Build binaries. ARGS="-t <tool>" for one tool, ARGS=-d for dot only
 	$(call print_header,"BUILD","                            ")
-	$(call print_info,"Building $(BINARY_NAME)...")
-	@mkdir -p $(BIN_DIR)
-	@$(GO) build -buildvcs=false $(GOFLAGS) $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/dot 2>&1 | grep -v "^$(BIN_DIR)" || true
-	$(call print_success,"Binary built: $(BIN_DIR)/$(BINARY_NAME)")
+	@./scripts/build.sh $(ARGS)
+	@echo ""
+
+build-dot: fmt vet ## Build only the dot CLI binary
+	$(call print_header,"BUILD DOT","                        ")
+	@./scripts/build.sh -d
+	@echo ""
+
+build-dep-checker: ## Build only the dep-checker tool
+	$(call print_header,"BUILD DEP-CHECKER","               ")
+	@./scripts/build.sh -t dep-checker
 	@echo ""
 
 dev: build ## Build and run dot
