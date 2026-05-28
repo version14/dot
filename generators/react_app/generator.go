@@ -35,7 +35,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"react-dom": "^18.3.0",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/react":         "^18.3.0",
+				"@types/react":         "^19.2.15",
 				"@types/react-dom":     "^18.3.0",
 				"@vitejs/plugin-react": "^4.3.0",
 				"vite":                 "^5.4.0",
