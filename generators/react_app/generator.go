@@ -32,7 +32,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			},
 			"dependencies": map[string]interface{}{
 				"react":     "^18.3.0",
-				"react-dom": "^18.3.0",
+				"react-dom": "^19.2.6",
 			},
 			"devDependencies": map[string]interface{}{
 				"@types/react":         "^18.3.0",
