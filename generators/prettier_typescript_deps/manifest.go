@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "prettier_typescript_deps",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "Adds prettier devDependency and format script to package.json (TypeScript projects)",
 	DependsOn:   []string{"prettier_config", "*"},
 	Outputs:     []string{},

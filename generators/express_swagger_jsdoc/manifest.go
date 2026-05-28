@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_swagger_jsdoc",
-	Version:     "0.1.0",
+	Version:     "0.1.2",
 	Description: "Classic JSDoc-driven Swagger/OpenAPI: scans source files for @openapi comments, builds the spec at boot, and mounts swagger-ui at /docs",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs: []string{

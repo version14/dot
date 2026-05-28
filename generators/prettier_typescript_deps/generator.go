@@ -20,7 +20,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"format:check": "prettier --check .",
 			},
 			"devDependencies": map[string]interface{}{
-				"prettier": "^3.2.0",
+				"prettier": "^3.8.3",
 			},
 		})
 		return nil

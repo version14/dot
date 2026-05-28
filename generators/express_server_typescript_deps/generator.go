@@ -21,16 +21,16 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"start": "node dist/index.js",
 			},
 			"dependencies": map[string]interface{}{
-				"cors":    "^2.8.5",
+				"cors":    "^2.8.6",
 				"dotenv":  "^16.4.0",
 				"express": "^4.21.0",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/cors":    "^2.8.17",
-				"@types/express": "^5.0.0",
+				"@types/cors":    "^2.8.19",
+				"@types/express": "^5.0.6",
 				"@types/node":    "^22.0.0",
-				"nodemon":        "^3.1.0",
-				"tsx":            "^4.19.0",
+				"nodemon":        "^3.1.14",
+				"tsx":            "^4.22.3",
 			},
 		})
 		return nil

@@ -22,10 +22,10 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"db:studio":   "drizzle-kit studio",
 			},
 			"dependencies": map[string]interface{}{
-				"drizzle-orm": "^0.44.0",
+				"drizzle-orm": "^0.45.2",
 			},
 			"devDependencies": map[string]interface{}{
-				"drizzle-kit": "^0.30.0",
+				"drizzle-kit": "^0.31.10",
 			},
 		})
 		return nil

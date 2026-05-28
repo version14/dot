@@ -6,7 +6,7 @@ const PACKAGE_JSON = "package.json"
 
 var Manifest = dotapi.Manifest{
 	Name:        "drizzle_typescript_deps",
-	Version:     "0.1.0",
+	Version:     "0.1.2",
 	Description: "Adds drizzle-orm and drizzle-kit to package.json and db:* scripts",
 	DependsOn:   []string{"drizzle_config_base"},
 	Outputs:     []string{},
