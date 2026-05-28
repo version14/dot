@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "drizzle_postgres_adapter",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "PostgreSQL driver and database connection file for Drizzle ORM (src/db/index.ts)",
 	DependsOn:   []string{"drizzle_typescript_deps"},
 	Outputs: []string{

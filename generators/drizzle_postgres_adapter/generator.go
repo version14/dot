@@ -27,7 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	return ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"postgres": "^3.4.0",
+				"postgres": "^3.4.9",
 			},
 		})
 		return nil
