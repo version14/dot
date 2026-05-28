@@ -31,7 +31,8 @@ async function loadFlags(): Promise<Record<string, boolean>> {
   if (flagsCache) return flagsCache;
   const res = await fetch("/flags.json");
   flagsCache = await res.json();
-  return flagsCache!;
+  return flagsCache ?? {};
+
 }
 
 export async function getFlag(flag: string): Promise<boolean> {
