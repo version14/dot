@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_server_entrypoint",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Express server TypeScript source files: src/index.ts (bootstrap) and src/app.ts (/health route)",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{
