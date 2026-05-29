@@ -32,9 +32,11 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	framework, _ := ctx.Answers["framework"].(string)
 
 	pkg := "@clerk/clerk-react"
+	version := "^5.61.3"
 	src := filesFS
 	if framework == "next" {
 		pkg = "@clerk/nextjs"
+		version = "^7.4.2"
 		src = nextFS
 	}
 
@@ -46,7 +48,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				pkg: "^5.0.0",
+				pkg: version,
 			},
 		})
 		return nil

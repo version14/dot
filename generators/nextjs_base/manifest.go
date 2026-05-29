@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "nextjs_base",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Next.js 15 App Router project with TypeScript",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{

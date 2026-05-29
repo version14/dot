@@ -37,9 +37,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"build-storybook": "storybook build",
 			},
 			"devDependencies": map[string]interface{}{
-				"storybook":        "^10.0.0",
-				"@storybook/react": "^10.0.0",
-				frameworkPkg:       "^10.0.0",
+				"storybook":        "^10.4.1",
+				"@storybook/react": "^10.4.1",
+				frameworkPkg:       "^10.4.1",
 			},
 		})
 		return nil

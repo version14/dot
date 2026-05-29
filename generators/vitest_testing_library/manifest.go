@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "vitest_testing_library",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Vitest + React Testing Library for React+Vite projects",
 	DependsOn:   []string{"react_app"},
 	Outputs: []string{

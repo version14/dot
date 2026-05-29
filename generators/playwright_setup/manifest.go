@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "playwright_setup",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Playwright end-to-end testing setup",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{

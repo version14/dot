@@ -9,7 +9,7 @@ Adds PostHog feature flags — installs `posthog-js`, writes a PostHog client in
 | Field | Value |
 |-------|-------|
 | Name | `feature_flags_posthog` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/feature_flags_posthog` |
 
 ---

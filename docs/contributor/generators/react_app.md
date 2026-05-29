@@ -9,7 +9,7 @@ React + Vite application. Merges React dependencies and JSX compiler options int
 | Field   | Value                  |
 | ------- | ---------------------- |
 | Name    | `react_app`            |
-| Version | `0.5.2`                |
+| Version | `0.6.0` |
 | Package | `generators/react_app` |
 
 ---

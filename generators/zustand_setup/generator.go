@@ -22,7 +22,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"zustand": "^5.0.0",
+				"zustand": "^5.0.14",
 			},
 		})
 		return nil

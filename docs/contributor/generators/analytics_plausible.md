@@ -9,7 +9,7 @@ Adds Plausible Analytics via `plausible-tracker` — writes a tracker initialize
 | Field | Value |
 |-------|-------|
 | Name | `analytics_plausible` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/analytics_plausible` |
 
 ---

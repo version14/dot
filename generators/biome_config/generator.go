@@ -33,16 +33,37 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		// Pattern" docs, directory exclusions must use the **/<dir> form — a
 		// bare name like !dist does not match the directory's contents.
 		// !! is a hard-exclude (skip scanner) for the dot-owned meta dir.
-		// AppendStringSet so other generators (e.g. panda_css) can add entries.
-		return d.AppendStringSet("files.includes",
+		// "**" MUST be position 0; collect any entries added by earlier
+		// generators (e.g. panda_css's !**/styled-system) and append them after.
+		standard := []string{
 			"**",
 			"!!**/.dot",
 			"!**/.next",
 			"!**/coverage",
 			"!**/dist",
+			"!**/playwright-report",
 			"!**/storybook-static",
 			"!src/routeTree.gen.ts",
-		)
+		}
+		seen := make(map[string]struct{}, len(standard))
+		final := make([]interface{}, 0, len(standard))
+		for _, s := range standard {
+			seen[s] = struct{}{}
+			final = append(final, s)
+		}
+		if raw, ok := d.GetNested("files.includes"); ok {
+			if arr, ok := raw.([]interface{}); ok {
+				for _, v := range arr {
+					if s, ok := v.(string); ok {
+						if _, dup := seen[s]; !dup {
+							seen[s] = struct{}{}
+							final = append(final, s)
+						}
+					}
+				}
+			}
+		}
+		return d.SetNested("files.includes", final)
 	}); err != nil {
 		return err
 	}

@@ -9,7 +9,7 @@ Adds Sentry error tracking — framework-aware: `@sentry/nextjs` with a client c
 | Field | Value |
 |-------|-------|
 | Name | `sentry_frontend` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/sentry_frontend` |
 
 ---

@@ -27,12 +27,12 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"test:coverage": "vitest run --coverage",
 			},
 			"devDependencies": map[string]interface{}{
-				"vitest":                      "^2.0.0",
-				"@vitest/coverage-v8":         "^2.0.0",
-				"@testing-library/react":      "^16.0.0",
-				"@testing-library/user-event": "^14.0.0",
-				"@testing-library/jest-dom":   "^6.0.0",
-				"jsdom":                       "^24.0.0",
+				"vitest":                      "^4.1.7",
+				"@vitest/coverage-v8":         "^4.1.7",
+				"@testing-library/react":      "^16.3.2",
+				"@testing-library/user-event": "^14.6.1",
+				"@testing-library/jest-dom":   "^6.9.1",
+				"jsdom":                       "^29.1.1",
 			},
 		})
 		return nil

@@ -9,7 +9,7 @@ Adds Zustand v5 state management with a typed counter store example.
 | Field | Value |
 |-------|-------|
 | Name | `zustand_setup` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/zustand_setup` |
 
 ---

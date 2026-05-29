@@ -9,7 +9,7 @@ Adds Vercel Edge Config feature flags — installs `@vercel/edge-config` and `@v
 | Field | Value |
 |-------|-------|
 | Name | `feature_flags_vercel` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/feature_flags_vercel` |
 
 ---

@@ -9,7 +9,7 @@ Adds `react-helmet-async` SEO for React+Vite — writes a `<HelmetProvider>` wra
 | Field | Value |
 |-------|-------|
 | Name | `seo_react` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/seo_react` |
 
 ---

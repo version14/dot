@@ -9,7 +9,7 @@ Sets up Panda CSS v1 with a config file. Registers `panda codegen` as a `prepare
 | Field | Value |
 |-------|-------|
 | Name | `panda_css` |
-| Version | `0.1.2` |
+| Version | `0.2.0` |
 | Package | `generators/panda_css` |
 
 ---

@@ -9,7 +9,7 @@ Bootstraps a Next.js 15 App Router project with TypeScript, writing the entry la
 | Field | Value |
 |-------|-------|
 | Name | `nextjs_base` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/nextjs_base` |
 
 ---

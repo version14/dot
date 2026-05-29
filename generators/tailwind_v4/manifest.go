@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "tailwind_v4",
-	Version:       "0.1.0",
+	Version:       "0.2.0",
 	Description:   "Tailwind CSS v4 (CSS-first configuration)",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"panda_css", "shadcn_ui"},

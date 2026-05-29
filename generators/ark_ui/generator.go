@@ -22,7 +22,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"@ark-ui/react": "^4.0.0",
+				"@ark-ui/react": "^5.37.0",
 			},
 		})
 		return nil

@@ -19,15 +19,15 @@ func (g *Generator) Name() string    { return Manifest.Name }
 func (g *Generator) Version() string { return Manifest.Version }
 
 func (g *Generator) Generate(ctx *dotapi.Context) error {
-	linter, _ := ctx.Spec.Answers["linter"].(string)
+	linter, _ := ctx.Answers["linter"].(string)
 	if linter == "" {
-		linter, _ = ctx.Spec.Answers["frontend-linter"].(string)
+		linter, _ = ctx.Answers["frontend-linter"].(string)
 	}
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"devDependencies": map[string]interface{}{
-				"@pandacss/dev": "^0.45.0",
+				"@pandacss/dev": "^1.11.1",
 			},
 		})
 		prepare := "panda codegen"

@@ -9,7 +9,7 @@ Integrates Clerk authentication — framework-aware: `@clerk/nextjs` for Next.js
 | Field | Value |
 |-------|-------|
 | Name | `auth_clerk_frontend` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/auth_clerk_frontend` |
 
 ---

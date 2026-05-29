@@ -22,8 +22,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"@vercel/edge-config": "^1.0.0",
-				"@vercel/flags":       "^3.0.0",
+				"@vercel/edge-config": "^1.4.3",
+				"@vercel/flags":       "^3.1.1",
 			},
 		})
 		return nil

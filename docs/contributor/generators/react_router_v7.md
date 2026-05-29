@@ -9,7 +9,7 @@ Adds React Router v7 to a React+Vite app — wires up a `RouterProvider`, create
 | Field | Value |
 |-------|-------|
 | Name | `react_router_v7` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/react_router_v7` |
 
 ---

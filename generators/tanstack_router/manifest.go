@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "tanstack_router",
-	Version:       "0.1.0",
+	Version:       "0.2.0",
 	Description:   "TanStack Router type-safe file-based routing for React+Vite",
 	DependsOn:     []string{"react_app"},
 	ConflictsWith: []string{"react_router_v7"},

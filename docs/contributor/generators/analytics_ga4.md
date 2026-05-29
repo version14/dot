@@ -9,7 +9,7 @@ Adds Google Analytics 4 via `react-ga4` — writes an initializer and a `.env.ex
 | Field | Value |
 |-------|-------|
 | Name | `analytics_ga4` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/analytics_ga4` |
 
 ---

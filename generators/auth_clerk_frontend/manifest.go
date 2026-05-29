@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "auth_clerk_frontend",
-	Version:       "0.1.0",
+	Version:       "0.2.0",
 	Description:   "Clerk authentication provider and useAuth hook",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"auth_better_auth_frontend", "auth_vanilla_frontend"},

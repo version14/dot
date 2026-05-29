@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "feature_flags_vercel",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "Vercel Edge Config feature flags with typed hook",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{

@@ -9,7 +9,7 @@ Configures shadcn/ui with Tailwind v4 — writes components.json, a button compo
 | Field | Value |
 |-------|-------|
 | Name | `shadcn_ui` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/shadcn_ui` |
 
 ---

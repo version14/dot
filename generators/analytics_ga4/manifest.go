@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "analytics_ga4",
-	Version:       "0.1.0",
+	Version:       "0.2.0",
 	Description:   "Google Analytics 4 (GA4) with pageview tracking",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"analytics_plausible"},

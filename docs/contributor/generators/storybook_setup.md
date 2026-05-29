@@ -9,7 +9,7 @@ Configures Storybook v8 — framework-aware: uses `@storybook/react-vite` for Vi
 | Field | Value |
 |-------|-------|
 | Name | `storybook_setup` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/storybook_setup` |
 
 ---

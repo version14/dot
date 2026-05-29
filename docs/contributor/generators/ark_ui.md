@@ -9,7 +9,7 @@ Adds Ark UI headless components — installs `@ark-ui/react` and writes an examp
 | Field | Value |
 |-------|-------|
 | Name | `ark_ui` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/ark_ui` |
 
 ---

@@ -25,14 +25,14 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	framework, _ := ctx.Answers["framework"].(string)
 
 	devDeps := map[string]interface{}{
-		"@tailwindcss/vite":    "^4.0.0",
-		"@tailwindcss/postcss": "^4.0.0",
+		"@tailwindcss/vite":    "^4.3.0",
+		"@tailwindcss/postcss": "^4.3.0",
 	}
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"tailwindcss": "^4.0.0",
+				"tailwindcss": "^4.3.0",
 			},
 			"devDependencies": devDeps,
 		})

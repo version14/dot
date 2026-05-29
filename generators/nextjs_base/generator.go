@@ -40,14 +40,14 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"lint":  "next lint",
 			},
 			"dependencies": map[string]interface{}{
-				"next":      "^15.0.0",
-				"react":     "^19.0.0",
-				"react-dom": "^19.0.0",
+				"next":      "^16.2.6",
+				"react":     "^19.2.6",
+				"react-dom": "^19.2.6",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/node":      "^22.0.0",
-				"@types/react":     "^19.0.0",
-				"@types/react-dom": "^19.0.0",
+				"@types/node":      "^25.9.1",
+				"@types/react":     "^19.2.15",
+				"@types/react-dom": "^19.2.3",
 			},
 		})
 		return nil

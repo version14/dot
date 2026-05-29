@@ -27,7 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"react-ga4": "^2.0.0",
+				"react-ga4": "^3.0.1",
 			},
 		})
 		return nil

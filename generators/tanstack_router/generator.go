@@ -22,10 +22,10 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"@tanstack/react-router": "^1.0.0",
+				"@tanstack/react-router": "^1.170.9",
 			},
 			"devDependencies": map[string]interface{}{
-				"@tanstack/router-plugin": "^1.0.0",
+				"@tanstack/router-plugin": "^1.168.12",
 			},
 		})
 		return nil

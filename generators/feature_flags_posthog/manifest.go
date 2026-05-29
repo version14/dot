@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "feature_flags_posthog",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "PostHog feature flags and analytics provider",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{

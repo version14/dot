@@ -56,7 +56,6 @@ import (
 	reactapp "github.com/version14/dot/generators/react_app"
 	reactrouterv7 "github.com/version14/dot/generators/react_router_v7"
 	sentryfrontend "github.com/version14/dot/generators/sentry_frontend"
-	seonext "github.com/version14/dot/generators/seo_next"
 	seoreact "github.com/version14/dot/generators/seo_react"
 	shadcnui "github.com/version14/dot/generators/shadcn_ui"
 	storybooksetup "github.com/version14/dot/generators/storybook_setup"
@@ -121,7 +120,6 @@ func builtinGeneratorEntries() []generator.Entry {
 		{Manifest: sentryfrontend.Manifest, Generator: sentryfrontend.New()},
 		{Manifest: analyticsga4.Manifest, Generator: analyticsga4.New()},
 		{Manifest: analyticsplausible.Manifest, Generator: analyticsplausible.New()},
-		{Manifest: seonext.Manifest, Generator: seonext.New()},
 		{Manifest: seoreact.Manifest, Generator: seoreact.New()},
 
 		// Frontend — formatter rules

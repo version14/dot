@@ -1,3 +1,3 @@
-import { ark } from "@ark-ui/react/factory";
+import { ark } from "@ark-ui/react";
 
 export const Button = ark.button;

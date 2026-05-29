@@ -9,7 +9,7 @@ Configures Tailwind CSS v4 — framework-aware: uses the Vite plugin for React+V
 | Field | Value |
 |-------|-------|
 | Name | `tailwind_v4` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/tailwind_v4` |
 
 ---

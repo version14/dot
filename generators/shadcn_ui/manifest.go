@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "shadcn_ui",
-	Version:       "0.1.0",
+	Version:       "0.2.0",
 	Description:   "shadcn/ui component library with Tailwind CSS v4",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"tailwind_v4", "panda_css", "css_modules"},

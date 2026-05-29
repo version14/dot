@@ -395,8 +395,6 @@ func resolveFrontendGenerators(s *spec.ProjectSpec) []Invocation {
 	// SEO module (framework-aware)
 	if includeSEO {
 		switch fw {
-		case FRONTEND_NEXT:
-			out = append(out, Invocation{Name: "seo_next"})
 		case FRONTEND_REACT_VITE:
 			out = append(out, Invocation{Name: "seo_react"})
 		}

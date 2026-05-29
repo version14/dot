@@ -39,14 +39,14 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"tailwindcss":              "^4.0.0",
-				"class-variance-authority": "^0.7.0",
-				"clsx":                     "^2.0.0",
-				"tailwind-merge":           "^2.0.0",
-				"lucide-react":             "^0.400.0",
+				"tailwindcss":              "^4.3.0",
+				"class-variance-authority": "^0.7.1",
+				"clsx":                     "^2.1.1",
+				"tailwind-merge":           "^3.6.0",
+				"lucide-react":             "^1.17.0",
 			},
 			"devDependencies": map[string]interface{}{
-				"@tailwindcss/vite": "^4.0.0",
+				"@tailwindcss/vite": "^4.3.0",
 			},
 		})
 		return nil

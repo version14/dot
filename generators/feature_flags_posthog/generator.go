@@ -27,7 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"posthog-js": "^1.0.0",
+				"posthog-js": "^1.376.4",
 			},
 		})
 		return nil
