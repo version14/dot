@@ -13,6 +13,7 @@ var Manifest = dotapi.Manifest{
 		{Cmd: "pnpm format"},
 	},
 	TestCommands: []dotapi.Command{
+		{Cmd: "pnpm format"},
 		{Cmd: "pnpm format:check"},
 	},
 	Validators: []dotapi.Validator{

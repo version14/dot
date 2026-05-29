@@ -10,12 +10,13 @@ import (
 // project needs the TypeScript foundation first.
 var Manifest = dotapi.Manifest{
 	Name:        "react_app",
-	Version:     "0.5.1",
+	Version:     "0.6.0",
 	Description: "React + Vite application setup",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{
 		"src/main.tsx",
 		"src/App.tsx",
+		"src/vite-env.d.ts",
 		"index.html",
 		"vite.config.ts",
 	},
@@ -36,6 +37,7 @@ var Manifest = dotapi.Manifest{
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckFileExists, Path: "src/main.tsx"},
 				{Type: dotapi.CheckFileExists, Path: "src/App.tsx"},
+				{Type: dotapi.CheckFileExists, Path: "src/vite-env.d.ts"},
 				{Type: dotapi.CheckFileExists, Path: "index.html"},
 				{Type: dotapi.CheckFileExists, Path: "vite.config.ts"},
 				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "dependencies.react"},

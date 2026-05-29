@@ -3,17 +3,24 @@ package cli
 import (
 	"fmt"
 
+	analyticsga4 "github.com/version14/dot/generators/analytics_ga4"
+	analyticsplausible "github.com/version14/dot/generators/analytics_plausible"
+	arkui "github.com/version14/dot/generators/ark_ui"
 	authbetterauth "github.com/version14/dot/generators/auth_better_auth"
+	authbetterauthfrontend "github.com/version14/dot/generators/auth_better_auth_frontend"
 	authbetterauthschema "github.com/version14/dot/generators/auth_better_auth_schema"
+	authclerkfrontend "github.com/version14/dot/generators/auth_clerk_frontend"
 	authjwtcleanarchmodule "github.com/version14/dot/generators/auth_jwt_clean_arch_module"
 	authjwtmvcroute "github.com/version14/dot/generators/auth_jwt_mvc_route"
 	authjwtusersschema "github.com/version14/dot/generators/auth_jwt_users_schema"
 	authjwtvanilla "github.com/version14/dot/generators/auth_jwt_vanilla"
+	authvanillafrontend "github.com/version14/dot/generators/auth_vanilla_frontend"
 	backendArchitectureCleanArchitecture "github.com/version14/dot/generators/backend_architecture_clean_architecture"
 	backendArchitectureHexagonal "github.com/version14/dot/generators/backend_architecture_hexagonal_architecture"
 	backendArchitectureMVC "github.com/version14/dot/generators/backend_architecture_mvc_architecture"
 	baseproject "github.com/version14/dot/generators/base_project"
 	biomeconfig "github.com/version14/dot/generators/biome_config"
+	cssmodules "github.com/version14/dot/generators/css_modules"
 	decoratorscleanarchadapter "github.com/version14/dot/generators/decorators_clean_arch_adapter"
 	decoratorshexagonaladapter "github.com/version14/dot/generators/decorators_hexagonal_adapter"
 	decoratorsmvcadapter "github.com/version14/dot/generators/decorators_mvc_adapter"
@@ -31,16 +38,35 @@ import (
 	expresssharederrors "github.com/version14/dot/generators/express_shared_errors"
 	expressswaggerjsdoc "github.com/version14/dot/generators/express_swagger_jsdoc"
 	expresstestsetup "github.com/version14/dot/generators/express_test_setup"
+	featureflagslocal "github.com/version14/dot/generators/feature_flags_local"
+	featureflagsposthog "github.com/version14/dot/generators/feature_flags_posthog"
+	featureflagsvercel "github.com/version14/dot/generators/feature_flags_vercel"
+	jotaisetup "github.com/version14/dot/generators/jotai_setup"
 	monorepotsworkspaces "github.com/version14/dot/generators/monorepo_ts_workspaces"
+	nextjsbase "github.com/version14/dot/generators/nextjs_base"
+	pandacss "github.com/version14/dot/generators/panda_css"
+	playwrightsetup "github.com/version14/dot/generators/playwright_setup"
 	pluginreposkeleton "github.com/version14/dot/generators/plugin_repo_skeleton"
 	postgresdockercompose "github.com/version14/dot/generators/postgres_docker_compose"
 	postgresenvexample "github.com/version14/dot/generators/postgres_env_example"
 	prettierconfig "github.com/version14/dot/generators/prettier_config"
 	prettierexpressrules "github.com/version14/dot/generators/prettier_express_rules"
+	prettierfrontendrules "github.com/version14/dot/generators/prettier_frontend_rules"
 	prettiertypescriptdeps "github.com/version14/dot/generators/prettier_typescript_deps"
 	reactapp "github.com/version14/dot/generators/react_app"
+	reactrouterv7 "github.com/version14/dot/generators/react_router_v7"
+	sentryfrontend "github.com/version14/dot/generators/sentry_frontend"
+	seoreact "github.com/version14/dot/generators/seo_react"
+	shadcnui "github.com/version14/dot/generators/shadcn_ui"
+	storybooksetup "github.com/version14/dot/generators/storybook_setup"
+	tailwindv4 "github.com/version14/dot/generators/tailwind_v4"
+	tanstackrouter "github.com/version14/dot/generators/tanstack_router"
+	themeprovider "github.com/version14/dot/generators/theme_provider"
 	typescriptbase "github.com/version14/dot/generators/typescript_base"
+	version14ui "github.com/version14/dot/generators/version14_ui"
+	vitesttestinglibrary "github.com/version14/dot/generators/vitest_testing_library"
 	zodvalidationdeps "github.com/version14/dot/generators/zod_validation_deps"
+	zustandsetup "github.com/version14/dot/generators/zustand_setup"
 	"github.com/version14/dot/internal/generator"
 )
 
@@ -53,9 +79,51 @@ func builtinGeneratorEntries() []generator.Entry {
 		{Manifest: baseproject.Manifest, Generator: baseproject.New()},
 		{Manifest: typescriptbase.Manifest, Generator: typescriptbase.New()},
 		{Manifest: reactapp.Manifest, Generator: reactapp.New()},
+		{Manifest: nextjsbase.Manifest, Generator: nextjsbase.New()},
 		{Manifest: biomeconfig.Manifest, Generator: biomeconfig.New()},
 		{Manifest: monorepotsworkspaces.Manifest, Generator: monorepotsworkspaces.New()},
 		{Manifest: pluginreposkeleton.Manifest, Generator: pluginreposkeleton.New()},
+
+		// Frontend — router
+		{Manifest: reactrouterv7.Manifest, Generator: reactrouterv7.New()},
+		{Manifest: tanstackrouter.Manifest, Generator: tanstackrouter.New()},
+
+		// Frontend — UI library
+		{Manifest: shadcnui.Manifest, Generator: shadcnui.New()},
+		{Manifest: arkui.Manifest, Generator: arkui.New()},
+		{Manifest: version14ui.Manifest, Generator: version14ui.New()},
+
+		// Frontend — styling
+		{Manifest: tailwindv4.Manifest, Generator: tailwindv4.New()},
+		{Manifest: cssmodules.Manifest, Generator: cssmodules.New()},
+		{Manifest: pandacss.Manifest, Generator: pandacss.New()},
+
+		// Frontend — state
+		{Manifest: zustandsetup.Manifest, Generator: zustandsetup.New()},
+		{Manifest: jotaisetup.Manifest, Generator: jotaisetup.New()},
+
+		// Frontend — testing
+		{Manifest: vitesttestinglibrary.Manifest, Generator: vitesttestinglibrary.New()},
+		{Manifest: playwrightsetup.Manifest, Generator: playwrightsetup.New()},
+		{Manifest: storybooksetup.Manifest, Generator: storybooksetup.New()},
+
+		// Frontend — auth modules
+		{Manifest: authclerkfrontend.Manifest, Generator: authclerkfrontend.New()},
+		{Manifest: authbetterauthfrontend.Manifest, Generator: authbetterauthfrontend.New()},
+		{Manifest: authvanillafrontend.Manifest, Generator: authvanillafrontend.New()},
+
+		// Frontend — modules
+		{Manifest: themeprovider.Manifest, Generator: themeprovider.New()},
+		{Manifest: featureflagsposthog.Manifest, Generator: featureflagsposthog.New()},
+		{Manifest: featureflagsvercel.Manifest, Generator: featureflagsvercel.New()},
+		{Manifest: featureflagslocal.Manifest, Generator: featureflagslocal.New()},
+		{Manifest: sentryfrontend.Manifest, Generator: sentryfrontend.New()},
+		{Manifest: analyticsga4.Manifest, Generator: analyticsga4.New()},
+		{Manifest: analyticsplausible.Manifest, Generator: analyticsplausible.New()},
+		{Manifest: seoreact.Manifest, Generator: seoreact.New()},
+
+		// Frontend — formatter rules
+		{Manifest: prettierfrontendrules.Manifest, Generator: prettierfrontendrules.New()},
 
 		// Backend architecture
 		{Manifest: backendArchitectureCleanArchitecture.Manifest, Generator: backendArchitectureCleanArchitecture.New()},

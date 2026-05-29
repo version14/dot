@@ -101,6 +101,22 @@ func (s *VirtualProjectState) WriteFile(path string, content []byte, ct ContentT
 	s.writeRaw(s.np(path), content, ct)
 }
 
+// AppendFile appends content to a raw file, creating it if absent.
+// A newline is added between existing content and new content when needed.
+func (s *VirtualProjectState) AppendFile(path string, content []byte) {
+	full := s.np(path)
+	existing, ok := s.Files[full]
+	if !ok || len(existing.Content) == 0 {
+		s.writeRaw(full, content, ContentRaw)
+		return
+	}
+	combined := append([]byte(nil), existing.Content...)
+	if combined[len(combined)-1] != '\n' {
+		combined = append(combined, '\n')
+	}
+	s.writeRaw(full, append(combined, content...), ContentRaw)
+}
+
 func (s *VirtualProjectState) GetFile(path string) (*FileNode, bool) {
 	f, ok := s.Files[s.np(path)]
 	return f, ok

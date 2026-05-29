@@ -1,0 +1,9 @@
+import type { StorybookConfig } from "{{.FrameworkPkg}}";
+
+const config: StorybookConfig = {
+  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  addons: [],
+  framework: { name: "{{.FrameworkPkg}}", options: {} },
+};
+
+export default config;

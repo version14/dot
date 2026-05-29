@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "prettier_config",
-	Version:     "0.1.0",
+	Version:     "0.1.1",
 	Description: "Base Prettier configuration: .prettierrc and .prettierignore",
 	DependsOn:   []string{"typescript_base"},
 	Outputs: []string{
