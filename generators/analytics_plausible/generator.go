@@ -43,7 +43,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		plausible, _ := nextFS.ReadFile("next/plausible.ts")
 		ctx.State.WriteFile("src/lib/plausible.ts", plausible, state.ContentRaw)
 		env, _ := nextFS.ReadFile("next/.env.example")
-		ctx.State.WriteFile(".env.example", env, state.ContentRaw)
+		ctx.State.AppendFile(".env.example", env)
+	} else {
+		ctx.State.AppendFile(".env.example", []byte("# Plausible Analytics\nVITE_PLAUSIBLE_DOMAIN=yourdomain.com\nVITE_PLAUSIBLE_API_HOST=https://plausible.io\n"))
 	}
 
 	return nil

@@ -43,7 +43,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		ga4, _ := nextFS.ReadFile("next/ga4.ts")
 		ctx.State.WriteFile("src/lib/ga4.ts", ga4, state.ContentRaw)
 		env, _ := nextFS.ReadFile("next/.env.example")
-		ctx.State.WriteFile(".env.example", env, state.ContentRaw)
+		ctx.State.AppendFile(".env.example", env)
+	} else {
+		ctx.State.AppendFile(".env.example", []byte("# Google Analytics 4\nVITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX\n"))
 	}
 
 	return nil

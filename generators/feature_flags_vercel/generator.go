@@ -31,5 +31,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
+	if err := render.NewLocalFolderRenderer(ctx.State).Render(fs, nil); err != nil {
+		return err
+	}
+	ctx.State.AppendFile(".env.example", []byte("# Vercel Edge Config\nEDGE_CONFIG=your_edge_config_connection_string\n"))
+	return nil
 }

@@ -52,7 +52,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	}
 
 	ctx.State.WriteFile("src/lib/sentry.ts", mustRead(src, dir+"/sentry.ts"), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", mustRead(src, dir+"/.env.example"), state.ContentRaw)
+	ctx.State.AppendFile(".env.example", mustRead(src, dir+"/.env.example"))
 
 	if framework == "next" {
 		ctx.State.WriteFile("sentry.client.config.ts", mustRead(nextFS, "next/sentry.client.config.ts"), state.ContentRaw)

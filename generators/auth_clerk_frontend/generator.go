@@ -58,7 +58,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	ctx.State.WriteFile("src/providers/ClerkProvider.tsx", mustRead(src, dir+"/ClerkProvider.tsx"), state.ContentRaw)
 	ctx.State.WriteFile("src/hooks/useAuth.ts", mustRead(src, dir+"/useAuth.ts"), state.ContentRaw)
-	ctx.State.WriteFile(".env.example", mustRead(src, dir+"/.env.example"), state.ContentRaw)
+	ctx.State.AppendFile(".env.example", mustRead(src, dir+"/.env.example"))
 
 	return nil
 }

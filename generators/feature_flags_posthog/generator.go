@@ -43,7 +43,9 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		posthog, _ := nextFS.ReadFile("next/posthog.ts")
 		ctx.State.WriteFile("src/lib/posthog.ts", posthog, state.ContentRaw)
 		env, _ := nextFS.ReadFile("next/.env.example")
-		ctx.State.WriteFile(".env.example", env, state.ContentRaw)
+		ctx.State.AppendFile(".env.example", env)
+	} else {
+		ctx.State.AppendFile(".env.example", []byte("# PostHog\nVITE_POSTHOG_KEY=phc_your_project_api_key\nVITE_POSTHOG_HOST=https://app.posthog.com\n"))
 	}
 
 	return nil
