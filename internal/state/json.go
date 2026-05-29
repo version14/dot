@@ -3,7 +3,6 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -108,7 +107,7 @@ func (d *JSONDoc) DeleteKey(path string) {
 }
 
 // AppendStringSet appends string values into the array at the dotted path,
-// deduplicating and sorting the result for deterministic output. Intermediate
+// deduplicating while preserving insertion order. Intermediate
 // objects and the array itself are created if missing — this is the right
 // helper when several generators each contribute entries to a shared list
 // (e.g. `pnpm.onlyBuiltDependencies`). Returns an error if a non-array value
@@ -159,7 +158,6 @@ func (d *JSONDoc) AppendStringSet(path string, values ...string) error {
 			out = append(out, v)
 		}
 	}
-	sort.Strings(out)
 	arr := make([]interface{}, len(out))
 	for i, s := range out {
 		arr[i] = s

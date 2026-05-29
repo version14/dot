@@ -56,6 +56,9 @@ func Dispatch(ctx context.Context, args []string, toolVersion string) int {
 	case "plugin", "plugins":
 		return runPlugin(ctx, rest)
 
+	case "gen-bump":
+		return runGenBump(rest)
+
 	default:
 		fmt.Fprintf(os.Stderr, "dot: unknown command %q\n\n", cmd)
 		printUsage(os.Stderr, toolVersion)
@@ -75,6 +78,8 @@ func printUsage(w io.Writer, version string) {
 	fmt.Fprintln(w, "  dot plugin <list|install|uninstall> Manage installable plugins")
 	fmt.Fprintln(w, "  dot flows                           List available flows")
 	fmt.Fprintln(w, "  dot generators                      List registered generators")
+	fmt.Fprintln(w, "  dot gen-bump --all [--bump patch|minor|major]   Bump all generator manifest versions")
+	fmt.Fprintln(w, "  dot gen-bump --name NAME [--bump patch|minor|major | --set VERSION]")
 	fmt.Fprintln(w, "  dot version                         Print the tool version")
 	fmt.Fprintln(w, "  dot help                            Show this message")
 	fmt.Fprintln(w)

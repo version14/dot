@@ -9,18 +9,22 @@ on:
     - cron: "0 9 * * 3"
   workflow_dispatch:
 
-# PRs only need read access; schedule/dispatch need write to create branches,
-# PRs, and issues. Scoped at job level below.
+# PRs need read + pull-requests write (to post/update the dep comment).
+# schedule/dispatch need write to create branches, PRs, and issues.
+# Scoped at job level below.
 permissions:
   contents: read
 
 jobs:
   # Runs on every PR and every scheduled/manual trigger.
-  # On PRs: shows the report as a step summary (informational only, never blocks).
+  # On PRs: shows the report as a step summary, comments filtered results on the PR.
   # On schedule/dispatch: feeds the report to the process job which opens PRs.
   scan:
     name: Scan template dependencies
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -38,13 +42,78 @@ jobs:
       - name: Show scan summary
         run: |
           ./bin/dep-checker report --input=dep-report.json --output=dep-report.md
+          cat dep-report.md
           cat dep-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Filter report to PR-changed generators
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Generator directories touched by this PR.
+          # Use --paginate + per_page=100 so large PRs (200+ files) are fully covered.
+          # --jq extracts one generator name per line per page; sort -u deduplicates
+          # across pages; jq -R/jq -s converts the text list to a JSON array.
+          CHANGED_GENS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
+            --paginate \
+            --jq '[.[] | select(.filename | startswith("generators/")) | .filename | split("/")[1]] | .[]' \
+            | sort -u \
+            | jq -R . | jq -s .)
+
+          echo "Changed generators: $CHANGED_GENS"
+
+          if [ "$CHANGED_GENS" = "[]" ]; then
+            echo "No generator files changed in this PR — producing empty filtered report."
+            jq '. + {entries: []}' dep-report.json > pr-dep-report.json
+          else
+            jq --argjson gens "$CHANGED_GENS" \
+              '. + {entries: [.entries[] | select(.generator as $g | ($gens | index($g)) != null)]}' \
+              dep-report.json > pr-dep-report.json
+            echo "Filtered to $(jq '.entries | length' pr-dep-report.json) entries from generators: $CHANGED_GENS"
+          fi
+
+      - name: Comment PR with dependency changes
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          ENTRY_COUNT=$(jq '.entries | length' pr-dep-report.json)
+          if [ "$ENTRY_COUNT" -eq 0 ]; then
+            echo "No tracked dependencies in the changed generators — skipping dep comment."
+            exit 0
+          fi
+
+          ./bin/dep-checker report --input=pr-dep-report.json --output=pr-dep-report.md
+
+          MARKER="<!-- dep-checker-report -->"
+          BODY="${MARKER}
+          $(cat pr-dep-report.md)"
+
+          # Upsert: update existing marker comment, or create a new one.
+          EXISTING_ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq '[.[] | select(.body | startswith("<!-- dep-checker-report -->"))] | first | .id // empty')
+
+          if [ -n "$EXISTING_ID" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$EXISTING_ID" \
+              --method PATCH \
+              --field body="$BODY"
+            echo "Updated dep comment $EXISTING_ID on PR #$PR_NUMBER."
+          else
+            gh pr comment "$PR_NUMBER" --body "$BODY" --repo "$GITHUB_REPOSITORY"
+            echo "Created dep comment on PR #$PR_NUMBER."
+          fi
 
       - name: Fail PR on major/minor updates
         if: github.event_name == 'pull_request'
         run: |
-          if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' dep-report.json > /dev/null; then
-            echo "Major/minor dependency updates detected. Failing PR check." >&2
+          if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' pr-dep-report.json > /dev/null; then
+            echo "Major/minor dependency updates detected in PR-changed generators. Failing PR check." >&2
             exit 1
           fi
 

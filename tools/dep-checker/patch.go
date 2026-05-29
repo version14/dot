@@ -84,6 +84,11 @@ func patchGeneratorFile(generatorName, pkg, current, latest string) error {
 	}
 
 	newVersion := applyPrefix(current, latest)
+	if newVersion == current {
+		// Versions are effectively equal after prefix normalisation — nothing to patch.
+		fmt.Printf("patched %s: %s is already at %s (no-op)\n", filePath, pkg, current)
+		return nil
+	}
 
 	// Allow one or more spaces between the colon and the value to handle
 	// tab-aligned map literals. Anchor on the quoted strings to avoid
