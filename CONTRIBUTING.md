@@ -40,7 +40,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
    ```bash
    git remote add upstream https://github.com/version14/dot.git
    ```
-4. Follow the [Development Setup](#development-setup) section below and [docs/getting-started.md](docs/getting-started.md).
+4. Follow the [Development Setup](#development-setup) section below and [docs/contributor/getting-started.md](docs/contributor/getting-started.md).
 
 ---
 
@@ -48,7 +48,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### Prerequisites
 
-- Go 1.21+ (`go version`)
+- Go 1.26+ (`go version`)
 - `git` on `$PATH`
 - `golangci-lint` (for linting): `brew install golangci-lint` or see [golangci-lint docs](https://golangci-lint.run/usage/install/)
 
@@ -68,10 +68,10 @@ make validate     # fmt → vet → lint → test
 ### End-to-end test
 
 ```bash
-make test-flow    # runs test-flow against all testdata fixtures (skips test commands)
+make test-flows   # runs test-flow against all testdata fixtures (skips test commands)
 ```
 
-See [docs/test-flow.md](docs/test-flow.md) for the full guide.
+See [docs/contributor/test-flow.md](docs/contributor/test-flow.md) for the full guide.
 
 ---
 
@@ -123,14 +123,14 @@ chmod +x .githooks/commit-msg
 
 2. **Make your changes** following the [Code Style](#code-style) guidelines.
 
-3. **Write or update tests** — every new behavior needs a test. If you changed a flow or generator, add or update a `test-flow` fixture (see [docs/test-flow.md](docs/test-flow.md)).
+3. **Write or update tests** — every new behavior needs a test. If you changed a flow or generator, add or update a `test-flow` fixture (see [docs/contributor/test-flow.md](docs/contributor/test-flow.md)).
 
 4. **Update documentation** — see [Documentation](#documentation) for the rules.
 
 5. **Run validation locally**:
    ```bash
    make validate
-   make test-flow
+   make test-flows
    ```
 
 6. **Commit following [Commit Conventions](#commit-conventions)**.
@@ -145,7 +145,7 @@ chmod +x .githooks/commit-msg
 - [ ] All validations pass (`make validate`)
 - [ ] Commits follow Conventional Commits
 - [ ] Tests pass (`make test`)
-- [ ] `test-flow` fixtures pass (`make test-flow`)
+- [ ] `test-flows` fixtures pass (`make test-flows`)
 - [ ] Documentation is updated (see [Documentation rules](#documentation))
 
 ---
@@ -246,10 +246,10 @@ Critical areas that require table-driven tests:
 ### End-to-end tests (test-flow)
 
 ```bash
-make test-flow      # go run ./tools/test-flow -skip-test
+make test-flows     # go run ./tools/test-flow -skip-test
 ```
 
-Every flow change needs a matching fixture. See [docs/test-flow.md](docs/test-flow.md).
+Every flow change needs a matching fixture. See [docs/contributor/test-flow.md](docs/contributor/test-flow.md).
 
 ---
 
@@ -261,20 +261,20 @@ The `docs/` directory is the single source of truth. Read [docs/README.md](docs/
 
 | Change | Required update |
 |--------|----------------|
-| New CLI command or flag | `docs/cli-reference.md` |
-| New flow | `docs/authoring-flows.md` + test fixture |
-| New question type | `docs/authoring-flows.md` + `docs/architecture.md` |
-| New injection kind | `docs/authoring-plugins.md` |
-| New exported type in `pkg/dotapi` or `pkg/dotplugin` | `docs/authoring-generators.md` or `docs/authoring-plugins.md` |
-| **New generator** | **Create `docs/generators/<name>.md`** (copy `docs/generators/_template.md`) + update `docs/README.md` |
-| **New plugin** | **Create `docs/plugins/<name>.md`** (copy `docs/plugins/_template.md`) + update `docs/README.md` |
-| **New flow** | **Create `docs/flows/<id>.md`** (copy `docs/flows/_template.md`) + update `docs/README.md` |
-| Generator manifest fields change | `docs/generators/<name>.md` |
-| Plugin injection IDs change | `docs/plugins/<name>.md` + affected test fixtures |
-| Pipeline step change | `docs/architecture.md` |
-| `.dot/` schema change | `docs/architecture.md` |
-| New `test-flow` flag | `docs/test-flow.md` |
-| Install mechanism change | `docs/getting-started.md` |
+| New CLI command or flag | `docs/user/cli-reference.md` |
+| New flow | `docs/contributor/authoring-flows.md` + test fixture |
+| New question type | `docs/contributor/authoring-flows.md` + `docs/contributor/architecture.md` |
+| New injection kind | `docs/contributor/authoring-plugins.md` |
+| New exported type in `pkg/dotapi` or `pkg/dotplugin` | `docs/contributor/authoring-generators.md` or `docs/contributor/authoring-plugins.md` |
+| **New generator** | **Create `docs/contributor/generators/<name>.md`** (copy `docs/contributor/generators/_template.md`) + update `docs/README.md` |
+| **New plugin** | **Create `docs/contributor/plugins/<name>.md`** (copy `docs/contributor/plugins/_template.md`) + update `docs/README.md` |
+| **New flow** | **Create `docs/contributor/flows/<id>.md`** (copy `docs/contributor/flows/_template.md`) + update `docs/README.md` |
+| Generator manifest fields change | `docs/contributor/generators/<name>.md` |
+| Plugin injection IDs change | `docs/contributor/plugins/<name>.md` + affected test fixtures |
+| Pipeline step change | `docs/contributor/architecture.md` |
+| `.dot/` schema change | `docs/contributor/architecture.md` |
+| New `test-flow` flag | `docs/contributor/test-flow.md` |
+| Install mechanism change | `docs/user/getting-started.md` |
 
 Documentation updates use the `docs` commit type:
 

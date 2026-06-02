@@ -40,9 +40,7 @@ One file per built-in flow. Each covers: question IDs, branching diagram, genera
 | File | Flow |
 |------|------|
 | [contributor/flows/init.md](contributor/flows/init.md) | `init` — default project wizard (TypeScript / Express / decorators / DB / auth) |
-| [contributor/flows/monorepo.md](contributor/flows/monorepo.md) | `monorepo` — general-purpose project wizard |
-| [contributor/flows/fullstack.md](contributor/flows/fullstack.md) | `fullstack` — TypeScript + optional React + optional Go backend |
-| [contributor/flows/microservices.md](contributor/flows/microservices.md) | `microservices` — N services via LoopQuestion |
+| [contributor/flows/frontend.md](contributor/flows/frontend.md) | `frontend` — frontend project wizard (framework, router, UI, styling, state, testing, modules) |
 | [contributor/flows/plugin-template.md](contributor/flows/plugin-template.md) | `plugin-template` — publishable plugin repository |
 
 ### Generator reference (`docs/contributor/generators/`)
@@ -55,9 +53,8 @@ One file per built-in generator. Each covers: answers consumed, files written, v
 | [contributor/generators/typescript_base.md](contributor/generators/typescript_base.md) | `typescript_base` — package.json, tsconfig.json |
 | [contributor/generators/react_app.md](contributor/generators/react_app.md) | `react_app` — React + Vite application |
 | [contributor/generators/biome_config.md](contributor/generators/biome_config.md) | `biome_config` — Biome formatter + linter |
-| [contributor/generators/service_writer.md](contributor/generators/service_writer.md) | `service_writer` — one service per loop iteration |
 | [contributor/generators/plugin_repo_skeleton.md](contributor/generators/plugin_repo_skeleton.md) | `plugin_repo_skeleton` — publishable plugin repo |
-| [contributor/generators/backend_architecture_mvc_architecture.md](contributor/generators/backend_architecture_mvc_architecture.md) | `backend_architecture_mvc` — MVC backend structure |
+| [contributor/generators/backend_architecture_mvc_architecture.md](contributor/generators/backend_architecture_mvc_architecture.md) | `backend_architecture_mvc_architecture` — MVC backend structure |
 | [contributor/generators/backend_architecture_clean_architecture.md](contributor/generators/backend_architecture_clean_architecture.md) | `backend_architecture_clean_architecture` — Clean Architecture backend structure |
 | [contributor/generators/backend_architecture_hexagonal_architecture.md](contributor/generators/backend_architecture_hexagonal_architecture.md) | `backend_architecture_hexagonal` — Hexagonal Architecture backend structure |
 | [contributor/generators/zod_validation_deps.md](contributor/generators/zod_validation_deps.md) | `zod_validation_deps` — Zod / zod-to-openapi / reflect-metadata deps + decorator tsconfig flags |

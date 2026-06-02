@@ -60,7 +60,7 @@ make build        # → bin/dot
 ### Keep it up to date
 
 ```bash
-dot update
+dot self-update
 ```
 
 ### Uninstall
@@ -80,22 +80,25 @@ Project `.dot/` directories are left untouched — remove them manually if neede
 ## Usage
 
 ```bash
-dot scaffold [flow-id] [-out DIR]   # Run an interactive scaffold flow
-dot update [PATH]                   # Re-run generators against an existing project
-dot doctor [PATH]                   # Diagnose drift between spec and installed tools
-dot plugin <list|install|uninstall> # Manage installable plugins
-dot flows                           # List available flows
-dot generators                      # List registered generators
-dot version                         # Print version
-dot help                            # Show help
+dot scaffold [flow-id] [-out DIR]                      # Run an interactive scaffold flow
+dot update [PATH]                                      # Re-run generators against an existing project
+dot self-update                                        # Update dot to the latest release
+dot doctor [PATH]                                      # Diagnose drift between spec and installed tools
+dot plugin <list|install|uninstall>                    # Manage installable plugins
+dot flows                                              # List available flows
+dot generators                                         # List registered generators
+dot gen-bump --all [--bump patch|minor|major]          # Bump all generator manifest versions
+dot gen-bump --name NAME [--bump patch|minor|major | --set VERSION]  # Bump single generator version
+dot version                                            # Print version
+dot help                                               # Show help
 ```
 
 **Quick start:**
 
 ```bash
-dot scaffold                  # pick a flow interactively
-dot scaffold monorepo         # use a specific flow by ID
-dot scaffold fullstack -out ~/projects
+dot scaffold              # pick a flow interactively
+dot scaffold init         # use a specific flow by ID
+dot scaffold frontend -out ~/projects
 ```
 
 After scaffolding, a `.dot/` directory is written alongside the project. It stores the full spec (`spec.json`) and generator manifest (`manifest.json`) so `dot update` and `dot doctor` can work later.
@@ -109,12 +112,11 @@ See [docs/README.md](docs/README.md) for the complete documentation index.
 
 | Flow ID | What it builds |
 |---------|---------------|
-| `monorepo` | General-purpose project — TypeScript, optional React, optional Biome |
-| `fullstack` | TypeScript frontend + optional Go backend |
-| `microservices` | N independent services, each with its own name and port |
+| `init` | Project wizard — TypeScript app, optional monorepo, Express backend, auth, database, tooling |
+| `frontend` | Frontend project — framework, router, UI library, styling, state, testing, modules |
 | `plugin-template` | A publishable dot plugin repository |
 
-The `init` flow also offers a decorator-based API option for Express backends:
+The `init` flow offers a decorator-based API option for Express backends:
 class decorators (`@Controller`, `@Get`, `@Body`, `@Response`, `@Auth`),
 request/response validation via Zod, and an OpenAPI v3 spec served at
 `/docs`. See [docs/user/decorators.md](docs/user/decorators.md).
@@ -170,27 +172,32 @@ dot scaffold
 
 ```
 dot/
-├── cmd/dot/          ← main() — thin entry point, imports plugins
-├── flows/            ← built-in flow definitions + registry
-├── generators/       ← built-in generator packages (one per generator)
-├── plugins/          ← in-tree plugins (biome_extras, ...)
-├── examples/         ← reference plugin implementations
-├── tools/test-flow/  ← end-to-end test runner + fixtures
+├── cmd/dot/              ← main() — thin entry point, imports plugins
+├── flows/                ← built-in flow definitions + registry
+├── generators/           ← built-in generator packages (one per generator)
+├── plugins/              ← in-tree plugins (biome_extras, ...)
+├── examples/             ← reference plugin implementations
+├── tools/
+│   ├── test-flow/        ← end-to-end test runner + fixtures
+│   └── dep-checker/      ← generator dependency version analyzer and updater
 │
 ├── internal/
-│   ├── cli/          ← command dispatch, Scaffold(), TUI form runner, spinner
-│   ├── flow/         ← question DSL, FlowEngine, HookRegistry, FragmentRegistry
-│   ├── spec/         ← ProjectSpec, builder, loader
-│   ├── generator/    ← registry, executor, resolver, topological sorter, validator
-│   ├── state/        ← VirtualProjectState, Persist, JSON/YAML/GoMod helpers
-│   ├── commands/     ← post-gen + test command planner and runner
-│   ├── dotdir/       ← .dot/ read/write (spec.json, manifest.json)
-│   ├── plugin/       ← provider interface, loader, installer
-│   └── versioning/   ← semver parser and constraint checker
+│   ├── cli/              ← command dispatch, Scaffold(), TUI form runner, spinner
+│   ├── flow/             ← question DSL, FlowEngine, HookRegistry, FragmentRegistry
+│   ├── spec/             ← ProjectSpec, builder, loader
+│   ├── generator/        ← registry, executor, resolver, topological sorter, validator
+│   ├── state/            ← VirtualProjectState, Persist, JSON/YAML/GoMod helpers
+│   ├── commands/         ← post-gen + test command planner and runner
+│   ├── dotdir/           ← .dot/ read/write (spec.json, manifest.json)
+│   ├── plugin/           ← provider interface, loader, installer
+│   ├── render/           ← template rendering (local files, remote GitHub URLs), TAR handling
+│   ├── fileutils/        ← path utilities, safe write operations, file tree walking
+│   ├── git/              ← git integration utilities
+│   └── versioning/       ← semver parser and constraint checker
 │
 └── pkg/
-    ├── dotapi/       ← public Generator interface, Manifest, Context (stable API)
-    └── dotplugin/    ← public plugin author API — re-exports from internal
+    ├── dotapi/           ← public Generator interface, Manifest, Context (stable API)
+    └── dotplugin/        ← public plugin author API — re-exports from internal
 ```
 
 See [docs/contributor/architecture.md](docs/contributor/architecture.md) for a deep-dive into each subsystem.
@@ -204,6 +211,8 @@ See [docs/contributor/architecture.md](docs/contributor/architecture.md) for a d
 | **CI** | Push / PR | Vet, lint, test, build |
 | **Commitlint** | Push / PR | Validate commit messages |
 | **Release** | `v*.*.*` tag | Build multi-platform binaries, create GitHub Release |
+| **Dep-checker** | PR, weekly (Wed 09:00 UTC), manual | Scan generator dependencies for outdated packages |
+| **Dependency review** | PR to main | GitHub dependency vulnerability scanning |
 
 **Local checks before pushing:**
 

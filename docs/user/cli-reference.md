@@ -28,7 +28,7 @@ dot scaffold [flow-id] [-out DIR] [-skip-post]
 
 | Argument | Description |
 |----------|-------------|
-| `flow-id` | Optional. ID of the flow to run (e.g. `monorepo`, `fullstack`). When omitted and more than one flow is registered, DOT lists available flows and exits. |
+| `flow-id` | Optional. ID of the flow to run (e.g. `init`, `frontend`). When omitted and more than one flow is registered, DOT shows an interactive flow picker. |
 
 **Flags**
 
@@ -64,9 +64,9 @@ Each generator prints a status line. Post-gen commands show a live spinner with 
 
 ```bash
 dot scaffold                          # pick flow interactively
-dot scaffold monorepo                 # use the monorepo flow
-dot scaffold fullstack -out /tmp      # write to /tmp/<project_name>/
-dot scaffold monorepo --skip-post     # generate files only, no pnpm install
+dot scaffold init                     # use the init flow
+dot scaffold frontend -out /tmp       # write to /tmp/<project_name>/
+dot scaffold init --skip-post         # generate files only, no pnpm install
 ```
 
 ---
@@ -134,7 +134,7 @@ dot doctor [PATH]
 **Output**
 
 ```
-✓ flow: monorepo
+✓ flow: init
 ✓ generators: all found
 ⚠ version drift: base_project spec=0.1.0 installed=0.2.0
 ✓ validators: 12 passed
@@ -164,10 +164,10 @@ No flags. No arguments.
 
 ```
 Flows
-  monorepo         Turborepo monorepo (apps + shared packages)
-                   Full monorepo with pnpm workspaces, Turborepo, and shared packages.
-  fullstack        Full-stack app (Next.js + Go API)
-  microservices    Go microservices (multiple services, Docker Compose)
+  init             Project Wizard
+                   Scaffold a new project with optional monorepo, language, and tooling.
+  frontend         Frontend project wizard
+                   Framework → router → UI library → styling → state → formatter/linter → testing → modules.
   plugin-template  Plugin Repository Template
                    Scaffold a publishable DOT plugin repo (go.mod + plugin.go + manifest + README + LICENSE).
 ```
@@ -301,6 +301,54 @@ Removes `~/.dot/plugins/<id>/`. Idempotent — no error if the plugin is not ins
 | `0` | Success (or already not installed) |
 | `1` | Filesystem error |
 | `2` | No ID provided |
+
+---
+
+### `dot self-update`
+
+Update the dot binary to the latest release.
+
+```
+dot self-update
+```
+
+No flags. No arguments. Fetches the latest release and replaces the current binary in-place.
+
+**Exit codes**
+
+| Code | Meaning |
+|------|---------|
+| `0` | Updated successfully (or already on the latest version) |
+| `1` | Network error or write failure |
+
+---
+
+### `dot gen-bump`
+
+Bump generator manifest versions. Intended for dot maintainers when releasing new generator versions.
+
+```
+dot gen-bump --all [--bump patch|minor|major]
+dot gen-bump --name NAME [--bump patch|minor|major | --set VERSION]
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--all` | Bump all registered generators. |
+| `--name NAME` | Bump a single generator by name. |
+| `--bump patch\|minor\|major` | Increment strategy (default: `patch`). |
+| `--set VERSION` | Set an explicit version string instead of incrementing. Only valid with `--name`. |
+
+**Examples**
+
+```bash
+dot gen-bump --all                        # patch-bump every generator
+dot gen-bump --all --bump minor           # minor-bump every generator
+dot gen-bump --name react_app --bump minor
+dot gen-bump --name biome_config --set 1.0.0
+```
 
 ---
 

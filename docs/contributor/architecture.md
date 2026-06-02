@@ -66,7 +66,9 @@ flows/                    Built-in flow definitions + registry
 generators/               Built-in generator packages
 plugins/                  Built-in (in-tree) plugins
 examples/                 Example community plugin
-tools/test-flow/          End-to-end test runner for flows
+tools/
+  test-flow/              End-to-end test runner for flows
+  dep-checker/            Generator dependency version analyzer and updater
 
 pkg/
   dotapi/                 Public API for generator authors (stable)
@@ -81,8 +83,10 @@ internal/
   commands/               Command planner, runner, dedup, {token} interpolation
   dotdir/                 .dot/ directory read/write (spec.json, manifest.json)
   plugin/                 Plugin loader, installer, Provider interface
+  render/                 Template rendering (local files, remote GitHub URLs), TAR handling
+  fileutils/              Path helpers, safe write, directory walker
+  git/                    Git integration utilities
   versioning/             Semver parser, constraint checker, version cache
-  file-utils/             Path helpers, safe write, directory walker
 ```
 
 ---

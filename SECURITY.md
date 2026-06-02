@@ -12,7 +12,7 @@
 
 To report a security issue, email the maintainers at:
 
-> **pro@mathieusouflis.com** — replace with your actual security contact before publishing this repository.
+> **pro@mathieusouflis.com**
 
 Include:
 

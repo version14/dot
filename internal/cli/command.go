@@ -85,8 +85,8 @@ func printUsage(w io.Writer, version string) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Examples:")
 	fmt.Fprintln(w, "  dot scaffold                        # pick flow interactively")
-	fmt.Fprintln(w, "  dot scaffold monorepo               # use the monorepo flow")
-	fmt.Fprintln(w, "  dot scaffold fullstack -out /tmp")
+	fmt.Fprintln(w, "  dot scaffold init                   # use the init flow")
+	fmt.Fprintln(w, "  dot scaffold frontend -out /tmp")
 	fmt.Fprintln(w, "  dot update ./my-project             # re-run generators after an upgrade")
 	fmt.Fprintln(w, "  dot doctor ./my-project             # check spec ↔ installed drift")
 }

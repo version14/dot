@@ -212,7 +212,9 @@ dot/
 ├── generators/       ← Built-in generator packages (one package per generator)
 ├── plugins/          ← In-tree plugins (biome_extras, ...)
 ├── examples/         ← Reference plugin implementations
-├── tools/test-flow/  ← End-to-end test runner + fixtures (testdata/)
+├── tools/
+│   ├── test-flow/    ← End-to-end test runner + fixtures (testdata/)
+│   └── dep-checker/  ← Generator dependency version analyzer and updater
 ├── scripts/          ← Development setup scripts (you are here)
 │
 ├── internal/
@@ -224,6 +226,9 @@ dot/
 │   ├── commands/     ← Post-gen + test command planner and runner
 │   ├── dotdir/       ← .dot/ read/write (spec.json, manifest.json)
 │   ├── plugin/       ← Provider interface, loader, installer
+│   ├── render/       ← Template rendering (local files, remote GitHub URLs), TAR handling
+│   ├── fileutils/    ← Path utilities, safe write operations, file tree walking
+│   ├── git/          ← Git integration utilities
 │   └── versioning/   ← Semver parser and constraint checker
 │
 └── pkg/

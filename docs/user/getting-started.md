@@ -42,7 +42,7 @@ brew install version14/tap/dot
 go install github.com/version14/dot/cmd/dot@latest
 ```
 
-Requires Go 1.21+. The binary lands in `$GOPATH/bin` (usually already on `$PATH`).
+Requires Go 1.26+. The binary lands in `$GOPATH/bin` (usually already on `$PATH`).
 
 ### From source
 
@@ -75,9 +75,8 @@ Output:
 
 ```
 Flows
-  monorepo      Turborepo monorepo (apps + shared packages)
-  fullstack     Full-stack app (Next.js + Go API)
-  microservices Go microservices (multiple services, Docker Compose)
+  init             Project Wizard
+  frontend         Frontend project wizard
   plugin-template  Plugin Repository Template
 ```
 
@@ -89,18 +88,10 @@ dot scaffold
 
 If there is more than one flow, DOT lists them and asks you to pick one:
 
-```
-Multiple flows available — re-run with one of:
-  dot scaffold monorepo
-  dot scaffold fullstack
-  dot scaffold microservices
-  dot scaffold plugin-template
-```
-
 Or pass the flow ID directly:
 
 ```bash
-dot scaffold monorepo
+dot scaffold init
 ```
 
 ### 3. Answer the interactive questions
@@ -128,13 +119,13 @@ post-gen commands (1)
 To skip post-generation commands (useful for CI or offline runs):
 
 ```bash
-dot scaffold monorepo --skip-post
+dot scaffold init --skip-post
 ```
 
 To write the project to a specific directory:
 
 ```bash
-dot scaffold monorepo -out /tmp
+dot scaffold init -out /tmp
 # Creates /tmp/my-project/
 ```
 
@@ -184,7 +175,7 @@ dot doctor ./my-project
 Output example:
 
 ```
-✓ flow: monorepo
+✓ flow: init
 ✓ generators: all found
 ⚠ version drift: base_project spec=0.1.0 installed=0.2.0
 ✓ validators: 12 passed
