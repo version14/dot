@@ -9,7 +9,7 @@ Sets up Panda CSS v1 with a config file. Registers `panda codegen` as a `prepare
 | Field | Value |
 |-------|-------|
 | Name | `panda_css` |
-| Version | `0.2.0` |
+| Version | `0.4.0` |
 | Package | `generators/panda_css` |
 
 ---
@@ -45,6 +45,15 @@ Also merges into:
 | `package.json` | `devDependencies`: `@pandacss/dev`; `scripts.prepare`: `panda codegen` (appended) |
 | `.prettierignore` | Appends `styled-system/` |
 | `biome.json` | `files.ignore`: `styled-system/**` (biome only) |
+| `tsconfig.json` | `compilerOptions.paths["@styled-system/*"]`: `["./styled-system/*"]` |
+| `vite.config.ts` | `resolve.alias["@styled-system"]`: `path.resolve(__dirname, "styled-system")` (when file exists and alias not already present) |
+
+When `version14_ui` ran before this generator, two additional patches are applied:
+
+| Path | Change |
+|------|--------|
+| `src/styles/global.css` | Prepends `@import "@version14/ui/fonts.css";` |
+| `panda.config.ts` | Adds `import { v14Preset } from "@version14/ui/preset"` and `presets: [v14Preset]` |
 
 ---
 
