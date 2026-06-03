@@ -182,13 +182,21 @@ func FrontendFlow() *FlowDef {
 		},
 	}
 
+	includeTanstackQuery := &flow.ConfirmQuestion{
+		QuestionBase: flow.QuestionBase{ID_: "include-tanstack-query"},
+		Label:        "Include TanStack Query (server-state management)?",
+		Default:      false,
+		Then:         &flow.Next{Question: formatter},
+		Else:         &flow.Next{Question: formatter},
+	}
+
 	state := &flow.OptionQuestion{
 		QuestionBase: flow.QuestionBase{ID_: "frontend-state"},
 		Label:        "State management",
 		Options: []*flow.Option{
-			{Label: "Zustand", Value: FRONTEND_STATE_ZUSTAND, Next: &flow.Next{Question: formatter}},
-			{Label: "Jotai", Value: FRONTEND_STATE_JOTAI, Next: &flow.Next{Question: formatter}},
-			{Label: "None", Value: FRONTEND_STATE_NONE, Next: &flow.Next{Question: formatter}},
+			{Label: "Zustand", Value: FRONTEND_STATE_ZUSTAND, Next: &flow.Next{Question: includeTanstackQuery}},
+			{Label: "Jotai", Value: FRONTEND_STATE_JOTAI, Next: &flow.Next{Question: includeTanstackQuery}},
+			{Label: "None", Value: FRONTEND_STATE_NONE, Next: &flow.Next{Question: includeTanstackQuery}},
 		},
 	}
 
@@ -265,6 +273,7 @@ func resolveFrontendGenerators(s *spec.ProjectSpec) []Invocation {
 	uiLib, _ := s.Answers["ui-library"].(string)
 	stylingChoice, _ := s.Answers["frontend-styling"].(string)
 	stateChoice, _ := s.Answers["frontend-state"].(string)
+	includeTanstackQuery, _ := s.Answers["include-tanstack-query"].(bool)
 	formatterChoice, _ := s.Answers["frontend-formatter"].(string)
 	includeVitest, _ := s.Answers["include-vitest"].(bool)
 	includePlaywright, _ := s.Answers["include-playwright"].(bool)
@@ -330,6 +339,11 @@ func resolveFrontendGenerators(s *spec.ProjectSpec) []Invocation {
 		out = append(out, Invocation{Name: "zustand_setup"})
 	case FRONTEND_STATE_JOTAI:
 		out = append(out, Invocation{Name: "jotai_setup"})
+	}
+
+	// Server-state management
+	if includeTanstackQuery {
+		out = append(out, Invocation{Name: "tanstack_query"})
 	}
 
 	// Testing
