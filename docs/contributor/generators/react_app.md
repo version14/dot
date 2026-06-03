@@ -9,7 +9,7 @@ React + Vite application. Merges React dependencies and JSX compiler options int
 | Field   | Value                  |
 | ------- | ---------------------- |
 | Name    | `react_app`            |
-| Version | `0.6.0` |
+| Version | `0.7.1` |
 | Package | `generators/react_app` |
 
 ---
@@ -37,7 +37,7 @@ React + Vite application. Merges React dependencies and JSX compiler options int
 | Path             | Description                                                 |
 | ---------------- | ----------------------------------------------------------- |
 | `index.html`     | HTML entry point with `<div id="root">` and Vite script tag |
-| `vite.config.ts` | Vite config with `@vitejs/plugin-react`                     |
+| `vite.config.ts` | Vite config with `@vitejs/plugin-react` and `resolve.alias["@"]` → `src` |
 | `src/main.tsx`   | React DOM `createRoot` entry                                |
 | `src/App.tsx`    | Minimal `App` component returning a heading                 |
 
