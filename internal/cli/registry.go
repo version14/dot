@@ -60,6 +60,7 @@ import (
 	shadcnui "github.com/version14/dot/generators/shadcn_ui"
 	storybooksetup "github.com/version14/dot/generators/storybook_setup"
 	tailwindv4 "github.com/version14/dot/generators/tailwind_v4"
+	tanstackquery "github.com/version14/dot/generators/tanstack_query"
 	tanstackrouter "github.com/version14/dot/generators/tanstack_router"
 	themeprovider "github.com/version14/dot/generators/theme_provider"
 	typescriptbase "github.com/version14/dot/generators/typescript_base"
@@ -101,6 +102,7 @@ func builtinGeneratorEntries() []generator.Entry {
 		// Frontend — state
 		{Manifest: zustandsetup.Manifest, Generator: zustandsetup.New()},
 		{Manifest: jotaisetup.Manifest, Generator: jotaisetup.New()},
+		{Manifest: tanstackquery.Manifest, Generator: tanstackquery.New()},
 
 		// Frontend — testing
 		{Manifest: vitesttestinglibrary.Manifest, Generator: vitesttestinglibrary.New()},

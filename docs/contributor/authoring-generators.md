@@ -490,3 +490,4 @@ Each loop iteration is a separate `generator.Invocation`. The same generator fun
 | `auth_jwt_users_schema` | `generators/auth_jwt_users_schema` | Drizzle users schema for JWT auth |
 | `auth_jwt_mvc_route` | `generators/auth_jwt_mvc_route` | JWT auth route for MVC architecture |
 | `auth_jwt_clean_arch_module` | `generators/auth_jwt_clean_arch_module` | JWT auth module for Clean Architecture |
+| `tanstack_query` | `generators/tanstack_query` | TanStack Query v5 server-state with QueryProvider and devtools; injects into `src/main.tsx` |
