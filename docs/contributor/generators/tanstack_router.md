@@ -9,7 +9,7 @@ Adds TanStack Router (file-based routing) to a React+Vite app — installs the V
 | Field | Value |
 |-------|-------|
 | Name | `tanstack_router` |
-| Version | `0.2.0` |
+| Version | `0.2.2` |
 | Package | `generators/tanstack_router` |
 
 ---

@@ -2,6 +2,8 @@ package tanstackrouter
 
 import (
 	"embed"
+	"slices"
+	"strings"
 
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
@@ -33,5 +35,23 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		return err
 	}
 
-	return render.NewLocalFolderRenderer(ctx.State).Render(fs, nil)
+	if err := render.NewLocalFolderRenderer(ctx.State).Render(fs, nil); err != nil {
+		return err
+	}
+
+	// Inject global CSS import when panda_css already ran (and wrote the CSS file).
+	if slices.Contains(ctx.PreviousGens, "panda_css") {
+		if f, ok := ctx.State.GetFile("src/main.tsx"); ok {
+			content := string(f.Content)
+			if !strings.Contains(content, "styles/global.css") {
+				content = strings.Replace(content,
+					`import React from "react";`,
+					"import React from \"react\";\nimport \"./styles/global.css\";",
+					1)
+				ctx.State.WriteFile("src/main.tsx", []byte(content), state.ContentRaw)
+			}
+		}
+	}
+
+	return nil
 }
