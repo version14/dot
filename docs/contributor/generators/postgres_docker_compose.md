@@ -9,7 +9,7 @@ Creates `docker-compose.yml` with a PostgreSQL 16 service for the local developm
 | Field | Value |
 |-------|-------|
 | Name | `postgres_docker_compose` |
-| Version | `0.1.0` |
+| Version | `0.1.2` |
 | Package | `generators/postgres_docker_compose` |
 
 ---
