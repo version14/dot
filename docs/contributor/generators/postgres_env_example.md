@@ -9,7 +9,7 @@ Appends `DATABASE_URL` (PostgreSQL connection string) to the `.env.example` file
 | Field | Value |
 |-------|-------|
 | Name | `postgres_env_example` |
-| Version | `0.1.0` |
+| Version | `0.1.1` |
 | Package | `generators/postgres_env_example` |
 
 ---

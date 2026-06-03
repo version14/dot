@@ -9,7 +9,7 @@ Creates the Express TypeScript source files: `src/index.ts` (server bootstrap wi
 | Field | Value |
 |-------|-------|
 | Name | `express_server_entrypoint` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/express_server_entrypoint` |
 
 ---
