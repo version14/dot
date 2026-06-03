@@ -8,7 +8,7 @@ const packageJSONFileName = "package.json"
 // the package.json + tsconfig.json that any TypeScript project needs.
 var Manifest = dotapi.Manifest{
 	Name:        "typescript_base",
-	Version:     "0.2.1",
+	Version:     "0.2.2",
 	Description: "TypeScript foundation: package.json + tsconfig.json",
 	DependsOn:   []string{"base_project"},
 	Outputs: []string{

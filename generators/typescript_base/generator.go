@@ -52,12 +52,13 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 					"strict":           true,
 					"esModuleInterop":  true,
 					"skipLibCheck":     true,
+					"rootDir":          ".",
 					"outDir":           "dist",
 				},
 				"include": []interface{}{"src"},
 			})
 		}
-		return nil
+		return d.SetNested("compilerOptions.paths.@/*", []interface{}{"./src/*"})
 	})
 }
 

@@ -9,7 +9,7 @@ TypeScript foundation for any project. Writes `package.json` and `tsconfig.json`
 | Field | Value |
 |-------|-------|
 | Name | `typescript_base` |
-| Version | `0.2.1` |
+| Version | `0.2.2` |
 | Package | `generators/typescript_base` |
 
 ---
