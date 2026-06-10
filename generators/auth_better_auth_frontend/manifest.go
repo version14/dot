@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "auth_better_auth_frontend",
-	Version:       "0.2.0",
+	Version:       "0.2.1",
 	Description:   "Better Auth client setup with AuthProvider and useAuth hook",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"auth_clerk_frontend", "auth_vanilla_frontend"},

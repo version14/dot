@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "auth_better_auth",
-	Version:     "0.2.2",
+	Version:     "0.2.3",
 	Description: "BetterAuth setup with Drizzle adapter: src/lib/auth.ts plus a direct toNodeHandler mount in src/app.ts (no intermediate route file)",
 	DependsOn:   []string{"drizzle_postgres_adapter"},
 	Outputs: []string{

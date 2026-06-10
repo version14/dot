@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "express_server_typescript_deps",
-	Version:     "0.3.0",
+	Version:     "0.3.1",
 	Description: "Express + CORS + dotenv npm dependencies and dev/build/start scripts for TypeScript projects",
 	DependsOn:   []string{"express_server_entrypoint"},
 	Outputs:     []string{},
