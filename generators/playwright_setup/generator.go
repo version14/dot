@@ -39,7 +39,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"test:e2e": "playwright test",
 			},
 			"devDependencies": map[string]interface{}{
-				"@playwright/test": "^1.60.0",
+				"@playwright/test": "^1.61.1",
 			},
 		})
 		return nil

@@ -23,7 +23,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
 				"react-router":     "^8.0.1",
-				"react-router-dom": "^7.16.0",
+				"react-router-dom": "^7.18.0",
 			},
 		})
 		return nil

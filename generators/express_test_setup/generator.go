@@ -30,8 +30,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"test:coverage": "vitest run --coverage",
 			},
 			"devDependencies": map[string]interface{}{
-				"vitest":              "^4.1.7",
-				"@vitest/coverage-v8": "^4.1.7",
+				"vitest":              "^4.1.9",
+				"@vitest/coverage-v8": "^4.1.9",
 				"supertest":           "^7.2.2",
 				"@types/supertest":    "^7.2.0",
 			},

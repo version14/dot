@@ -39,14 +39,14 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"preview": "vite preview",
 			},
 			"dependencies": map[string]interface{}{
-				"react":     "^19.2.6",
-				"react-dom": "^19.2.6",
+				"react":     "^19.2.7",
+				"react-dom": "^19.2.7",
 			},
 			"devDependencies": map[string]interface{}{
-				"@types/react":         "^19.2.15",
+				"@types/react":         "^19.2.17",
 				"@types/react-dom":     "^19.2.3",
-				"@vitejs/plugin-react": "^6.0.2",
-				"vite":                 "^8.0.14",
+				"@vitejs/plugin-react": "^6.0.3",
+				"vite":                 "^8.1.0",
 			},
 		})
 		return nil

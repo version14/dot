@@ -28,7 +28,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"better-auth": "^1.6.11",
+				"better-auth": "^1.6.20",
 			},
 		})
 		return nil

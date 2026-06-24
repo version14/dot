@@ -75,7 +75,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"format": "biome format --write .",
 			},
 			"devDependencies": map[string]interface{}{
-				"@biomejs/biome": "^2.4.16",
+				"@biomejs/biome": "^2.5.1",
 			},
 		})
 		return nil
