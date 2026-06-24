@@ -22,7 +22,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"dependencies": map[string]interface{}{
-				"react-router":     "^7.16.0",
+				"react-router":     "^8.0.1",
 				"react-router-dom": "^7.16.0",
 			},
 		})
