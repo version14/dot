@@ -105,7 +105,7 @@ jobs:
           node-version: "22"
 
       - name: Download binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dot-binaries-linux-amd64
           path: bin/
