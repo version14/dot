@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "version14_ui",
-	Version:       "0.2.1",
+	Version:       "0.4.0",
 	Description:   "@version14/ui component library",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"shadcn_ui", "ark_ui"},
@@ -22,6 +22,7 @@ var Manifest = dotapi.Manifest{
 			Name: "version14-ui-files",
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "dependencies.@version14/ui"},
+				{Type: dotapi.CheckJSONKeyExists, Path: "package.json", Key: "dependencies.@ark-ui/react"},
 			},
 		},
 	},

@@ -29,7 +29,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
 			"devDependencies": map[string]interface{}{
-				"@pandacss/dev": "^1.11.1",
+				"@pandacss/dev": "^1.11.4",
 			},
 		})
 		prepare := "panda codegen"

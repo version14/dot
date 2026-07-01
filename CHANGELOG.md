@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## 0.8.1
+
+### Fixed
+- `version14_ui` never wired up `@version14/ui/styles.css` — the component
+  library installed and typechecked fine, but nothing imported its
+  precompiled CSS, so every scaffolded component rendered unstyled
+  regardless of which styling engine (Tailwind, CSS Modules, Panda, or none)
+  was picked. The import is now injected directly into the app's real entry
+  point (`src/main.tsx` for `react_app`, `src/app/layout.tsx` for
+  `nextjs_base`) by `version14_ui` itself, so it no longer depends on
+  `panda_css` having run.
+- `version14_ui` never added `@ark-ui/react` as a dependency even though
+  every `@version14/ui` component wraps an Ark UI primitive at runtime and
+  in its type declarations — added explicitly, matching the `ark_ui`
+  generator's own convention.
+- Bumped the `@version14/ui` pin to `0.8.0`, which fixes the published
+  package itself missing `dist/styles.css` from its npm tarball (present in
+  `0.7.2` and earlier), and `@pandacss/dev` to `^1.11.4` to match its new
+  peer range.
+- `V14Example.tsx` now actually renders `Button` imported from
+  `@version14/ui/button` instead of static placeholder text, demonstrating
+  the library's per-component subpath imports.
+- Added two `tools/test-flow` fixtures covering `version14_ui` on Next.js
+  and on a non-Panda styling engine — the styles-import bug was invisible to
+  the previous test coverage, which only ever combined `version14_ui` with
+  `panda-css` on React+Vite.
+
+---
+
 ## 0.6.0
 
 ### Added

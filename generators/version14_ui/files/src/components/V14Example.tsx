@@ -1,7 +1,7 @@
+// Import "@version14/ui/styles.css" once in your app's entry point — it
+// ships the pre-generated component styles and isn't included here.
+import { Button } from "@version14/ui/button";
+
 export default function V14Example() {
-  return (
-    <div>
-      @version14/ui is installed. Import components from "@version14/ui".
-    </div>
-  );
+  return <Button variant="primary">@version14/ui is installed</Button>;
 }
