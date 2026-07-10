@@ -63,6 +63,9 @@ go run ./tools/test-flow -only turborepo_ts_react
 # Run multiple fixtures
 go run ./tools/test-flow -only "turborepo_ts_react,single_go"
 
+# Run up to four fixtures concurrently (the default is GOMAXPROCS)
+go run ./tools/test-flow -parallel 4
+
 # Skip post-gen commands globally (faster, offline)
 go run ./tools/test-flow -skip-post
 
@@ -96,6 +99,8 @@ make test-flow            # equivalent to go run ./tools/test-flow -skip-test
 | `-skip-post` | `false` | Skip all `PostGenerationCommands` globally. Overrides the fixture's `skip_post_commands`. |
 | `-skip-test` | `false` | Skip all `TestCommands` globally. Overrides the fixture's `skip_test_commands`. |
 | `-only NAMES` | (all) | Comma-separated list of fixture `name` values to run. |
+| `-parallel N` | `GOMAXPROCS` | Maximum fixtures to run concurrently. Each fixture uses its own scratch directory. |
+| `-list` | `false` | Print enabled fixture names as a JSON array and exit. Used by CI to build its test matrix. |
 | `-keep` | `false` | Do not delete scratch directories after the run. Lets you inspect generated files. |
 | `-no-cache` | `false` | Ignore cache hits and re-run every case from scratch. Cache entries are still refreshed on success. |
 | `-keep-going` | `false` | Continue running remaining cases after a failure. Without this flag the runner stops at the **first** failing case (fail-fast is the default). |
@@ -104,7 +109,7 @@ make test-flow            # equivalent to go run ./tools/test-flow -skip-test
 
 ## Fail-fast (default)
 
-The runner stops at the first failing case so you see the failure immediately instead of waiting for the rest of the suite. The summary reports how many cases were skipped:
+The runner starts fixtures concurrently up to `-parallel`. On the first failure it stops scheduling new fixtures and cancels active work through its context. A fixture already near completion may still report a result. The summary reports how many cases were skipped:
 
 ```
 ✗ 1/18 cases failed (10 not run)
@@ -120,6 +125,10 @@ make test-flows -- -keep-going                # via the Makefile shortcut
 ```
 
 Failed cases never write to `.test-flow-cache/`, so re-running after a fix only retries cases that didn't pass last time (if combined with the cache).
+
+## CI execution
+
+CI discovers enabled fixtures with `test-flow -list`, then runs one matrix job per fixture. The matrix uses `fail-fast: true`: all fixture jobs start concurrently, and GitHub cancels queued or in-progress matrix jobs when one fails.
 
 ---
 
