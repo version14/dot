@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"syscall"
 
 	"github.com/version14/dot/flows"
@@ -48,7 +51,13 @@ func main() {
 	keep := flag.Bool("keep", false, "do not delete per-case scratch dirs (so you can inspect outputs)")
 	noCache := flag.Bool("no-cache", false, "ignore cache hits and re-run every case from scratch (cache entries are still refreshed on success)")
 	keepGoing := flag.Bool("keep-going", false, "continue running remaining cases after a failure (default: stop at the first failure)")
+	parallel := flag.Int("parallel", runtime.GOMAXPROCS(0), "number of cases to run concurrently")
+	list := flag.Bool("list", false, "print enabled case names as a JSON array and exit")
 	flag.Parse()
+	if *parallel < 1 {
+		fmt.Fprintln(os.Stderr, "test-flow: -parallel must be at least 1")
+		os.Exit(2)
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -70,15 +79,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, "test-flow: no cases match -only filter")
 		os.Exit(2)
 	}
+	if *list {
+		if err := json.NewEncoder(os.Stdout).Encode(enabledCaseNames(cases)); err != nil {
+			fmt.Fprintln(os.Stderr, "test-flow:", err)
+			os.Exit(2)
+		}
+		return
+	}
 
 	rt, err := cli.DefaultRuntime()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "test-flow:", err)
 		os.Exit(2)
 	}
-
-	rep := NewReporter(len(cases))
-	results := make([]*Result, 0, len(cases))
 
 	repoRoot, err := os.Getwd()
 	if err != nil {
@@ -94,57 +107,130 @@ func main() {
 		keepScratch:      *keep,
 		noCache:          *noCache,
 		repoRoot:         repoRoot,
+		flowsDir:         flowsDir(repoRoot),
 	}
 
-	// Fail-fast by default — stop the loop on the first failing case so
-	// developers see the failure immediately instead of waiting for the
-	// remaining cases to finish. Pass -keep-going to run every case.
-	stopped := false
-	for _, tc := range cases {
-		if tc.Disabled {
-			continue
-		}
-
-		def, ok := registry.Get(tc.FlowID)
-		if !ok {
-			r := &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}
-			rep.CaseStart(tc.Name, tc.FlowID)
-			rep.Step("flow lookup", false, "", r.Err)
-			rep.CaseEnd(false)
-			results = append(results, r)
-			if !*keepGoing {
-				stopped = true
-				break
-			}
-			continue
-		}
-
-		caseOpts := opts
-		caseOpts.caseFile = tc.SourcePath
-		caseOpts.flowsDir = flowsDir(repoRoot)
-
-		r := runOne(ctx, tc, def, rt, rep, caseOpts)
-		results = append(results, r)
-		if !r.Pass() && !*keepGoing {
-			stopped = true
-			break
-		}
-	}
-
+	totalCases := len(enabledCaseNames(cases))
+	rep := NewReporter(totalCases)
+	results, stopped := runCases(ctx, cases, registry, rt, rep, opts, *parallel, *keepGoing)
 	if stopped {
 		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Stopped at first failure (pass -keep-going to run every case).")
+		fmt.Fprintln(os.Stdout, "Stopped after the first failure (pass -keep-going to run every case).")
 	}
 
-	totalCases := 0
-	for _, c := range cases {
-		if !c.Disabled {
-			totalCases++
-		}
-	}
 	if Summarize(os.Stdout, results, totalCases) > 0 {
 		os.Exit(1)
 	}
+}
+
+type caseJob struct {
+	index int
+	case_ *TestCase
+}
+
+// runCases executes independent fixtures with a bounded worker pool. A failed
+// case cancels work that has not started yet by default; -keep-going disables
+// that cancellation and lets every selected fixture complete.
+func runCases(
+	ctx context.Context,
+	cases []*TestCase,
+	registry *flows.Registry,
+	rt *cli.Runtime,
+	rep *StepReporter,
+	opts caseOptions,
+	parallel int,
+	keepGoing bool,
+) ([]*Result, bool) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	jobs := make(chan caseJob)
+	results := make([]*Result, len(cases))
+	var wg sync.WaitGroup
+	var cancelOnce sync.Once
+	stopped := false
+	var stoppedMu sync.Mutex
+
+	worker := func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case job, ok := <-jobs:
+				if !ok {
+					return
+				}
+
+				tc := job.case_
+				def, ok := registry.Get(tc.FlowID)
+				var result *Result
+				if !ok {
+					result = &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}
+					rep.CaseStart(tc.Name, tc.FlowID)
+					rep.Step("flow lookup", false, "", result.Err)
+					rep.CaseEnd(false)
+				} else {
+					caseOpts := opts
+					caseOpts.caseFile = tc.SourcePath
+					result = runOne(ctx, tc, def, rt, rep, caseOpts)
+				}
+				results[job.index] = result
+
+				if !result.Pass() && !keepGoing {
+					cancelOnce.Do(func() {
+						stoppedMu.Lock()
+						stopped = true
+						stoppedMu.Unlock()
+						cancel()
+					})
+				}
+			}
+		}
+	}
+
+	enabled := len(enabledCaseNames(cases))
+	if parallel > enabled {
+		parallel = enabled
+	}
+	wg.Add(parallel)
+	for range parallel {
+		go worker()
+	}
+
+enqueue:
+	for i, tc := range cases {
+		if tc.Disabled {
+			continue
+		}
+		select {
+		case <-ctx.Done():
+			break enqueue
+		case jobs <- caseJob{index: i, case_: tc}:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	completed := make([]*Result, 0, enabled)
+	for _, result := range results {
+		if result != nil {
+			completed = append(completed, result)
+		}
+	}
+	stoppedMu.Lock()
+	defer stoppedMu.Unlock()
+	return completed, stopped
+}
+
+func enabledCaseNames(cases []*TestCase) []string {
+	names := make([]string, 0, len(cases))
+	for _, tc := range cases {
+		if !tc.Disabled {
+			names = append(names, tc.Name)
+		}
+	}
+	return names
 }
 
 // flowsDir returns the absolute path to the flows/ directory. The cache

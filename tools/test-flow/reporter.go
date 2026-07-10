@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 
@@ -57,6 +58,7 @@ type StepReporter struct {
 	w     io.Writer
 	idx   int
 	total int
+	mu    sync.Mutex
 }
 
 func NewReporter(total int) *StepReporter {
@@ -65,6 +67,8 @@ func NewReporter(total int) *StepReporter {
 
 // CaseStart begins a new case block.
 func (r *StepReporter) CaseStart(name, flowID string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.idx++
 	prefix := indexStyle.Render(fmt.Sprintf("[%d/%d]", r.idx, r.total))
 	suffix := dimStyle.Render(fmt.Sprintf("(flow=%s)", flowID))
@@ -73,11 +77,15 @@ func (r *StepReporter) CaseStart(name, flowID string) {
 
 // Step prints an inline pass/fail step at one level of indent.
 func (r *StepReporter) Step(label string, ok bool, detail string, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "  %s %s%s%s\n", mark(ok), padLabel(label), formatDetail(detail), formatErr(err))
 }
 
 // Substep introduces a group with N children that follow as Sub() entries.
 func (r *StepReporter) Substep(label string, count int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "  %s %s %s\n",
 		dimStyle.Render("→"),
 		headStyle.Render(label),
@@ -87,11 +95,15 @@ func (r *StepReporter) Substep(label string, count int) {
 
 // Sub prints one child entry under a Substep.
 func (r *StepReporter) Sub(label string, ok bool, detail string, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "    %s %s%s%s\n", mark(ok), padLabel(label), formatDetail(detail), formatErr(err))
 }
 
 // CaseEnd prints the case verdict line.
 func (r *StepReporter) CaseEnd(pass bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if pass {
 		fmt.Fprintf(r.w, "  %s\n", okStyle.Render("PASS"))
 	} else {
