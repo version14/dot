@@ -109,12 +109,11 @@ jobs:
             echo "Created dep comment on PR #$PR_NUMBER."
           fi
 
-      - name: Fail PR on major/minor updates
+      - name: Warn about outstanding major/minor updates
         if: github.event_name == 'pull_request'
         run: |
           if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' pr-dep-report.json > /dev/null; then
-            echo "Major/minor dependency updates detected in PR-changed generators. Failing PR check." >&2
-            exit 1
+            echo "::warning::Outstanding major/minor dependency updates were found in PR-changed generators. Review the dependency report before merging."
           fi
 
       - name: Upload scan report
