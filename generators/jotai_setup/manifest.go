@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "jotai_setup",
-	Version:       "0.2.0",
+	Version:       "0.2.1",
 	Description:   "Jotai atomic state management with example counter atom",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"zustand_setup"},
