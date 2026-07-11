@@ -16,7 +16,7 @@ CHANGED_GENS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=
 
 echo "Changed generators: $CHANGED_GENS"
 
-if [ "$CHANGED_GENS" = "[]" ]; then
+if [[ "$CHANGED_GENS" = "[]" ]]; then
   echo "No generator files changed in this PR — producing empty filtered report."
   jq '. + {entries: []}' dep-report.json > pr-dep-report.json
 else

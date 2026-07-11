@@ -5,7 +5,7 @@
 set -euo pipefail
 
 ENTRY_COUNT=$(jq '.entries | length' pr-dep-report.json)
-if [ "$ENTRY_COUNT" -eq 0 ]; then
+if [[ "$ENTRY_COUNT" -eq 0 ]]; then
   echo "No tracked dependencies in the changed generators — skipping dep comment."
   exit 0
 fi
@@ -20,7 +20,7 @@ $(cat pr-dep-report.md)"
 EXISTING_ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
   --jq '[.[] | select(.body | startswith("<!-- dep-checker-report -->"))] | first | .id // empty')
 
-if [ -n "$EXISTING_ID" ]; then
+if [[ -n "$EXISTING_ID" ]]; then
   gh api "repos/$GITHUB_REPOSITORY/issues/comments/$EXISTING_ID" \
     --method PATCH \
     --field body="$BODY"

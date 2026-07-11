@@ -224,64 +224,27 @@ func (m *tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case msgCaseStart:
-		row := m.rows[msg.idx]
-		row.status = cellRunning
-		row.flowID = msg.flowID
+		m.handleCaseStart(msg)
 		return m, nil
 
 	case msgStep:
-		cs := m.cell(msg.idx, msg.key)
-		if msg.ok {
-			cs.status = cellPass
-			cs.detail = msg.detail
-		} else {
-			cs.status = cellFail
-			cs.detail = errDetail(msg.detail, msg.err)
-		}
+		m.handleStep(msg)
 		return m, nil
 
 	case msgSubstep:
-		cs := m.cell(msg.idx, msg.key)
-		cs.status = cellRunning
-		cs.total = msg.count
-		cs.doneCount = 0
-		cs.detail = fmt.Sprintf("0/%d", msg.count)
+		m.handleSubstep(msg)
 		return m, nil
 
 	case msgSubStart:
-		cs := m.cell(msg.idx, msg.key)
-		cs.status = cellRunning
-		cs.detail = fmt.Sprintf("%d/%d %s", cs.doneCount+1, cs.total, msg.label)
+		m.handleSubStart(msg)
 		return m, nil
 
 	case msgSub:
-		cs := m.cell(msg.idx, msg.key)
-		cs.doneCount++
-		if !msg.ok {
-			cs.status = cellFail
-			cs.detail = msg.label
-		} else if cs.doneCount >= cs.total {
-			cs.status = cellPass
-			cs.detail = fmt.Sprintf("%d cmd(s)", cs.total)
-		}
+		m.handleSub(msg)
 		return m, nil
 
 	case msgCaseEnd:
-		row := m.rows[msg.idx]
-		if msg.pass {
-			row.status = cellPass
-		} else {
-			row.status = cellFail
-		}
-		// Any column no event ever touched (step wasn't applicable — e.g. no
-		// ExpectedIDs so "verify" never ran) settles to a dim "not run"
-		// marker instead of spinning forever.
-		for _, col := range tableColumns {
-			if _, ok := row.cells[col.key]; !ok {
-				row.cells[col.key] = &cellState{status: cellSkip}
-			}
-		}
-		m.completed++
+		m.handleCaseEnd(msg)
 		return m, nil
 
 	case msgAllDone:
@@ -289,6 +252,67 @@ func (m *tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	return m, nil
+}
+
+func (m *tableModel) handleCaseStart(msg msgCaseStart) {
+	row := m.rows[msg.idx]
+	row.status = cellRunning
+	row.flowID = msg.flowID
+}
+
+func (m *tableModel) handleStep(msg msgStep) {
+	cs := m.cell(msg.idx, msg.key)
+	if msg.ok {
+		cs.status = cellPass
+		cs.detail = msg.detail
+	} else {
+		cs.status = cellFail
+		cs.detail = errDetail(msg.detail, msg.err)
+	}
+}
+
+func (m *tableModel) handleSubstep(msg msgSubstep) {
+	cs := m.cell(msg.idx, msg.key)
+	cs.status = cellRunning
+	cs.total = msg.count
+	cs.doneCount = 0
+	cs.detail = fmt.Sprintf("0/%d", msg.count)
+}
+
+func (m *tableModel) handleSubStart(msg msgSubStart) {
+	cs := m.cell(msg.idx, msg.key)
+	cs.status = cellRunning
+	cs.detail = fmt.Sprintf("%d/%d %s", cs.doneCount+1, cs.total, msg.label)
+}
+
+func (m *tableModel) handleSub(msg msgSub) {
+	cs := m.cell(msg.idx, msg.key)
+	cs.doneCount++
+	if !msg.ok {
+		cs.status = cellFail
+		cs.detail = msg.label
+	} else if cs.doneCount >= cs.total {
+		cs.status = cellPass
+		cs.detail = fmt.Sprintf("%d cmd(s)", cs.total)
+	}
+}
+
+// handleCaseEnd records the case's final verdict and settles any column no
+// event ever touched (step wasn't applicable — e.g. no ExpectedIDs so
+// "verify" never ran) to a dim "not run" marker instead of spinning forever.
+func (m *tableModel) handleCaseEnd(msg msgCaseEnd) {
+	row := m.rows[msg.idx]
+	if msg.pass {
+		row.status = cellPass
+	} else {
+		row.status = cellFail
+	}
+	for _, col := range tableColumns {
+		if _, ok := row.cells[col.key]; !ok {
+			row.cells[col.key] = &cellState{status: cellSkip}
+		}
+	}
+	m.completed++
 }
 
 func (m *tableModel) abort() {
@@ -303,24 +327,46 @@ func (m *tableModel) abort() {
 
 // ── view ───────────────────────────────────────────────────────────────
 
+const tuiGrayColor = "#888888"
+
 var (
-	tuiHeaderStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#888888"))
-	tuiIdxStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	tuiHeaderStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(tuiGrayColor))
+	tuiIdxStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color(tuiGrayColor))
 	tuiNameRun      = lipgloss.NewStyle()
 	tuiNamePass     = lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575"))
 	tuiNameFail     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF5F87"))
-	tuiNamePending  = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	tuiNamePending  = lipgloss.NewStyle().Foreground(lipgloss.Color(tuiGrayColor))
 	tuiSpinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 	tuiOkStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575"))
 	tuiFailStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF5F87"))
-	tuiDimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
-	tuiFooterStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	tuiDimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color(tuiGrayColor))
+	tuiFooterStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color(tuiGrayColor))
 )
 
 func (m *tableModel) View() string {
 	var b strings.Builder
 
-	passed, failed, running := 0, 0, 0
+	passed, failed, running := m.statusCounts()
+	pending := m.total - passed - failed - running
+
+	// Reserve one line for the header and one for the footer; whatever's
+	// left is how many rows we can show at once. Before the first
+	// WindowSizeMsg (height == 0) show everything — that first frame is
+	// replaced almost immediately once bubbletea reports the real size.
+	available := len(m.rows)
+	if m.height > 2 {
+		available = m.height - 2
+	}
+	start, end := m.visibleWindow(available)
+
+	m.writeHeader(&b)
+	m.writeRows(&b, start, end)
+	m.writeFooter(&b, passed, failed, running, pending, start, end)
+
+	return b.String()
+}
+
+func (m *tableModel) statusCounts() (passed, failed, running int) {
 	for _, row := range m.rows {
 		if row.disabled {
 			continue
@@ -334,26 +380,19 @@ func (m *tableModel) View() string {
 			running++
 		}
 	}
-	pending := m.total - passed - failed - running
+	return passed, failed, running
+}
 
-	// Reserve one line for the header and one for the footer; whatever's
-	// left is how many rows we can show at once. Before the first
-	// WindowSizeMsg (height == 0) show everything — that first frame is
-	// replaced almost immediately once bubbletea reports the real size.
-	available := len(m.rows)
-	if m.height > 2 {
-		available = m.height - 2
-	}
-	start, end := m.visibleWindow(available)
-
-	// Header.
+func (m *tableModel) writeHeader(b *strings.Builder) {
 	b.WriteString(padCell(tuiHeaderStyle.Render("#"), 4))
 	b.WriteString(padCell(tuiHeaderStyle.Render("TEST"), nameColWidth))
 	for _, col := range tableColumns {
 		b.WriteString(padCell(tuiHeaderStyle.Render(col.label), col.width))
 	}
 	b.WriteString("\n")
+}
 
+func (m *tableModel) writeRows(b *strings.Builder, start, end int) {
 	for i := start; i < end; i++ {
 		row := m.rows[i]
 		if row.disabled {
@@ -366,7 +405,9 @@ func (m *tableModel) View() string {
 		}
 		b.WriteString("\n")
 	}
+}
 
+func (m *tableModel) writeFooter(b *strings.Builder, passed, failed, running, pending, start, end int) {
 	footer := fmt.Sprintf("%d passed · %d failed · %d running · %d pending", passed, failed, running, pending)
 	if start > 0 || end < len(m.rows) {
 		footer += fmt.Sprintf("  · rows %d-%d/%d", start+1, end, len(m.rows))
@@ -374,8 +415,6 @@ func (m *tableModel) View() string {
 	footer += "  (ctrl+c to cancel)"
 	b.WriteString(tuiFooterStyle.Render(footer))
 	b.WriteString("\n")
-
-	return b.String()
 }
 
 // visibleWindow picks which [start, end) slice of rows to render given
