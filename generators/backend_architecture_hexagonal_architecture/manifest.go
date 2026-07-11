@@ -5,7 +5,7 @@ import "github.com/version14/dot/pkg/dotapi"
 // Manifest declares backend-architecture-hexagonal — the generator that scaffolds an
 // Hexagonal Architecture-based backend structure.
 var Manifest = dotapi.Manifest{
-	Name:        "backend_architecture_hexagonal",
+	Name:        "backend_architecture_hexagonal_architecture",
 	Version:     "1.0.0",
 	Description: "Scaffolds a base structure for a backend architecture using Hexagonal Architecture",
 	Outputs: []string{
@@ -26,7 +26,7 @@ var Manifest = dotapi.Manifest{
 	},
 	Validators: []dotapi.Validator{
 		{
-			Name: "backend_architecture_hexagonal",
+			Name: "backend_architecture_hexagonal_architecture",
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckFileExists, Path: "src/adapters/primary/http/controllers/.gitkeep"},
 				{Type: dotapi.CheckFileExists, Path: "src/adapters/primary/http/routes/.gitkeep"},

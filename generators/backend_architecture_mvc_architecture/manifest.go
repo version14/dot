@@ -5,7 +5,7 @@ import "github.com/version14/dot/pkg/dotapi"
 // Manifest declares backend-architecture-mvc — the generator that scaffolds an
 // MVC-based backend structure.
 var Manifest = dotapi.Manifest{
-	Name:        "backend_architecture_mvc",
+	Name:        "backend_architecture_mvc_architecture",
 	Version:     "1.0.0",
 	Description: "Scaffolds a base structure for a backend architecture using MVC",
 	Outputs: []string{
@@ -22,7 +22,7 @@ var Manifest = dotapi.Manifest{
 	},
 	Validators: []dotapi.Validator{
 		{
-			Name: "backend_architecture_mvc",
+			Name: "backend_architecture_mvc_architecture",
 			Checks: []dotapi.Check{
 				{Type: dotapi.CheckFileExists, Path: "src/controllers/.gitkeep"},
 				{Type: dotapi.CheckFileExists, Path: "src/views/.gitkeep"},

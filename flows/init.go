@@ -292,7 +292,7 @@ func resolveAppGenerators(answers map[string]interface{}, loopStack []flow.LoopF
 	case CLEAN_ARCHITECTURE:
 		out = append(out, inv("backend_architecture_clean_architecture"))
 	case MVC_ARCHITECTURE:
-		out = append(out, inv("backend_architecture_mvc"))
+		out = append(out, inv("backend_architecture_mvc_architecture"))
 	case HEXAGONAL_ARCHITECTURE:
 		out = append(out, inv("backend_architecture_hexagonal_architecture"))
 	}

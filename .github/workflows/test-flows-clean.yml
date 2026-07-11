@@ -1,0 +1,26 @@
+name: Test Flows Clean Run
+
+# Monthly integrity check for the test-flow fingerprint cache: runs every
+# fixture from scratch (-no-cache), independent of whatever's currently
+# cached. PR/push runs trust cache hits unconditionally since the
+# fingerprint is content-based rather than a heuristic — this exists to
+# catch bugs in the fingerprint logic itself (e.g. a dependency the hash
+# misses), not to work around data staleness.
+on:
+  schedule:
+    # 03:00 UTC on the 1st of each month.
+    - cron: "0 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  test-flows:
+    needs: build
+    uses: ./.github/workflows/test-flows.yml
+    with:
+      no_cache: true

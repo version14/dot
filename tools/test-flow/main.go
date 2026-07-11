@@ -108,7 +108,6 @@ func main() {
 		keepScratch:      *keep,
 		noCache:          *noCache,
 		repoRoot:         repoRoot,
-		flowsDir:         flowsDir(repoRoot),
 	}
 
 	totalCases := len(enabledCaseNames(cases))
@@ -264,15 +263,6 @@ func enabledCaseNames(cases []*TestCase) []string {
 		}
 	}
 	return names
-}
-
-// flowsDir returns the absolute path to the flows/ directory. The cache
-// fingerprint hashes the whole directory so any edit to a flow definition
-// invalidates every case (that's the desired behaviour: it's hard to tell
-// from a flow ID alone which Go file produced it, and over-invalidation is
-// safer than missing a relevant change).
-func flowsDir(repoRoot string) string {
-	return filepath.Join(repoRoot, "flows")
 }
 
 // filterCases narrows cases to those whose Name appears in the comma-separated

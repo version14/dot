@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/version14/dot/internal/generator"
 	"github.com/version14/dot/pkg/dotapi"
@@ -18,7 +19,12 @@ import (
 // fingerprint algorithm changes. Older entries become invalid automatically.
 //   - v1: initial Cacheable opt-in (default false)
 //   - v2: flipped polarity to NoCache opt-out (default cacheable)
-const cacheSchemaVersion = 2
+//   - v3: replaced the separate flows-dir/pkg-dotapi/tool-test-flow hashes
+//     with one denylist-based "core" hash covering the whole repo (see
+//     coreExcludeDirs); also fixed tool-test-flow previously hashing
+//     testdata/ wholesale, which invalidated every case on any one
+//     fixture's edit
+const cacheSchemaVersion = 3
 
 // cacheRoot is where successful case fingerprints are persisted. Kept under
 // the repository root so it follows the working copy (and is gitignored).
@@ -43,7 +49,6 @@ type CacheEntry struct {
 // the invocation list.
 type CacheKeyInputs struct {
 	CaseFile      string                 // absolute path to the testdata JSON
-	FlowsDir      string                 // absolute path to the flows/ directory (whole dir is hashed)
 	Invocations   []generator.Invocation // resolved generator list
 	Manifests     []dotapi.Manifest      // matches Invocations
 	SkipPostFlag  bool                   // -skip-post CLI flag
@@ -52,12 +57,45 @@ type CacheKeyInputs struct {
 	RepoRoot      string                 // absolute path to the repo root
 }
 
+// coreExcludeDirs are repo-root-relative directories hashCore never
+// descends into, because they already have a narrower, more precise rule, or
+// because they're tooling/environment scaffolding rather than source that
+// can affect a fixture's behaviour:
+//   - generators/          → hashed per invoked generator, below
+//   - tools/test-flow/testdata/ → hashed per case, via the case-file hash
+//   - docs/, bin/          → never affect fixture behaviour
+//   - .git/, cacheRoot     → pure bookkeeping; hashing them is either noise
+//     (.git churns without content changes) or self-referential (cacheRoot
+//     holds the fingerprints this function produces)
+//   - .claude/, .zed/, .githooks/ → editor/agent config, not tool source;
+//     also the most likely thing to get touched mid-run by an active
+//     coding-agent session sharing this checkout, which would otherwise
+//     make the cache flaky for reasons that have nothing to do with the
+//     fixtures under test
+var coreExcludeDirs = []string{
+	".git",
+	cacheRoot,
+	"docs",
+	"bin",
+	"generators",
+	".claude",
+	".zed",
+	".githooks",
+	filepath.Join("tools", "test-flow", "testdata"),
+}
+
 // ComputeFingerprint hashes everything that can plausibly change a case's
-// behaviour: the testdata file, every involved generator's source tree, the
-// flow definition file, the Manifest schema (pkg/dotapi), and the test-flow
-// runner itself. CLI flags that change command execution (`-skip-post`,
-// `-skip-test`) are folded in too so different modes get different cache
-// slots.
+// behaviour: the testdata file, every invoked generator's source tree, and
+// — as one "core" hash shared by every case — the rest of the repo. Editing
+// anything outside the excluded dirs (engine code, flow graphs, plugins, CI
+// config, build files, ...) is assumed relevant to every fixture, since it's
+// rarely obvious from the outside which fixtures a change like that could
+// touch; over-invalidating is the safe failure mode. Markdown never affects
+// behaviour so it's excluded everywhere in the core walk (generators/ keeps
+// its own .md templates hashed in full via the per-generator rule, since
+// there they're shipped output, not background docs). CLI flags that change
+// command execution (`-skip-post`, `-skip-test`) are folded in too so
+// different modes get different cache slots.
 func ComputeFingerprint(in CacheKeyInputs) (string, error) {
 	h := sha256.New()
 	fmt.Fprintf(h, "schema:%d\n", cacheSchemaVersion)
@@ -67,12 +105,6 @@ func ComputeFingerprint(in CacheKeyInputs) (string, error) {
 		return "", fmt.Errorf("hash case file: %w", err)
 	}
 	fmt.Fprintf(h, "case:%s\n", sha256Bytes(caseBytes))
-
-	if in.FlowsDir != "" {
-		if flowsHash, err := hashDir(in.FlowsDir); err == nil {
-			fmt.Fprintf(h, "flows-dir:%s\n", flowsHash)
-		}
-	}
 
 	// Hash every involved generator's source tree. Order by name so the
 	// fingerprint is stable regardless of resolver output order.
@@ -94,16 +126,12 @@ func ComputeFingerprint(in CacheKeyInputs) (string, error) {
 		fmt.Fprintf(h, "gen:%s:%s\n", name, genHash)
 	}
 
-	// pkg/dotapi controls the Manifest schema; touching it reasonably
-	// invalidates every case.
-	if dotapiHash, err := hashDir(filepath.Join(in.RepoRoot, "pkg", "dotapi")); err == nil {
-		fmt.Fprintf(h, "pkg-dotapi:%s\n", dotapiHash)
-	}
-
-	// The test-flow tool itself can change semantics (cache logic included);
-	// hashing its source guarantees the cache invalidates on tool edits.
-	if toolHash, err := hashDir(filepath.Join(in.RepoRoot, "tools", "test-flow")); err == nil {
-		fmt.Fprintf(h, "tool-test-flow:%s\n", toolHash)
+	if in.RepoRoot != "" {
+		coreHash, err := hashCore(in.RepoRoot)
+		if err != nil {
+			return "", fmt.Errorf("hash core: %w", err)
+		}
+		fmt.Fprintf(h, "core:%s\n", coreHash)
 	}
 
 	fmt.Fprintf(h, "skip-post:%t\n", in.SkipPostFlag)
@@ -209,6 +237,61 @@ func sanitizeName(name string) string {
 func sha256Bytes(b []byte) string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// hashCore hashes every file under repoRoot except coreExcludeDirs and *.md
+// files — see ComputeFingerprint for why. Structurally the same walk as
+// hashDir, just with a skip predicate; kept separate rather than
+// parameterizing hashDir because the two have different failure semantics
+// (hashDir treats a single file as a one-element directory; hashCore always
+// operates on the repo root).
+func hashCore(repoRoot string) (string, error) {
+	type fileEntry struct {
+		path string
+		hash string
+	}
+	var files []fileEntry
+
+	err := filepath.WalkDir(repoRoot, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, relErr := filepath.Rel(repoRoot, path)
+		if relErr != nil {
+			return relErr
+		}
+		if rel == "." {
+			return nil
+		}
+		if d.IsDir() {
+			for _, excl := range coreExcludeDirs {
+				if rel == excl {
+					return fs.SkipDir
+				}
+			}
+			return nil
+		}
+		if strings.EqualFold(filepath.Ext(rel), ".md") {
+			return nil
+		}
+		b, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		files = append(files, fileEntry{path: rel, hash: sha256Bytes(b)})
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	sort.Slice(files, func(i, j int) bool { return files[i].path < files[j].path })
+
+	h := sha256.New()
+	for _, f := range files {
+		fmt.Fprintf(h, "%s\x00%s\n", f.path, f.hash)
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // hashDir produces a content hash that depends on every file under root —

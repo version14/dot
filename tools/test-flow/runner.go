@@ -172,7 +172,6 @@ type caseOptions struct {
 	noCache          bool   // when true, ignore cache hits and refresh entries
 	caseFile         string // absolute path to the testdata JSON for this case
 	repoRoot         string // absolute path to the dot repo root
-	flowsDir         string // absolute path to the flows/ directory
 }
 
 // runOne drives one TestCase through the full pipeline:
@@ -268,7 +267,6 @@ func runOne(
 	cacheHit := false
 	fingerprint, fpErr := ComputeFingerprint(CacheKeyInputs{
 		CaseFile:      opts.caseFile,
-		FlowsDir:      opts.flowsDir,
 		Invocations:   res.Invocations,
 		Manifests:     res.Manifests,
 		SkipPostFlag:  opts.skipPostCommands || tc.SkipPostCommands,

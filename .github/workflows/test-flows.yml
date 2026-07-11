@@ -2,6 +2,14 @@ name: Test Flows
 
 on:
   workflow_call:
+    inputs:
+      no_cache:
+        description: >-
+          Bypass the per-fixture cache and run every command from scratch.
+          Used by the monthly clean-run workflow as an integrity check on
+          the fingerprint logic itself, independent of cached state.
+        type: boolean
+        default: false
 
 jobs:
   list:
@@ -61,5 +69,22 @@ jobs:
       - name: Make binaries executable
         run: chmod +x bin/*
 
+      # Scoped to this matrix job's own fixture — each job only ever reads
+      # or writes .test-flow-cache/<fixture>.json, so a shared key across
+      # the whole matrix would just be unnecessary contention, not a
+      # correctness issue. The save key includes run_id because actions/
+      # cache silently skips saving over an existing exact key; restore-keys
+      # falls back to the most recent prior save for this fixture. GitHub's
+      # own eviction (7-day-unused, 10GB/repo) keeps this from growing
+      # unbounded — entries here are a few hundred bytes each.
+      - name: Restore fixture cache
+        if: ${{ !inputs.no_cache }}
+        uses: actions/cache@v4
+        with:
+          path: .test-flow-cache/${{ matrix.fixture }}.json
+          key: test-flow-cache-${{ matrix.fixture }}-${{ github.run_id }}
+          restore-keys: |
+            test-flow-cache-${{ matrix.fixture }}-
+
       - name: Run flow fixture
-        run: ./bin/test-flow -dir tools/test-flow/testdata -only "${{ matrix.fixture }}"
+        run: ./bin/test-flow -dir tools/test-flow/testdata -only "${{ matrix.fixture }}" ${{ inputs.no_cache && '-no-cache' || '' }}
