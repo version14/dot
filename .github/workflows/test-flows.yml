@@ -1,0 +1,65 @@
+name: Test Flows
+
+on:
+  workflow_call:
+
+jobs:
+  list:
+    name: Discover flow fixtures
+    runs-on: ubuntu-latest
+    outputs:
+      fixtures: ${{ steps.list.outputs.fixtures }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download binaries
+        uses: actions/download-artifact@v8
+        with:
+          name: dot-binaries-linux-amd64
+          path: bin/
+
+      - name: Make binaries executable
+        run: chmod +x bin/*
+
+      - name: List enabled fixtures
+        id: list
+        run: echo "fixtures=$(./bin/test-flow -dir tools/test-flow/testdata -list)" >> "$GITHUB_OUTPUT"
+
+  # One job per fixture so results land in parallel instead of streaming
+  # through a single sequential loop. fail-fast cancels the rest of the
+  # matrix the moment one fixture fails.
+  run:
+    name: "E2E: ${{ matrix.fixture }}"
+    runs-on: ubuntu-latest
+    needs: list
+    strategy:
+      fail-fast: true
+      matrix:
+        fixture: ${{ fromJson(needs.list.outputs.fixtures) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Download binaries
+        uses: actions/download-artifact@v8
+        with:
+          name: dot-binaries-linux-amd64
+          path: bin/
+
+      - name: Make binaries executable
+        run: chmod +x bin/*
+
+      - name: Run flow fixture
+        run: ./bin/test-flow -dir tools/test-flow/testdata -only "${{ matrix.fixture }}"

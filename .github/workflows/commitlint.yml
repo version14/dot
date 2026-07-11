@@ -1,14 +1,7 @@
 name: Commitlint
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-
-concurrency:
-  group: commitlint-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   commitlint:

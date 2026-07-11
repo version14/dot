@@ -1,120 +1,28 @@
 name: Template Dependency Check
 
+# The PR-facing half of this check (scan + step summary + PR comment) lives
+# in ci.yml's dep-scan job, alongside the rest of the per-PR pipeline. This
+# workflow only handles the scheduled/manual bot run that opens dependency
+# bump PRs and deprecation issues on its own — it has no PR-review purpose,
+# so it stays out of the PR check graph.
 on:
-  pull_request:
-    branches: [main]
   schedule:
     # Every Wednesday at 09:00 UTC — offset from Dependabot (Monday) to
     # avoid PR pile-ups on the same day.
     - cron: "0 9 * * 3"
   workflow_dispatch:
 
-# PRs need read + pull-requests write (to post/update the dep comment).
-# schedule/dispatch need write to create branches, PRs, and issues.
-# Scoped at job level below.
 permissions:
   contents: read
 
 jobs:
-  # Runs on every PR and every scheduled/manual trigger.
-  # On PRs: shows the report as a step summary, comments filtered results on the PR.
-  # On schedule/dispatch: feeds the report to the process job which opens PRs.
   scan:
     name: Scan template dependencies
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Build dep-checker
-        run: make build ARGS="-t dep-checker"
-
-      - name: Run dependency scan
-        run: ./bin/dep-checker scan --output=dep-report.json
-
-      - name: Show scan summary
-        run: |
-          ./bin/dep-checker report --input=dep-report.json --output=dep-report.md
-          cat dep-report.md
-          cat dep-report.md >> $GITHUB_STEP_SUMMARY
-
-      - name: Filter report to PR-changed generators
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-
-          # Generator directories touched by this PR.
-          # Use --paginate + per_page=100 so large PRs (200+ files) are fully covered.
-          # --jq extracts one generator name per line per page; sort -u deduplicates
-          # across pages; jq -R/jq -s converts the text list to a JSON array.
-          CHANGED_GENS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
-            --paginate \
-            --jq '[.[] | select(.filename | startswith("generators/")) | .filename | split("/")[1]] | .[]' \
-            | sort -u \
-            | jq -R . | jq -s .)
-
-          echo "Changed generators: $CHANGED_GENS"
-
-          if [ "$CHANGED_GENS" = "[]" ]; then
-            echo "No generator files changed in this PR — producing empty filtered report."
-            jq '. + {entries: []}' dep-report.json > pr-dep-report.json
-          else
-            jq --argjson gens "$CHANGED_GENS" \
-              '. + {entries: [.entries[] | select(.generator as $g | ($gens | index($g)) != null)]}' \
-              dep-report.json > pr-dep-report.json
-            echo "Filtered to $(jq '.entries | length' pr-dep-report.json) entries from generators: $CHANGED_GENS"
-          fi
-
-      - name: Comment PR with dependency changes
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-
-          ENTRY_COUNT=$(jq '.entries | length' pr-dep-report.json)
-          if [ "$ENTRY_COUNT" -eq 0 ]; then
-            echo "No tracked dependencies in the changed generators — skipping dep comment."
-            exit 0
-          fi
-
-          ./bin/dep-checker report --input=pr-dep-report.json --output=pr-dep-report.md
-
-          MARKER="<!-- dep-checker-report -->"
-          BODY="${MARKER}
-          $(cat pr-dep-report.md)"
-
-          # Upsert: update existing marker comment, or create a new one.
-          EXISTING_ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            --jq '[.[] | select(.body | startswith("<!-- dep-checker-report -->"))] | first | .id // empty')
-
-          if [ -n "$EXISTING_ID" ]; then
-            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$EXISTING_ID" \
-              --method PATCH \
-              --field body="$BODY"
-            echo "Updated dep comment $EXISTING_ID on PR #$PR_NUMBER."
-          else
-            gh pr comment "$PR_NUMBER" --body "$BODY" --repo "$GITHUB_REPOSITORY"
-            echo "Created dep comment on PR #$PR_NUMBER."
-          fi
-
-      - name: Warn about outstanding major/minor updates
-        if: github.event_name == 'pull_request'
-        run: |
-          if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' pr-dep-report.json > /dev/null; then
-            echo "::warning::Outstanding major/minor dependency updates were found in PR-changed generators. Review the dependency report before merging."
-          fi
+      - uses: ./.github/actions/dep-scan-core
 
       - name: Upload scan report
         if: always()
@@ -124,12 +32,11 @@ jobs:
           path: dep-report.json
           retention-days: 7
 
-  # Only runs on schedule or workflow_dispatch — creates PRs and issues.
+  # Creates PRs and issues from the scan job's report.
   process:
     name: Open PRs and issues
     runs-on: ubuntu-latest
     needs: scan
-    if: github.event_name != 'pull_request'
     environment: ci
     permissions:
       contents: write
@@ -141,7 +48,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.BOT_TOKEN }}
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -164,264 +71,4 @@ jobs:
       - name: Process outdated and deprecated dependencies
         env:
           GH_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          NEEDS_WORK=$(jq -r '
-            .entries[] | select(.outdated or .deprecated)
-            | .ecosystem + "|" + .package + "|" + .latest
-          ' dep-report.json | sort -u)
-
-          if [ -z "$NEEDS_WORK" ]; then
-            echo "All template dependencies are up to date."
-            exit 0
-          fi
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Helper: map @types/<name> -> <name>
-          base_package() {
-            local pkg="$1"
-            if [[ "$pkg" == @types/* ]]; then
-              echo "${pkg#@types/}"
-            else
-              echo "$pkg"
-            fi
-          }
-
-          update_rank() {
-            case "$1" in
-              major) echo 3 ;;
-              minor) echo 2 ;;
-              patch) echo 1 ;;
-              *) echo 0 ;;
-            esac
-          }
-
-          max_update_type() {
-            local entries="${1-}"
-            if [ -z "$entries" ]; then
-              entries=$(cat)
-            fi
-            local max=0
-            local max_type="unknown"
-            while IFS= read -r t; do
-              local rank
-              rank=$(update_rank "$t")
-              if [ "$rank" -gt "$max" ]; then
-                max="$rank"
-                max_type="$t"
-              fi
-            done <<< "$entries"
-            echo "$max_type"
-          }
-
-          # Track which logical groups have already been processed.
-          declare -A GROUP_SEEN
-          MINOR_PATCH_GROUPED=false
-
-          # Process one (ecosystem, package, latest) tuple at a time, but
-          # combine @types/<name> with <name> when both exist for npm.
-          while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
-            echo ""
-            echo "=== $ECOSYSTEM/$PACKAGE (latest: $LATEST) ==="
-
-            base="$(base_package "$PACKAGE")"
-            if [ "$ECOSYSTEM" = "npm" ]; then
-              GROUP_ENTRIES=$(jq -c \
-                --arg eco "$ECOSYSTEM" \
-                --arg pkg "$PACKAGE" \
-                --arg base "$base" \
-                '.entries[]
-                 | select(.ecosystem == $eco and (
-                     .package == $pkg or
-                     .package == ("@types/" + $base) or
-                     .package == $base
-                   ))' \
-                dep-report.json)
-              ENTRY_UPDATE_TYPE=$(max_update_type "$(echo "$GROUP_ENTRIES" | jq -r '.update_type')")
-            else
-              ENTRY_UPDATE_TYPE=$(max_update_type "$(jq -r \
-                --arg eco "$ECOSYSTEM" \
-                --arg pkg "$PACKAGE" \
-                '.entries[] | select(.ecosystem == $eco and .package == $pkg) | .update_type' \
-                dep-report.json)")
-            fi
-
-            if [ "$ECOSYSTEM" = "npm" ] && { [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; }; then
-              GROUP_KEY="npm|minor-patch"
-            else
-              GROUP_KEY="${ECOSYSTEM}|${base}|${ENTRY_UPDATE_TYPE}"
-            fi
-            if [ "${GROUP_SEEN[$GROUP_KEY]+_}" ]; then
-              echo "  Group ${GROUP_KEY} already processed — skipping."
-              continue
-            fi
-            GROUP_SEEN[$GROUP_KEY]=1
-
-            BRANCH=""
-            if [ "$ECOSYSTEM" = "npm" ]; then
-              if [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; then
-                if [ "$MINOR_PATCH_GROUPED" = "true" ]; then
-                  echo "  Minor/patch npm group already processed — skipping."
-                  continue
-                fi
-                MINOR_PATCH_GROUPED=true
-                ENTRIES=$(jq -c '
-                  .entries[]
-                  | select(.ecosystem == "npm" and (.update_type == "minor" or .update_type == "patch"))
-                ' dep-report.json)
-                BRANCH="deps/npm/minor-and-patch"
-              else
-                ENTRIES="$GROUP_ENTRIES"
-              fi
-            else
-              ENTRIES=$(jq -c \
-                --arg eco "$ECOSYSTEM" \
-                --arg pkg "$PACKAGE" \
-                '.entries[] | select(.ecosystem == $eco and .package == $pkg)' \
-                dep-report.json)
-            fi
-
-            if [ -z "$ENTRIES" ]; then
-              echo "  No entries found for group $GROUP_KEY — skipping."
-              continue
-            fi
-
-            if [ -z "$BRANCH" ]; then
-              if [ "$ECOSYSTEM" = "npm" ]; then
-                BRANCH="deps/${ECOSYSTEM}/${base}"
-              else
-                BRANCH="deps/${ECOSYSTEM}/${PACKAGE}"
-              fi
-            fi
-
-            # Idempotency: skip if an open PR already targets this branch.
-            OPEN_PRS=$(gh pr list \
-              --head "$BRANCH" \
-              --state open \
-              --json number \
-              --jq 'length' \
-              --repo "$GITHUB_REPOSITORY")
-            if [ "$OPEN_PRS" -gt 0 ]; then
-              echo "  Open PR already exists on $BRANCH — skipping."
-              continue
-            fi
-
-            IS_DEPRECATED=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecated' | head -1)
-            NOTICE=$(echo "$ENTRIES" | jq -r 'select(.deprecated) | .deprecation_notice // ""' | head -1)
-
-            # Create a fresh branch from main.
-            git checkout -B "$BRANCH" origin/main
-
-            # Patch every generator that declares this package group.
-            # --skip-manifest-bump prevents each patch call from incrementing
-            # the version independently; we do one bump per generator below.
-            PATCH_FAILED=false
-            declare -A GEN_MAX_RANK
-            declare -A GEN_MAX_TYPE
-            while IFS= read -r entry; do
-              GENERATOR=$(echo "$entry" | jq -r '.generator')
-              ENTRY_PACKAGE=$(echo "$entry" | jq -r '.package')
-              CURRENT=$(echo  "$entry" | jq -r '.current')
-              ENTRY_LATEST=$(echo "$entry" | jq -r '.latest')
-              ENTRY_UPDATE_TYPE=$(echo "$entry" | jq -r '.update_type')
-
-              # Track the highest-severity update type seen for each generator.
-              cur_rank="${GEN_MAX_RANK[$GENERATOR]:-0}"
-              new_rank=$(update_rank "$ENTRY_UPDATE_TYPE")
-              if [ "$new_rank" -gt "$cur_rank" ]; then
-                GEN_MAX_RANK[$GENERATOR]="$new_rank"
-                GEN_MAX_TYPE[$GENERATOR]="$ENTRY_UPDATE_TYPE"
-              fi
-
-              echo "  Patching $GENERATOR: $ENTRY_PACKAGE $CURRENT → ^$ENTRY_LATEST"
-              if ./bin/dep-checker patch \
-                  --generator="$GENERATOR" \
-                  --package="$ENTRY_PACKAGE" \
-                  --current="$CURRENT" \
-                  --latest="$ENTRY_LATEST" \
-                  --skip-manifest-bump > /dev/null; then
-                echo "  OK: $GENERATOR patched"
-              else
-                echo "  ERROR: patch failed for $GENERATOR"
-                PATCH_FAILED=true
-                break
-              fi
-            done <<< "$ENTRIES"
-
-            # Bump each generator's manifest exactly once, using the max
-            # update type observed for that generator in this branch.
-            if [ "$PATCH_FAILED" != "true" ]; then
-              for generator in "${!GEN_MAX_TYPE[@]}"; do
-                bump_type="${GEN_MAX_TYPE[$generator]}"
-                echo "  Bumping manifest for $generator ($bump_type)"
-                if ! ./bin/dep-checker bump-manifest \
-                    --generator="$generator" \
-                    --type="$bump_type"; then
-                  echo "  WARN: could not bump manifest for $generator"
-                fi
-              done
-            fi
-
-            if [ "$PATCH_FAILED" = "true" ]; then
-              git checkout main
-              continue
-            fi
-
-            # Commit, push, open PR.
-            CHANGED_GENS=$(echo "$ENTRIES" | jq -r '.generator' | sed 's/^/- `/' | sed 's/$/ `/')
-            PACKAGE_LABEL=$(echo "$ENTRIES" | jq -r '.package' | sort -u | paste -sd ", " -)
-            git add generators/
-            git commit -m "chore(deps): bump ${PACKAGE_LABEL} in templates"
-            git push origin "$BRANCH" --force-with-lease
-
-            PR_BODY=$(printf \
-              '## Dependency bump\n\nBumps `%s` (%s) in template generators.\n\n### Affected generators\n\n%s\n\n---\n🤖 Generated by [dep-checker](../tree/main/tools/dep-checker)' \
-              "$PACKAGE_LABEL" "$ECOSYSTEM" "$CHANGED_GENS")
-
-            gh pr create \
-              --title  "chore(deps): bump ${PACKAGE_LABEL} in templates" \
-              --body   "$PR_BODY" \
-              --base   main \
-              --head   "$BRANCH" \
-              --label  "dependencies" \
-              --repo   "$GITHUB_REPOSITORY"
-
-            # For deprecated packages, also open/reopen a tracking issue.
-            if [ "$IS_DEPRECATED" = "true" ]; then
-              ISSUE_TITLE="deprecated: ${PACKAGE_LABEL} (${ECOSYSTEM}) used in templates"
-
-              EXISTING=$(gh issue list \
-                --search  "\"$ISSUE_TITLE\" in:title" \
-                --state   all \
-                --json    number,state \
-                --jq      '.[0] // empty' \
-                --repo    "$GITHUB_REPOSITORY")
-
-              if [ -n "$EXISTING" ]; then
-                ISSUE_NUM=$(echo   "$EXISTING" | jq -r '.number')
-                ISSUE_STATE=$(echo "$EXISTING" | jq -r '.state')
-                if [ "$ISSUE_STATE" = "CLOSED" ]; then
-                  gh issue reopen "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY"
-                  gh issue comment "$ISSUE_NUM" \
-                    --body "Package is still deprecated as of $(date -u +%Y-%m-%d). Reopening for review." \
-                    --repo "$GITHUB_REPOSITORY"
-                fi
-              else
-                ISSUE_BODY=$(printf \
-                  '## Deprecated package\n\n`%s` (%s) is marked deprecated on its registry.\n\n**Deprecation notice:** %s\n\n### Affected generators\n\n%s\n\n### What to do\n\n- Check whether there is a recommended replacement package\n- Update all affected generators to use the replacement\n- Close this issue once resolved\n\nA version-bump PR has been opened — review whether it resolves the deprecation or whether a package rename is needed.' \
-                  "$PACKAGE_LABEL" "$ECOSYSTEM" "$NOTICE" "$CHANGED_GENS")
-
-                gh issue create \
-                  --title  "$ISSUE_TITLE" \
-                  --body   "$ISSUE_BODY" \
-                  --label  "dependencies,deprecated" \
-                  --repo   "$GITHUB_REPOSITORY"
-              fi
-            fi
-
-            git checkout main
-
-          done <<< "$NEEDS_WORK"
+        run: .github/scripts/dep-checker-process.sh
