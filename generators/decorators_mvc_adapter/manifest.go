@@ -7,7 +7,7 @@ var Manifest = dotapi.Manifest{
 	Version:     "0.2.0",
 	Description: "Wires the decorator router into an MVC project: sample controller in src/controllers, schemas in src/shared/validators, OpenAPI mount in app.ts",
 	DependsOn: []string{
-		"backend_architecture_mvc",
+		"backend_architecture_mvc_architecture",
 		"express_decorators_core",
 		"express_openapi_setup",
 	},

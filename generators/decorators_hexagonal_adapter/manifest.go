@@ -7,7 +7,7 @@ var Manifest = dotapi.Manifest{
 	Version:     "0.2.0",
 	Description: "Wires the decorator router into a Hexagonal project: sample primary HTTP adapter controller, schemas, OpenAPI mount in app.ts",
 	DependsOn: []string{
-		"backend_architecture_hexagonal",
+		"backend_architecture_hexagonal_architecture",
 		"express_decorators_core",
 		"express_openapi_setup",
 	},
