@@ -3,6 +3,7 @@ package postgresenvexample
 import (
 	"fmt"
 
+	"github.com/version14/dot/internal/portutil"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -25,7 +26,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 		existing = string(f.Content)
 	}
 
-	dbURL := fmt.Sprintf("postgresql://postgres:postgres@localhost:5433/%s", projectName)
+	dbURL := fmt.Sprintf("postgresql://postgres:postgres@localhost:%d/%s", portutil.PostgresHostPort(projectName), projectName)
 	updated := existing + fmt.Sprintf("\n# PostgreSQL\nDATABASE_URL=%s\n", dbURL)
 
 	ctx.State.WriteFile(".env.example", []byte(updated), state.ContentRaw)
