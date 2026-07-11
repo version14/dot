@@ -245,41 +245,16 @@ func sha256Bytes(b []byte) string {
 // parameterizing hashDir because the two have different failure semantics
 // (hashDir treats a single file as a one-element directory; hashCore always
 // operates on the repo root).
+type coreFileEntry struct {
+	path string
+	hash string
+}
+
 func hashCore(repoRoot string) (string, error) {
-	type fileEntry struct {
-		path string
-		hash string
-	}
-	var files []fileEntry
+	var files []coreFileEntry
 
 	err := filepath.WalkDir(repoRoot, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, relErr := filepath.Rel(repoRoot, path)
-		if relErr != nil {
-			return relErr
-		}
-		if rel == "." {
-			return nil
-		}
-		if d.IsDir() {
-			for _, excl := range coreExcludeDirs {
-				if rel == excl {
-					return fs.SkipDir
-				}
-			}
-			return nil
-		}
-		if strings.EqualFold(filepath.Ext(rel), ".md") {
-			return nil
-		}
-		b, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return readErr
-		}
-		files = append(files, fileEntry{path: rel, hash: sha256Bytes(b)})
-		return nil
+		return walkCoreEntry(repoRoot, path, d, err, &files)
 	})
 	if err != nil {
 		return "", err
@@ -292,6 +267,45 @@ func hashCore(repoRoot string) (string, error) {
 		fmt.Fprintf(h, "%s\x00%s\n", f.path, f.hash)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// walkCoreEntry is the WalkDir callback for hashCore: it skips
+// coreExcludeDirs and *.md files, hashing everything else into files.
+func walkCoreEntry(repoRoot, path string, d fs.DirEntry, err error, files *[]coreFileEntry) error {
+	if err != nil {
+		return err
+	}
+	rel, relErr := filepath.Rel(repoRoot, path)
+	if relErr != nil {
+		return relErr
+	}
+	if rel == "." {
+		return nil
+	}
+	if d.IsDir() {
+		if isCoreExcludedDir(rel) {
+			return fs.SkipDir
+		}
+		return nil
+	}
+	if strings.EqualFold(filepath.Ext(rel), ".md") {
+		return nil
+	}
+	b, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return readErr
+	}
+	*files = append(*files, coreFileEntry{path: rel, hash: sha256Bytes(b)})
+	return nil
+}
+
+func isCoreExcludedDir(rel string) bool {
+	for _, excl := range coreExcludeDirs {
+		if rel == excl {
+			return true
+		}
+	}
+	return false
 }
 
 // hashDir produces a content hash that depends on every file under root —

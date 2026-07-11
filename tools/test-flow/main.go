@@ -112,16 +112,18 @@ func main() {
 
 	totalCases := len(enabledCaseNames(cases))
 
+	pool := poolConfig{parallel: *parallel, keepGoing: *keepGoing}
+
 	var results []*Result
 	var stopped bool
 	if *plain || !isInteractive() {
 		rep := NewPlainReporter(totalCases)
-		results, stopped = runCases(ctx, cases, registry, rt, rep, opts, *parallel, *keepGoing)
+		results, stopped = runCases(ctx, cases, registry, rt, rep, opts, pool)
 	} else {
 		tr := NewTableReporter(cases, cancel)
 		done := make(chan struct{})
 		go func() {
-			results, stopped = runCases(ctx, cases, registry, rt, tr, opts, *parallel, *keepGoing)
+			results, stopped = runCases(ctx, cases, registry, rt, tr, opts, pool)
 			tr.Finish()
 			close(done)
 		}()
@@ -160,6 +162,13 @@ type caseJob struct {
 	case_ *TestCase
 }
 
+// poolConfig controls how runCases schedules work across its worker pool,
+// as opposed to caseOptions which controls how each individual case runs.
+type poolConfig struct {
+	parallel  int
+	keepGoing bool
+}
+
 // runCases executes independent fixtures with a bounded worker pool. A failed
 // case cancels work that has not started yet by default; -keep-going disables
 // that cancellation and lets every selected fixture complete.
@@ -170,89 +179,124 @@ func runCases(
 	rt *cli.Runtime,
 	rep Reporter,
 	opts caseOptions,
-	parallel int,
-	keepGoing bool,
+	pool poolConfig,
 ) ([]*Result, bool) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobs := make(chan caseJob)
-	results := make([]*Result, len(cases))
-	var wg sync.WaitGroup
-	var cancelOnce sync.Once
-	stopped := false
-	var stoppedMu sync.Mutex
-
-	worker := func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case job, ok := <-jobs:
-				if !ok {
-					return
-				}
-
-				tc := job.case_
-				def, ok := registry.Get(tc.FlowID)
-				var result *Result
-				if !ok {
-					result = &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}
-					rep.CaseStart(job.index, tc.Name, tc.FlowID)
-					rep.Step(job.index, stepKeyFlow, "flow lookup", false, "", result.Err)
-					rep.CaseEnd(job.index, false)
-				} else {
-					caseOpts := opts
-					caseOpts.caseFile = tc.SourcePath
-					result = runOne(ctx, job.index, tc, def, rt, rep, caseOpts)
-				}
-				results[job.index] = result
-
-				if !result.Pass() && !keepGoing {
-					cancelOnce.Do(func() {
-						stoppedMu.Lock()
-						stopped = true
-						stoppedMu.Unlock()
-						cancel()
-					})
-				}
-			}
-		}
+	p := &runPool{
+		ctx:       ctx,
+		cancel:    cancel,
+		cases:     cases,
+		registry:  registry,
+		rt:        rt,
+		rep:       rep,
+		opts:      opts,
+		keepGoing: pool.keepGoing,
+		jobs:      make(chan caseJob),
+		results:   make([]*Result, len(cases)),
 	}
+	return p.run(pool.parallel)
+}
 
-	enabled := len(enabledCaseNames(cases))
+// runPool holds the shared state a bounded worker pool needs to schedule and
+// track fixtures, so each pool operation (worker, enqueue, one job) can live
+// in its own small method instead of one large closure-heavy function.
+type runPool struct {
+	ctx       context.Context
+	cancel    context.CancelFunc
+	cases     []*TestCase
+	registry  *flows.Registry
+	rt        *cli.Runtime
+	rep       Reporter
+	opts      caseOptions
+	keepGoing bool
+
+	jobs       chan caseJob
+	results    []*Result
+	wg         sync.WaitGroup
+	cancelOnce sync.Once
+	stopped    bool
+	stoppedMu  sync.Mutex
+}
+
+func (p *runPool) run(parallel int) ([]*Result, bool) {
+	enabled := len(enabledCaseNames(p.cases))
 	if parallel > enabled {
 		parallel = enabled
 	}
-	wg.Add(parallel)
+	p.wg.Add(parallel)
 	for range parallel {
-		go worker()
+		go p.worker()
 	}
 
-enqueue:
-	for i, tc := range cases {
-		if tc.Disabled {
-			continue
-		}
-		select {
-		case <-ctx.Done():
-			break enqueue
-		case jobs <- caseJob{index: i, case_: tc}:
-		}
-	}
-	close(jobs)
-	wg.Wait()
+	p.enqueue()
+	close(p.jobs)
+	p.wg.Wait()
 
 	completed := make([]*Result, 0, enabled)
-	for _, result := range results {
+	for _, result := range p.results {
 		if result != nil {
 			completed = append(completed, result)
 		}
 	}
-	stoppedMu.Lock()
-	defer stoppedMu.Unlock()
-	return completed, stopped
+	p.stoppedMu.Lock()
+	defer p.stoppedMu.Unlock()
+	return completed, p.stopped
+}
+
+func (p *runPool) enqueue() {
+	for i, tc := range p.cases {
+		if tc.Disabled {
+			continue
+		}
+		select {
+		case <-p.ctx.Done():
+			return
+		case p.jobs <- caseJob{index: i, case_: tc}:
+		}
+	}
+}
+
+func (p *runPool) worker() {
+	defer p.wg.Done()
+	for {
+		select {
+		case <-p.ctx.Done():
+			return
+		case job, ok := <-p.jobs:
+			if !ok {
+				return
+			}
+			p.runJob(job)
+		}
+	}
+}
+
+func (p *runPool) runJob(job caseJob) {
+	tc := job.case_
+	def, ok := p.registry.Get(tc.FlowID)
+	var result *Result
+	if !ok {
+		result = &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}
+		p.rep.CaseStart(job.index, tc.Name, tc.FlowID)
+		p.rep.Step(job.index, stepKeyFlow, "flow lookup", false, "", result.Err)
+		p.rep.CaseEnd(job.index, false)
+	} else {
+		caseOpts := p.opts
+		caseOpts.caseFile = tc.SourcePath
+		result = runOne(p.ctx, job.index, tc, def, p.rt, p.rep, caseOpts)
+	}
+	p.results[job.index] = result
+
+	if !result.Pass() && !p.keepGoing {
+		p.cancelOnce.Do(func() {
+			p.stoppedMu.Lock()
+			p.stopped = true
+			p.stoppedMu.Unlock()
+			p.cancel()
+		})
+	}
 }
 
 func enabledCaseNames(cases []*TestCase) []string {

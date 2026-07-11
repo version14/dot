@@ -10,7 +10,7 @@ NEEDS_WORK=$(jq -r '
   | .ecosystem + "|" + .package + "|" + .latest
 ' dep-report.json | sort -u)
 
-if [ -z "$NEEDS_WORK" ]; then
+if [[ -z "$NEEDS_WORK" ]]; then
   echo "All template dependencies are up to date."
   exit 0
 fi
@@ -29,7 +29,8 @@ base_package() {
 }
 
 update_rank() {
-  case "$1" in
+  local update_type="$1"
+  case "$update_type" in
     major) echo 3 ;;
     minor) echo 2 ;;
     patch) echo 1 ;;
@@ -39,7 +40,7 @@ update_rank() {
 
 max_update_type() {
   local entries="${1-}"
-  if [ -z "$entries" ]; then
+  if [[ -z "$entries" ]]; then
     entries=$(cat)
   fi
   local max=0
@@ -47,7 +48,7 @@ max_update_type() {
   while IFS= read -r t; do
     local rank
     rank=$(update_rank "$t")
-    if [ "$rank" -gt "$max" ]; then
+    if [[ "$rank" -gt "$max" ]]; then
       max="$rank"
       max_type="$t"
     fi
@@ -66,7 +67,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
   echo "=== $ECOSYSTEM/$PACKAGE (latest: $LATEST) ==="
 
   base="$(base_package "$PACKAGE")"
-  if [ "$ECOSYSTEM" = "npm" ]; then
+  if [[ "$ECOSYSTEM" = "npm" ]]; then
     GROUP_ENTRIES=$(jq -c \
       --arg eco "$ECOSYSTEM" \
       --arg pkg "$PACKAGE" \
@@ -87,21 +88,21 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
       dep-report.json)")
   fi
 
-  if [ "$ECOSYSTEM" = "npm" ] && { [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; }; then
+  if [[ "$ECOSYSTEM" = "npm" ]] && { [[ "$ENTRY_UPDATE_TYPE" = "minor" ]] || [[ "$ENTRY_UPDATE_TYPE" = "patch" ]]; }; then
     GROUP_KEY="npm|minor-patch"
   else
     GROUP_KEY="${ECOSYSTEM}|${base}|${ENTRY_UPDATE_TYPE}"
   fi
-  if [ "${GROUP_SEEN[$GROUP_KEY]+_}" ]; then
+  if [[ "${GROUP_SEEN[$GROUP_KEY]+_}" ]]; then
     echo "  Group ${GROUP_KEY} already processed — skipping."
     continue
   fi
   GROUP_SEEN[$GROUP_KEY]=1
 
   BRANCH=""
-  if [ "$ECOSYSTEM" = "npm" ]; then
-    if [ "$ENTRY_UPDATE_TYPE" = "minor" ] || [ "$ENTRY_UPDATE_TYPE" = "patch" ]; then
-      if [ "$MINOR_PATCH_GROUPED" = "true" ]; then
+  if [[ "$ECOSYSTEM" = "npm" ]]; then
+    if [[ "$ENTRY_UPDATE_TYPE" = "minor" ]] || [[ "$ENTRY_UPDATE_TYPE" = "patch" ]]; then
+      if [[ "$MINOR_PATCH_GROUPED" = "true" ]]; then
         echo "  Minor/patch npm group already processed — skipping."
         continue
       fi
@@ -122,13 +123,13 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
       dep-report.json)
   fi
 
-  if [ -z "$ENTRIES" ]; then
+  if [[ -z "$ENTRIES" ]]; then
     echo "  No entries found for group $GROUP_KEY — skipping."
     continue
   fi
 
-  if [ -z "$BRANCH" ]; then
-    if [ "$ECOSYSTEM" = "npm" ]; then
+  if [[ -z "$BRANCH" ]]; then
+    if [[ "$ECOSYSTEM" = "npm" ]]; then
       BRANCH="deps/${ECOSYSTEM}/${base}"
     else
       BRANCH="deps/${ECOSYSTEM}/${PACKAGE}"
@@ -142,7 +143,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
     --json number \
     --jq 'length' \
     --repo "$GITHUB_REPOSITORY")
-  if [ "$OPEN_PRS" -gt 0 ]; then
+  if [[ "$OPEN_PRS" -gt 0 ]]; then
     echo "  Open PR already exists on $BRANCH — skipping."
     continue
   fi
@@ -169,7 +170,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
     # Track the highest-severity update type seen for each generator.
     cur_rank="${GEN_MAX_RANK[$GENERATOR]:-0}"
     new_rank=$(update_rank "$ENTRY_UPDATE_TYPE")
-    if [ "$new_rank" -gt "$cur_rank" ]; then
+    if [[ "$new_rank" -gt "$cur_rank" ]]; then
       GEN_MAX_RANK[$GENERATOR]="$new_rank"
       GEN_MAX_TYPE[$GENERATOR]="$ENTRY_UPDATE_TYPE"
     fi
@@ -183,7 +184,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
         --skip-manifest-bump > /dev/null; then
       echo "  OK: $GENERATOR patched"
     else
-      echo "  ERROR: patch failed for $GENERATOR"
+      echo "  ERROR: patch failed for $GENERATOR" >&2
       PATCH_FAILED=true
       break
     fi
@@ -191,7 +192,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
 
   # Bump each generator's manifest exactly once, using the max
   # update type observed for that generator in this branch.
-  if [ "$PATCH_FAILED" != "true" ]; then
+  if [[ "$PATCH_FAILED" != "true" ]]; then
     for generator in "${!GEN_MAX_TYPE[@]}"; do
       bump_type="${GEN_MAX_TYPE[$generator]}"
       echo "  Bumping manifest for $generator ($bump_type)"
@@ -203,7 +204,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
     done
   fi
 
-  if [ "$PATCH_FAILED" = "true" ]; then
+  if [[ "$PATCH_FAILED" = "true" ]]; then
     git checkout main
     continue
   fi
@@ -228,7 +229,7 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
     --repo   "$GITHUB_REPOSITORY"
 
   # For deprecated packages, also open/reopen a tracking issue.
-  if [ "$IS_DEPRECATED" = "true" ]; then
+  if [[ "$IS_DEPRECATED" = "true" ]]; then
     ISSUE_TITLE="deprecated: ${PACKAGE_LABEL} (${ECOSYSTEM}) used in templates"
 
     EXISTING=$(gh issue list \
@@ -238,10 +239,10 @@ while IFS='|' read -r ECOSYSTEM PACKAGE LATEST; do
       --jq      '.[0] // empty' \
       --repo    "$GITHUB_REPOSITORY")
 
-    if [ -n "$EXISTING" ]; then
+    if [[ -n "$EXISTING" ]]; then
       ISSUE_NUM=$(echo   "$EXISTING" | jq -r '.number')
       ISSUE_STATE=$(echo "$EXISTING" | jq -r '.state')
-      if [ "$ISSUE_STATE" = "CLOSED" ]; then
+      if [[ "$ISSUE_STATE" = "CLOSED" ]]; then
         gh issue reopen "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY"
         gh issue comment "$ISSUE_NUM" \
           --body "Package is still deprecated as of $(date -u +%Y-%m-%d). Reopening for review." \

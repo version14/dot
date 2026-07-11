@@ -130,7 +130,9 @@ func (r *PlainReporter) Substep(_ int, _, label string, count int) {
 
 // SubStart is a no-op for PlainReporter — Sub() below already prints once
 // the command finishes, which is all a sequential log needs.
-func (r *PlainReporter) SubStart(_ int, _, _ string) {}
+func (r *PlainReporter) SubStart(_ int, _, _ string) {
+	// no-op: Sub() prints once the command finishes.
+}
 
 // Sub prints one child entry under a Substep.
 func (r *PlainReporter) Sub(_ int, _, label string, ok bool, detail string, err error) {
