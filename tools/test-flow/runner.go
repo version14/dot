@@ -444,27 +444,6 @@ func formatCapturedOutputDiff(output []byte) string {
 	return "output:\n      " + strings.Join(lines, "\n      ")
 }
 
-func countChecks(mans []dotapi.Manifest) int {
-	n := 0
-	for _, m := range mans {
-		for _, v := range m.Validators {
-			n += len(v.Checks)
-		}
-	}
-	return n
-}
-
-func joinNames(invs []generator.Invocation) string {
-	out := ""
-	for i, inv := range invs {
-		if i > 0 {
-			out += ", "
-		}
-		out += inv.Name
-	}
-	return out
-}
-
 func equalStringSlice(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
