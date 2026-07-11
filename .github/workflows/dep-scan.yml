@@ -1,0 +1,39 @@
+name: Dependency Scan
+
+on:
+  workflow_call:
+
+jobs:
+  dep-scan:
+    name: Scan template dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/dep-scan-core
+
+      - name: Filter report to PR-changed generators
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: .github/scripts/dep-scan-filter-pr.sh
+
+      - name: Comment PR with dependency changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: .github/scripts/dep-scan-comment-pr.sh
+
+      - name: Warn about outstanding major/minor updates
+        run: |
+          if jq -e '.entries[] | select(.outdated and (.update_type == "major" or .update_type == "minor"))' pr-dep-report.json > /dev/null; then
+            echo "::warning::Outstanding major/minor dependency updates were found in PR-changed generators. Review the dependency report before merging."
+          fi
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dep-report
+          path: dep-report.json
+          retention-days: 7

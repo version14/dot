@@ -1,0 +1,25 @@
+name: Dependency scan core
+description: Builds dep-checker, scans template dependencies, and writes dep-report.json plus a step summary. Shared by the PR-facing scan (ci.yml) and the scheduled bot run (dep-checker.yml). Callers must checkout the repo before this step — a local action can't be resolved until the checkout that fetches it has already run.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+
+    - name: Build dep-checker
+      shell: bash
+      run: make build ARGS="-t dep-checker"
+
+    - name: Run dependency scan
+      shell: bash
+      run: ./bin/dep-checker scan --output=dep-report.json
+
+    - name: Show scan summary
+      shell: bash
+      run: |
+        ./bin/dep-checker report --input=dep-report.json --output=dep-report.md
+        cat dep-report.md
+        cat dep-report.md >> "$GITHUB_STEP_SUMMARY"
