@@ -3,6 +3,7 @@ package postgresdockercompose
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/portutil"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -26,5 +27,6 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 	renderer := render.NewLocalFolderRenderer(ctx.State)
 	return renderer.Render(fs, map[string]interface{}{
 		"ProjectName": projectName,
+		"DBPort":      portutil.PostgresHostPort(projectName),
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/version14/dot/flows"
@@ -15,6 +16,27 @@ import (
 	"github.com/version14/dot/internal/generator"
 	"github.com/version14/dot/pkg/dotapi"
 )
+
+// dockerComposeMu serializes post-gen/test commands across cases that spin
+// up a docker-compose service (e.g. postgres_docker_compose). Every such
+// fixture scaffolds a project named "my-app", so concurrent `docker compose
+// up` calls fight over the same container name and host port. Real projects
+// don't hit this — two differently-named scaffolds already get distinct
+// ports (see internal/portutil) — this is purely to keep the fixed-name test
+// fixtures from clobbering each other when test-flow runs cases in parallel.
+var dockerComposeMu sync.Mutex
+
+// usesDockerCompose reports whether any invoked generator manages a
+// docker-compose service, so runOne knows to serialize that case's commands
+// against other docker-compose cases.
+func usesDockerCompose(mans []dotapi.Manifest) bool {
+	for _, m := range mans {
+		if strings.Contains(m.Name, "docker_compose") {
+			return true
+		}
+	}
+	return false
+}
 
 // invocationNames returns just the names from a slice of Invocations, in order.
 func invocationNames(invs []generator.Invocation) []string {
@@ -270,6 +292,13 @@ func runOne(
 			detail := fmt.Sprintf("%d non-cacheable command(s) — running anyway", len(blocking))
 			rep.Step(caseIdx, stepKeyCache, "cache", true, detail, nil)
 		}
+	}
+
+	// Serialize the command-running window for docker-compose-backed cases;
+	// see dockerComposeMu docs above for why.
+	if !cacheHit && usesDockerCompose(res.Manifests) {
+		dockerComposeMu.Lock()
+		defer dockerComposeMu.Unlock()
 	}
 
 	// Step 3: post-generation commands (skipped on cache hit).
