@@ -28,7 +28,41 @@ func (r *Result) Pass() bool {
 	return r.Err == nil && len(r.Diffs) == 0
 }
 
-// ── StepReporter — live, hierarchical progress logging ────────────────────
+// Reporter receives live progress events from runOne/runCommandList as a
+// case executes. idx is the case's position in the original cases slice
+// (stable across runs, unlike an auto-incrementing counter, so concurrent
+// workers can report into the right row of a table). key identifies which
+// pipeline stage an event belongs to (see stepKey* constants below) — plain
+// text reporters can ignore it, table reporters use it to pick a column.
+//
+// Two implementations exist: PlainReporter (sequential text log, used for
+// non-interactive output such as CI) and TableReporter (live redrawing
+// table, used on an interactive terminal).
+type Reporter interface {
+	CaseStart(idx int, name, flowID string)
+	Step(idx int, key, label string, ok bool, detail string, err error)
+	Substep(idx int, key, label string, count int)
+	// SubStart fires immediately before one command in a Substep group
+	// begins running — it's what lets a table show "what's running now".
+	SubStart(idx int, key, label string)
+	Sub(idx int, key, label string, ok bool, detail string, err error)
+	CaseEnd(idx int, pass bool)
+}
+
+// Step keys, shared between runOne/runCommandList and both Reporter
+// implementations.
+const (
+	stepKeyFlow     = "flow"
+	stepKeyVerify   = "verify"
+	stepKeyResolved = "resolved"
+	stepKeyFiles    = "files"
+	stepKeyValidate = "validate"
+	stepKeyCache    = "cache"
+	stepKeyPost     = "post"
+	stepKeyTest     = "test"
+)
+
+// ── PlainReporter — sequential, hierarchical progress logging ─────────────
 
 var (
 	titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4"))
@@ -39,7 +73,8 @@ var (
 	headStyle  = lipgloss.NewStyle().Bold(true)
 )
 
-// StepReporter prints a structured tree per test case:
+// PlainReporter prints a structured tree per test case, in the order events
+// arrive (cases running concurrently interleave, but each line is atomic):
 //
 //	[2/3] turborepo_ts_react (flow=monorepo)
 //	  ✓ flow                        — 6 nodes visited
@@ -54,19 +89,19 @@ var (
 //	    ✓ [3/4] pnpm exec vite build  — 6.8s
 //	    ✓ [4/4] pnpm exec vite        — background, ready+stop in 4.0s
 //	  PASS
-type StepReporter struct {
+type PlainReporter struct {
 	w     io.Writer
 	idx   int
 	total int
 	mu    sync.Mutex
 }
 
-func NewReporter(total int) *StepReporter {
-	return &StepReporter{w: os.Stdout, total: total}
+func NewPlainReporter(total int) *PlainReporter {
+	return &PlainReporter{w: os.Stdout, total: total}
 }
 
 // CaseStart begins a new case block.
-func (r *StepReporter) CaseStart(name, flowID string) {
+func (r *PlainReporter) CaseStart(_ int, name, flowID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.idx++
@@ -76,14 +111,14 @@ func (r *StepReporter) CaseStart(name, flowID string) {
 }
 
 // Step prints an inline pass/fail step at one level of indent.
-func (r *StepReporter) Step(label string, ok bool, detail string, err error) {
+func (r *PlainReporter) Step(_ int, _, label string, ok bool, detail string, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "  %s %s%s%s\n", mark(ok), padLabel(label), formatDetail(detail), formatErr(err))
 }
 
 // Substep introduces a group with N children that follow as Sub() entries.
-func (r *StepReporter) Substep(label string, count int) {
+func (r *PlainReporter) Substep(_ int, _, label string, count int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "  %s %s %s\n",
@@ -93,15 +128,19 @@ func (r *StepReporter) Substep(label string, count int) {
 	)
 }
 
+// SubStart is a no-op for PlainReporter — Sub() below already prints once
+// the command finishes, which is all a sequential log needs.
+func (r *PlainReporter) SubStart(_ int, _, _ string) {}
+
 // Sub prints one child entry under a Substep.
-func (r *StepReporter) Sub(label string, ok bool, detail string, err error) {
+func (r *PlainReporter) Sub(_ int, _, label string, ok bool, detail string, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	fmt.Fprintf(r.w, "    %s %s%s%s\n", mark(ok), padLabel(label), formatDetail(detail), formatErr(err))
 }
 
 // CaseEnd prints the case verdict line.
-func (r *StepReporter) CaseEnd(pass bool) {
+func (r *PlainReporter) CaseEnd(_ int, pass bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if pass {

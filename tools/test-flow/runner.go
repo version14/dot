@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/version14/dot/flows"
@@ -156,30 +157,33 @@ type caseOptions struct {
 //
 //	flow → spec → generators → persist → validators → post-gen → test commands
 //
-// Each step is logged via the StepReporter. The function returns a Result
-// the caller passes to Summarize. Any per-step failure is captured in Result;
-// the function does not panic or os.Exit.
+// Each step is reported via rep, keyed by caseIdx (the case's stable position
+// in the original cases slice) so concurrent workers report into the right
+// row/case. The function returns a Result the caller passes to Summarize.
+// Any per-step failure is captured in Result; the function does not panic or
+// os.Exit.
 func runOne(
 	ctx context.Context,
+	caseIdx int,
 	tc *TestCase,
 	def *flows.FlowDef,
 	rt *cli.Runtime,
-	rep *StepReporter,
+	rep Reporter,
 	opts caseOptions,
 ) *Result {
 	r := &Result{Case: tc}
-	rep.CaseStart(tc.Name, tc.FlowID)
+	rep.CaseStart(caseIdx, tc.Name, tc.FlowID)
 
 	// Step 1: scaffold (flow → generators → persist → .dot files).
 	scratch, err := os.MkdirTemp(opts.tempDirRoot, "dot-test-"+tc.FlowID+"-*")
 	if err != nil {
 		r.Err = fmt.Errorf("mkdir temp: %w", err)
-		rep.Step("scaffold", false, "", err)
+		rep.Step(caseIdx, stepKeyFlow, "scaffold", false, "", err)
 		return r
 	}
 	defer func() {
 		if opts.keepScratch {
-			rep.Step("scratch dir kept", true, scratch, nil)
+			rep.Step(caseIdx, stepKeyFiles, "scratch dir kept", true, scratch, nil)
 			return
 		}
 		_ = os.RemoveAll(scratch)
@@ -199,41 +203,41 @@ func runOne(
 	})
 	if err != nil {
 		r.Err = fmt.Errorf("scaffold: %w", err)
-		rep.Step("scaffold", false, time.Since(scaffoldStart).String(), err)
+		rep.Step(caseIdx, stepKeyFlow, "scaffold", false, time.Since(scaffoldStart).String(), err)
 		return r
 	}
 	r.Scaffold = res
 	r.ProjectRoot = res.ProjectRoot
 
-	rep.Step("flow", true, fmt.Sprintf("%d nodes visited", len(res.Spec.VisitedNodes)), nil)
+	rep.Step(caseIdx, stepKeyFlow, "flow", true, fmt.Sprintf(""), nil)
 
 	if len(tc.ExpectedIDs) > 0 && !equalStringSlice(tc.ExpectedIDs, res.Spec.VisitedNodes) {
 		r.Diffs = append(r.Diffs, fmt.Sprintf(
 			"visited mismatch:\n      expected: %v\n      actual:   %v",
 			tc.ExpectedIDs, res.Spec.VisitedNodes,
 		))
-		rep.Step("verify visited", false, "", fmt.Errorf("mismatch"))
+		rep.Step(caseIdx, stepKeyVerify, "verify visited", false, "", fmt.Errorf("mismatch"))
 	} else if len(tc.ExpectedIDs) > 0 {
-		rep.Step("verify visited", true, "matches expected", nil)
+		rep.Step(caseIdx, stepKeyVerify, "verify visited", true, "", nil)
 	}
 
-	rep.Step("resolved generators", true, fmt.Sprintf("%s", joinNames(res.Invocations)), nil)
-	rep.Step("scaffolded files", true, fmt.Sprintf("→ %s", res.ProjectRoot), nil)
+	rep.Step(caseIdx, stepKeyResolved, "resolved generators", true, "", nil)
+	rep.Step(caseIdx, stepKeyFiles, "scaffolded files", true, "", nil)
 
 	// Step 2: validators (run against the on-disk project).
 	failures, err := generator.RunValidators(res.ProjectRoot, res.Manifests)
 	if err != nil {
 		r.Err = fmt.Errorf("validators: %w", err)
-		rep.Step("validators", false, "", err)
+		rep.Step(caseIdx, stepKeyValidate, "validators", false, "", err)
 		return r
 	}
 	if len(failures) > 0 {
 		for _, f := range failures {
 			r.Diffs = append(r.Diffs, "validator: "+f.String())
 		}
-		rep.Step("validators", false, fmt.Sprintf("%d failures", len(failures)), nil)
+		rep.Step(caseIdx, stepKeyValidate, "validators", false, fmt.Sprintf("%d failures", len(failures)), nil)
 	} else {
-		rep.Step("validators", true, fmt.Sprintf("%d passed", countChecks(res.Manifests)), nil)
+		rep.Step(caseIdx, stepKeyValidate, "validators", true, "", nil)
 	}
 
 	// Step 2.5: case-level cache check. Skips post-gen + test commands when
@@ -252,19 +256,19 @@ func runOne(
 	})
 
 	if fpErr != nil {
-		rep.Step("cache fingerprint", false, "", fpErr)
+		rep.Step(caseIdx, stepKeyCache, "cache fingerprint", false, "", fpErr)
 	} else if !opts.noCache {
 		entry, err := LoadCacheEntry(opts.repoRoot, tc.Name)
 		if err != nil {
-			rep.Step("cache load", false, "", err)
+			rep.Step(caseIdx, stepKeyCache, "cache load", false, "", err)
 		}
 		if entry != nil && entry.Fingerprint == fingerprint && AllCommandsCacheable(res.Manifests) {
-			rep.Step("cache", true, "HIT — skipping post-gen + test commands", nil)
+			rep.Step(caseIdx, stepKeyCache, "cache", true, "", nil)
 			cacheHit = true
 		} else if entry != nil && entry.Fingerprint == fingerprint && !AllCommandsCacheable(res.Manifests) {
 			blocking := NonCacheableCommands(res.Manifests)
 			detail := fmt.Sprintf("%d non-cacheable command(s) — running anyway", len(blocking))
-			rep.Step("cache", true, detail, nil)
+			rep.Step(caseIdx, stepKeyCache, "cache", true, detail, nil)
 		}
 	}
 
@@ -274,13 +278,16 @@ func runOne(
 	} else if !opts.skipPostCommands && !tc.SkipPostCommands {
 		postPlan := cli.PlanPostGenCommands(res.Spec, res.Manifests)
 		if len(postPlan) > 0 {
-			rep.Substep("post-gen commands", len(postPlan))
-			if cmdErr := runCommandList(ctx, res.ProjectRoot, postPlan); cmdErr != nil {
+			rep.Substep(caseIdx, stepKeyPost, "post-gen commands", len(postPlan))
+			if output, cmdErr := runCommandList(ctx, res.ProjectRoot, postPlan, rep, caseIdx, stepKeyPost); cmdErr != nil {
 				r.Diffs = append(r.Diffs, "post-gen: "+cmdErr.Error())
+				if diff := formatCapturedOutputDiff(output); diff != "" {
+					r.Diffs = append(r.Diffs, diff)
+				}
 			}
 		}
 	} else {
-		rep.Step("post-gen commands", true, "skipped", nil)
+		rep.Step(caseIdx, stepKeyPost, "post-gen commands", true, "skipped", nil)
 	}
 
 	// Step 4: test commands (incl. background dev servers).
@@ -289,13 +296,16 @@ func runOne(
 	} else if !opts.skipTestCommands && !tc.SkipTestCommands {
 		testPlan := cli.PlanTestCommands(res.Spec, res.Manifests)
 		if len(testPlan) > 0 {
-			rep.Substep("test commands", len(testPlan))
-			if cmdErr := runCommandList(ctx, res.ProjectRoot, testPlan); cmdErr != nil {
+			rep.Substep(caseIdx, stepKeyTest, "test commands", len(testPlan))
+			if output, cmdErr := runCommandList(ctx, res.ProjectRoot, testPlan, rep, caseIdx, stepKeyTest); cmdErr != nil {
 				r.Diffs = append(r.Diffs, "test: "+cmdErr.Error())
+				if diff := formatCapturedOutputDiff(output); diff != "" {
+					r.Diffs = append(r.Diffs, diff)
+				}
 			}
 		}
 	} else {
-		rep.Step("test commands", true, "skipped", nil)
+		rep.Step(caseIdx, stepKeyTest, "test commands", true, "skipped", nil)
 	}
 
 	// Persist a fresh cache entry on full success. Failed runs intentionally
@@ -310,28 +320,99 @@ func runOne(
 			Generators:    invocationNames(res.Invocations),
 		}
 		if err := SaveCacheEntry(opts.repoRoot, entry); err != nil {
-			rep.Step("cache save", false, "", err)
+			rep.Step(caseIdx, stepKeyCache, "cache save", false, "", err)
 		}
 	}
 
-	rep.CaseEnd(r.Pass())
+	rep.CaseEnd(caseIdx, r.Pass())
 	return r
 }
 
-// runCommandList executes each PlannedCommand in order with a Docker-style
-// spinner UX (animated while running, ✓/✗ + elapsed when done, full output
-// only on failure). Implementation lives in cli.RunCommandsQuiet so the same
-// behaviour is shared with `dot scaffold`.
+// runCommandList executes each PlannedCommand in order, reporting per-command
+// Start/Done events to rep under (caseIdx, key) — that's what lets a table
+// reporter show "what's running now" instead of a scrolling command log.
+// cli.RunCommandsWithProgress is shared with `dot scaffold`'s spinner UX; here
+// it's driven by reporterProgress instead.
 //
-// The reporter's Substep header is printed by the caller; this function only
-// renders the per-command lines (indented 4 spaces to nest under the header).
+// On failure it returns the captured combined stdout/stderr of the failing
+// command, when the caller should hold onto it for later (see reporterProgress
+// docs below) — otherwise nil, since it's already been printed live.
 func runCommandList(
 	ctx context.Context,
 	projectRoot string,
 	plan []commands.PlannedCommand,
-) error {
+	rep Reporter,
+	caseIdx int,
+	key string,
+) ([]byte, error) {
 	runner := commands.NewRunner(projectRoot, dotapi.DiscardLogger{})
-	return cli.RunCommandsQuiet(ctx, runner, plan, 4)
+	// TableReporter owns the terminal (raw mode, its own redraw loop) for the
+	// life of the run — a direct fmt.Fprint to stderr from here would race its
+	// repaints and corrupt the screen (this is exactly what garbled the TUI
+	// when a command failed: PrintCapturedOutput used to always write straight
+	// to stderr). So table runs hold onto the output and let runOne fold it
+	// into the Result's Diffs, which only get printed after the table quits
+	// and hands the terminal back. The plain reporter has no such conflict —
+	// it still gets the output printed live, as before.
+	_, isTable := rep.(*TableReporter)
+	progress := &reporterProgress{rep: rep, caseIdx: caseIdx, key: key, live: !isTable}
+	err := cli.RunCommandsWithProgress(ctx, runner, plan, progress)
+	return progress.deferredOutput, err
+}
+
+// reporterProgress adapts a Reporter to cli.CommandProgress so per-command
+// lifecycle events flow into the same case/column the rest of runOne reports
+// into.
+type reporterProgress struct {
+	rep     Reporter
+	caseIdx int
+	key     string
+	live    bool // true: safe to print captured output to stderr immediately
+
+	deferredOutput []byte // set on failure when !live
+}
+
+func (p *reporterProgress) Start(c commands.PlannedCommand) {
+	p.rep.SubStart(p.caseIdx, p.key, commandLabel(c))
+}
+
+func (p *reporterProgress) Done(c commands.PlannedCommand, elapsed time.Duration, output []byte, err error) {
+	label := commandLabel(c)
+	if err != nil {
+		p.rep.Sub(p.caseIdx, p.key, label, false, elapsed.String(), err)
+		if p.live {
+			cli.PrintCapturedOutput(output, 6)
+		} else {
+			p.deferredOutput = output
+		}
+		return
+	}
+	p.rep.Sub(p.caseIdx, p.key, label, true, elapsed.String(), nil)
+}
+
+// commandLabel is the plain-text (unstyled) label for one command — callers
+// apply their own styling/truncation.
+func commandLabel(c commands.PlannedCommand) string {
+	if c.Background {
+		return c.Cmd + " (background)"
+	}
+	return c.Cmd
+}
+
+// formatCapturedOutputDiff renders a failing command's captured output as one
+// Result.Diffs entry, capped so a runaway command can't blow up the summary.
+func formatCapturedOutputDiff(output []byte) string {
+	trimmed := strings.TrimRight(string(output), "\n")
+	if trimmed == "" {
+		return ""
+	}
+	const maxLines = 40
+	lines := strings.Split(trimmed, "\n")
+	if len(lines) > maxLines {
+		omitted := len(lines) - maxLines
+		lines = append([]string{fmt.Sprintf("… (%d earlier lines omitted)", omitted)}, lines[len(lines)-maxLines:]...)
+	}
+	return "output:\n      " + strings.Join(lines, "\n      ")
 }
 
 func countChecks(mans []dotapi.Manifest) int {

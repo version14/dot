@@ -114,6 +114,42 @@ func isStderrTTY() bool {
 
 // ── Quiet command runner with spinner UX ───────────────────────────────────
 
+// CommandProgress receives lifecycle events for each command in a plan run
+// via RunCommandsWithProgress. Implementations are called synchronously from
+// the goroutine driving the plan (one command at a time, in order), so they
+// don't need their own locking — but if an implementation forwards events
+// somewhere concurrent (e.g. a UI event loop), that forwarding must be safe
+// to call from arbitrary goroutines.
+type CommandProgress interface {
+	// Start fires immediately before a command begins executing.
+	Start(c commands.PlannedCommand)
+	// Done fires once a command finishes, successfully or not. output is the
+	// captured combined stdout/stderr (nil on a dry run).
+	Done(c commands.PlannedCommand, elapsed time.Duration, output []byte, err error)
+}
+
+// RunCommandsWithProgress executes a list of PlannedCommands sequentially,
+// reporting Start/Done to progress for each one. Stops at the first failing
+// command and returns its error.
+func RunCommandsWithProgress(
+	ctx context.Context,
+	runner *commands.Runner,
+	cmds []commands.PlannedCommand,
+	progress CommandProgress,
+) error {
+	for _, c := range cmds {
+		progress.Start(c)
+		start := time.Now()
+		output, err := runner.RunOneCaptured(ctx, c)
+		elapsed := time.Since(start).Round(10 * time.Millisecond)
+		progress.Done(c, elapsed, output, err)
+		if err != nil {
+			return fmt.Errorf("%s: %w", c.Cmd, err)
+		}
+	}
+	return nil
+}
+
 // RunCommandsQuiet executes a list of PlannedCommands sequentially with a
 // Docker-style spinner UX:
 //
@@ -133,29 +169,24 @@ func RunCommandsQuiet(
 	cmds []commands.PlannedCommand,
 	indent int,
 ) error {
-	for _, c := range cmds {
-		if err := runOneQuiet(ctx, runner, c, indent); err != nil {
-			return err
-		}
-	}
-	return nil
+	return RunCommandsWithProgress(ctx, runner, cmds, &spinnerProgress{indent: indent})
 }
 
-func runOneQuiet(
-	ctx context.Context,
-	runner *commands.Runner,
-	c commands.PlannedCommand,
-	indent int,
-) error {
+// spinnerProgress is the CommandProgress backing RunCommandsQuiet: it drives
+// the same animated-line UX the CLI has always had.
+type spinnerProgress struct {
+	indent int
+	sp     *Spinner
+}
+
+func (p *spinnerProgress) Start(c commands.PlannedCommand) {
+	p.sp = StartSpinner(formatCommandLabel(c), p.indent)
+}
+
+func (p *spinnerProgress) Done(c commands.PlannedCommand, elapsed time.Duration, output []byte, err error) {
+	p.sp.Stop()
 	label := formatCommandLabel(c)
-
-	sp := StartSpinner(label, indent)
-	start := time.Now()
-	output, err := runner.RunOneCaptured(ctx, c)
-	elapsed := time.Since(start).Round(10 * time.Millisecond)
-	sp.Stop()
-
-	pad := strings.Repeat(" ", indent)
+	pad := strings.Repeat(" ", p.indent)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s%s %s%s%s\n",
 			pad,
@@ -164,8 +195,8 @@ func runOneQuiet(
 			timeStyle.Render(" — "+elapsed.String()),
 			failStyle.Render("  FAILED"),
 		)
-		printCapturedOutput(output, indent+2)
-		return fmt.Errorf("%s: %w", c.Cmd, err)
+		PrintCapturedOutput(output, p.indent+2)
+		return
 	}
 
 	fmt.Fprintf(os.Stderr, "%s%s %s%s\n",
@@ -174,7 +205,6 @@ func runOneQuiet(
 		label,
 		timeStyle.Render(" — "+elapsed.String()),
 	)
-	return nil
 }
 
 // formatCommandLabel returns "<cmd>" or "<cmd>  background  source".
@@ -194,9 +224,9 @@ func formatCommandLabel(c commands.PlannedCommand) string {
 	return strings.Join(parts, "")
 }
 
-// printCapturedOutput dumps the command's combined stdout/stderr beneath the
+// PrintCapturedOutput dumps a command's combined stdout/stderr beneath a
 // failure line, indented and trimmed so very long outputs stay scannable.
-func printCapturedOutput(output []byte, indent int) {
+func PrintCapturedOutput(output []byte, indent int) {
 	if len(output) == 0 {
 		return
 	}

@@ -53,6 +53,7 @@ func main() {
 	keepGoing := flag.Bool("keep-going", false, "continue running remaining cases after a failure (default: stop at the first failure)")
 	parallel := flag.Int("parallel", runtime.GOMAXPROCS(0), "number of cases to run concurrently")
 	list := flag.Bool("list", false, "print enabled case names as a JSON array and exit")
+	plain := flag.Bool("plain", false, "force the sequential text log even on an interactive terminal (auto-used when stdin/stdout aren't a TTY, e.g. in CI)")
 	flag.Parse()
 	if *parallel < 1 {
 		fmt.Fprintln(os.Stderr, "test-flow: -parallel must be at least 1")
@@ -111,8 +112,26 @@ func main() {
 	}
 
 	totalCases := len(enabledCaseNames(cases))
-	rep := NewReporter(totalCases)
-	results, stopped := runCases(ctx, cases, registry, rt, rep, opts, *parallel, *keepGoing)
+
+	var results []*Result
+	var stopped bool
+	if *plain || !isInteractive() {
+		rep := NewPlainReporter(totalCases)
+		results, stopped = runCases(ctx, cases, registry, rt, rep, opts, *parallel, *keepGoing)
+	} else {
+		tr := NewTableReporter(cases, cancel)
+		done := make(chan struct{})
+		go func() {
+			results, stopped = runCases(ctx, cases, registry, rt, tr, opts, *parallel, *keepGoing)
+			tr.Finish()
+			close(done)
+		}()
+		if _, err := tr.Run(); err != nil {
+			fmt.Fprintln(os.Stderr, "test-flow: tui:", err)
+		}
+		<-done
+	}
+
 	if stopped {
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "Stopped after the first failure (pass -keep-going to run every case).")
@@ -121,6 +140,20 @@ func main() {
 	if Summarize(os.Stdout, results, totalCases) > 0 {
 		os.Exit(1)
 	}
+}
+
+// isInteractive reports whether both stdin and stdout are attached to a
+// terminal — the table reporter needs raw-mode input on stdin and an
+// in-place-redrawable stdout. Piped/redirected output (CI, `| tee`, etc.)
+// falls back to the plain sequential log.
+func isInteractive() bool {
+	for _, f := range []*os.File{os.Stdin, os.Stdout} {
+		fi, err := f.Stat()
+		if err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+			return false
+		}
+	}
+	return true
 }
 
 type caseJob struct {
@@ -136,7 +169,7 @@ func runCases(
 	cases []*TestCase,
 	registry *flows.Registry,
 	rt *cli.Runtime,
-	rep *StepReporter,
+	rep Reporter,
 	opts caseOptions,
 	parallel int,
 	keepGoing bool,
@@ -167,13 +200,13 @@ func runCases(
 				var result *Result
 				if !ok {
 					result = &Result{Case: tc, Err: fmt.Errorf("unknown flow_id %q", tc.FlowID)}
-					rep.CaseStart(tc.Name, tc.FlowID)
-					rep.Step("flow lookup", false, "", result.Err)
-					rep.CaseEnd(false)
+					rep.CaseStart(job.index, tc.Name, tc.FlowID)
+					rep.Step(job.index, stepKeyFlow, "flow lookup", false, "", result.Err)
+					rep.CaseEnd(job.index, false)
 				} else {
 					caseOpts := opts
 					caseOpts.caseFile = tc.SourcePath
-					result = runOne(ctx, tc, def, rt, rep, caseOpts)
+					result = runOne(ctx, job.index, tc, def, rt, rep, caseOpts)
 				}
 				results[job.index] = result
 
