@@ -59,6 +59,12 @@ func Dispatch(ctx context.Context, args []string, toolVersion string) int {
 	case "gen-bump":
 		return runGenBump(rest)
 
+	case "gen-fingerprint":
+		return runGenFingerprint(rest)
+
+	case "gen-check":
+		return runGenCheck(rest)
+
 	default:
 		fmt.Fprintf(os.Stderr, "dot: unknown command %q\n\n", cmd)
 		printUsage(os.Stderr, toolVersion)
