@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:        "auth_jwt_mvc_route",
-	Version:     "0.1.0",
+	Version:     "0.2.0",
 	Description: "JWT auth route and controller for MVC architecture",
 	DependsOn:   []string{"auth_jwt_vanilla"},
 	Outputs: []string{
