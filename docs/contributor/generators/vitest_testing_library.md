@@ -9,7 +9,7 @@ Adds Vitest v2 + React Testing Library for unit and component testing in React+V
 | Field | Value |
 |-------|-------|
 | Name | `vitest_testing_library` |
-| Version | `0.2.0` |
+| Version | `0.2.1` |
 | Package | `generators/vitest_testing_library` |
 
 ---

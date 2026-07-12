@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "version14_ui",
-	Version:       "0.4.0",
+	Version:       "0.4.1",
 	Description:   "@version14/ui component library",
 	DependsOn:     []string{"typescript_base"},
 	ConflictsWith: []string{"shadcn_ui", "ark_ui"},

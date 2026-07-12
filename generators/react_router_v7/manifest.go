@@ -4,7 +4,7 @@ import "github.com/version14/dot/pkg/dotapi"
 
 var Manifest = dotapi.Manifest{
 	Name:          "react_router_v7",
-	Version:       "0.3.0",
+	Version:       "0.4.0",
 	Description:   "React Router v7 client-side routing for React+Vite",
 	DependsOn:     []string{"react_app"},
 	ConflictsWith: []string{"tanstack_router"},

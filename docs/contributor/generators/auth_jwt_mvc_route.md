@@ -9,7 +9,7 @@ JWT auth route and controller for MVC architecture. Generates `src/routes/auth.r
 | Field | Value |
 |-------|-------|
 | Name | `auth_jwt_mvc_route` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Package | `generators/auth_jwt_mvc_route` |
 
 ---

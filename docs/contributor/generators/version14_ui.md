@@ -9,7 +9,7 @@ Adds `@version14/ui` — the company's WIP component library built with Panda CS
 | Field | Value |
 |-------|-------|
 | Name | `version14_ui` |
-| Version | `0.4.0` |
+| Version | `0.4.1` |
 | Package | `generators/version14_ui` |
 
 ---
