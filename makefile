@@ -203,3 +203,6 @@ validate: fmt vet lint test ## Run full validation suite
 	@echo ""
 
 .DEFAULT_GOAL := help
+
+release-prep: ## Rule 3: bump every generator whose output changed since the last tag (run before tagging)
+	@./.github/scripts/release-prep-generators.sh
