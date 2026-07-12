@@ -47,122 +47,6 @@ func invocationNames(invs []generator.Invocation) []string {
 	return out
 }
 
-// scriptedAdapter answers each question from a recorded map.
-//
-// LoopQuestion handling: when the scripted answer for a loop is a JSON array
-// (i.e. []interface{} after unmarshal), the adapter treats each element as
-// the answer-map for one iteration of the loop body. It walks the body in
-// order, looking up each child question's answer from the per-iteration map.
-// This mirrors HuhFormRunner.runLoopSubForms but synchronously and without
-// any UI, so test-flow can exercise loop-using flows from JSON fixtures.
-type scriptedAdapter struct {
-	answers map[string]flow.Answer
-}
-
-func newScriptedAdapter(answers map[string]flow.Answer) *scriptedAdapter {
-	return &scriptedAdapter{answers: answers}
-}
-
-func (a *scriptedAdapter) Ask(q flow.Question, ctx *flow.FlowContext) (flow.Answer, error) {
-	if loop, ok := q.(*flow.LoopQuestion); ok {
-		return a.askLoop(loop, ctx)
-	}
-
-	id := q.ID()
-	ans, ok := a.answers[id]
-	if !ok {
-		return nil, fmt.Errorf("test-flow: no scripted answer for question %q", id)
-	}
-	return ans, nil
-}
-
-// askLoop runs the full body sub-graph for each scripted iteration using a
-// fresh FlowEngine. This mirrors HuhFormRunner.runLoopSubForms: conditional
-// questions in the body are followed/skipped based on the iteration's answers.
-func (a *scriptedAdapter) askLoop(loop *flow.LoopQuestion, ctx *flow.FlowContext) (flow.Answer, error) {
-	raw, ok := a.answers[loop.ID()]
-	if !ok {
-		return nil, fmt.Errorf("test-flow: no scripted iterations for loop %q", loop.ID())
-	}
-	iters, ok := raw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("test-flow: loop %q expects an array of objects, got %T", loop.ID(), raw)
-	}
-
-	out := make([]map[string]flow.Answer, len(iters))
-
-	for i, iter := range iters {
-		iterMap, ok := iter.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("test-flow: loop %q iteration %d must be an object", loop.ID(), i)
-		}
-
-		// Layer iteration answers over global ones; each body question lookup
-		// hits the iteration map first, then falls back to outer answers.
-		iterAdapter := &scriptedAdapter{answers: mergeAnswerMaps(a.answers, iterMap)}
-		iterEng := flow.NewEngine(iterAdapter)
-
-		iterAnswers := make(map[string]flow.Answer)
-		for _, bodyRoot := range loop.Body {
-			bodyCtx, err := iterEng.Run(bodyRoot)
-			if err != nil {
-				return nil, fmt.Errorf("loop %q iter %d body: %w", loop.ID(), i, err)
-			}
-			for k, v := range bodyCtx.Answers {
-				iterAnswers[k] = v
-			}
-		}
-		out[i] = iterAnswers
-	}
-	return out, nil
-}
-
-func mergeAnswerMaps(base, overlay map[string]flow.Answer) map[string]flow.Answer {
-	merged := make(map[string]flow.Answer, len(base)+len(overlay))
-	for k, v := range base {
-		merged[k] = v
-	}
-	for k, v := range overlay {
-		merged[k] = v
-	}
-	return merged
-}
-
-// scriptedRunner implements flow.FlowRunner by running the flow.FlowEngine
-// against a scripted adapter — no terminal interaction.
-//
-// Plugin injections fire via the supplied HookRegistry (and FragmentRegistry),
-// which means inserted/replaced/added-option questions show up in the
-// engine's traversal exactly as they would in the interactive HuhFormRunner.
-type scriptedRunner struct {
-	adapter   *scriptedAdapter
-	hooks     *flow.HookRegistry
-	fragments *flow.FragmentRegistry
-}
-
-func newScriptedRunner(
-	answers map[string]flow.Answer,
-	hooks *flow.HookRegistry,
-	fragments *flow.FragmentRegistry,
-) *scriptedRunner {
-	return &scriptedRunner{
-		adapter:   newScriptedAdapter(answers),
-		hooks:     hooks,
-		fragments: fragments,
-	}
-}
-
-func (r *scriptedRunner) Run(root flow.Question) (*flow.FlowContext, error) {
-	eng := flow.NewEngine(r.adapter)
-	if r.hooks != nil {
-		eng.Hooks = r.hooks
-	}
-	if r.fragments != nil {
-		eng.Fragments = r.fragments
-	}
-	return eng.Run(root)
-}
-
 // caseOptions controls how runOne executes one test case.
 type caseOptions struct {
 	tempDirRoot      string // parent dir for the per-case scratch dir
@@ -220,7 +104,7 @@ func runOne(
 		OutputDir:   scratch,
 		ToolVersion: "test-flow",
 		Logger:      dotapi.DiscardLogger{}, // step logging is the reporter's job
-		Runner:      newScriptedRunner(tc.Answers, rt.Hooks, rt.Fragments),
+		Runner:      flow.NewScriptedRunner(tc.Answers, rt.Hooks, rt.Fragments),
 	})
 	if err != nil {
 		r.Err = fmt.Errorf("scaffold: %w", err)
