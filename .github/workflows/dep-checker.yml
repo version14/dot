@@ -1,14 +1,14 @@
 name: Template Dependency Check
 
-# The PR-facing half of this check (scan + step summary + PR comment) lives
-# in ci.yml's dep-scan job, alongside the rest of the per-PR pipeline. This
-# workflow only handles the scheduled/manual bot run that opens dependency
-# bump PRs and deprecation issues on its own — it has no PR-review purpose,
-# so it stays out of the PR check graph.
+# The scheduled bot run: scans the dependency Catalog (internal/deps) and opens
+# a Rollup PR, one Migration PR per constraint-breaking update, and an issue per
+# deprecation. See ADR-0002.
+#
+# The PR-facing half (scan + step summary) lives in ci.yml's dep-scan job. This
+# workflow has no PR-review purpose, so it stays out of the PR check graph.
 on:
   schedule:
-    # Every Wednesday at 09:00 UTC — offset from Dependabot (Monday) to
-    # avoid PR pile-ups on the same day.
+    # Wednesdays — offset from Dependabot (Monday) so the two don't pile up.
     - cron: "0 9 * * 3"
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   scan:
-    name: Scan template dependencies
+    name: Scan the Catalog
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -32,9 +32,8 @@ jobs:
           path: dep-report.json
           retention-days: 7
 
-  # Creates PRs and issues from the scan job's report.
-  process:
-    name: Open PRs and issues
+  propose:
+    name: Open Rollup, Migrations and deprecation issues
     runs-on: ubuntu-latest
     needs: scan
     environment: ci
@@ -66,9 +65,9 @@ jobs:
           GH_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
           gh label create "dependencies" --color "0075ca" --description "Dependency updates" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-          gh label create "deprecated"   --color "e4e669" --description "Deprecated package" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh label create "deprecated"   --color "e4e669" --description "Deprecated package"  --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
 
-      - name: Process outdated and deprecated dependencies
+      - name: Propose updates
         env:
           GH_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: .github/scripts/dep-checker-process.sh
+        run: .github/scripts/dep-bot.sh dep-report.json
