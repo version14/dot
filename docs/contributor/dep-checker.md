@@ -1,174 +1,185 @@
-# Template Dependency Checker
+# Dependency Catalog & dep-checker
 
-`tools/dep-checker` is a Go binary that detects when package versions hardcoded inside
-generator source files have become outdated or deprecated. It is the automated answer to
-a gap Dependabot cannot fill: the npm, Go, Rust, and Maven packages that generators write
-into scaffolded projects live inside Go map literals, invisible to standard dependency bots.
+Every third-party package that `dot` scaffolds into a generated project is pinned in
+one place: the **Catalog**, at `internal/deps/`. `tools/dep-checker` keeps the Catalog
+in step with the package registries.
 
-## Why this exists
+> Superseded design: this replaces the generator-scanning checker described in
+> [ADR-0001](../adr/0001-template-dep-checker-architecture.md). Read
+> [ADR-0002](../adr/0002-dependency-catalog.md) for why.
 
-Every generator declares its dependencies like this:
+---
+
+## The Catalog
 
 ```go
-// generators/express_server_typescript_deps/generator.go
+// internal/deps/npm.go — machine-owned; dep-checker rewrites this and nothing else
+var npm = map[string]string{
+    "@clerk/clerk-react": "^5.61.3",
+    "@clerk/nextjs":      "^7.4.2",
+    "react":              "^19.2.7",
+    "vitest":             "^4.1.8",
+    // ...
+}
+```
+
+Generators **name** the packages they need. The Catalog says which version they get:
+
+```go
+// generators/react_app/generator.go
 d.Merge(map[string]interface{}{
-    "dependencies": map[string]interface{}{
-        "express": "^4.21.0",   // ← hardcoded, never touched by Dependabot
-    },
+    "dependencies":    deps.NPM("react", "react-dom"),
+    "devDependencies": deps.NPM("vite", "@types/react"),
 })
 ```
 
-When a package releases a new major version or gets deprecated, nothing updates these
-strings automatically. A user running `dot scaffold` six months later gets a project
-pinned to an old baseline. The dep-checker closes this loop.
+`deps.NPM()` panics on an unknown package, so a typo fails when the generator runs and
+`test-flows` catches it.
 
-## Architecture
+**There is exactly one Pin per package, repo-wide.** Two generators cannot pin the same
+package to different versions — that is unrepresentable, not merely discouraged. It used
+to happen: `vitest` sat at `^4.1.7` in one generator and `^4.1.8` in another, and
+`bcryptjs` at `^2.4.3` and `^3.0.3`, because the old bot patched some generators and
+died before reaching the rest.
 
-The tool works in two phases: **scan** and **patch**.
+### Adding a package
 
-### Scan phase
+1. Add the Pin to `internal/deps/npm.go`.
+2. Name it from a generator: `deps.NPM("your-package")`.
 
-For each registered generator the scanner:
+That's it. The scan picks it up automatically.
 
-1. Creates a fresh `state.VirtualProjectState` (no files, empty spec).
-2. Calls `generator.Generate(ctx)` with that state.
-3. Reads back every file the generator wrote (`package.json`, `go.mod`, `Cargo.toml`, `pom.xml`).
-4. Extracts `{package: versionConstraint}` entries from those files.
-5. Queries the appropriate registry API for the latest version and deprecation status.
+### Adding an ecosystem
 
-This approach is strictly accurate because it runs the real `Generate()` code path — the
-same path that produces real scaffolded output. No source parsing, no second source of
-truth.
+Implement `Registry` in `tools/dep-checker/registry.go` and add one line to
+`registryFor()`. Ecosystem is a property a Pin **declares** — it is never inferred from
+which file a generator happens to write.
 
-### Patch phase
+Only npm is live today. Cargo, Maven and Go are absent on purpose: no generator scaffolds
+a `Cargo.toml`, `pom.xml` or `go.mod`, and the previous tool carried unreachable code for
+all three.
 
-Given a generator name, package name, current version, and latest version, the patcher:
+---
 
-1. Resolves the file path: `generators/<name>/generator.go`.
-2. Replaces the exact Go string literal pair `"pkg": "^old"` → `"pkg": "^new"`.
-3. Preserves the constraint prefix (`^`, `~`, etc.) from the current version.
+## How drift is classified
 
-### Manifest version bump
+> **A Pin update is low-risk if and only if the new version satisfies the Pin's existing
+> constraint.**
 
-After patching, the generator's `manifest.go` `Version` field is bumped according to the
-severity of the dependency update:
+The caret *is* the compatibility promise. `^19.2.6` permits `19.3.0` and refuses `20.0.0`,
+so the Pin already contains the answer — there is no separate notion of "major" to get
+wrong. Classification delegates to `internal/versioning`, which implements this correctly,
+including the case that matters most here:
 
-| Dep update | Manifest bump | Example |
-|---|---|---|
-| major or minor | minor | `0.1.3` → `0.2.0` |
-| patch | patch | `0.1.3` → `0.1.4` |
+`^0.45.2` means `>=0.45.2 <0.46.0`. Under semver a **zero-major minor is a breaking
+change**, so `drizzle-orm 0.45.2 → 0.46.0` is a Migration, not a routine bump. The old
+checker compared version digits by hand, saw the major stay at `0`, and classified it
+`"minor"` — it would have shipped a breaking Drizzle release inside a batch. Both
+`drizzle-orm` and `drizzle-kit` are pinned at 0.x.
 
-When multiple packages from the same generator are patched in a single PR branch, the
-manifest is bumped **once** using the highest-severity update type seen across all those
-packages. This keeps generator versioning independent of how many deps were batched
-together — two patch bumps still result in one `+0.0.1`, not `+0.0.2`.
+| Kind | Meaning |
+|---|---|
+| `current` | Nothing newer is published. |
+| `rollup` | Satisfies the existing constraint. Batched. |
+| `migration` | Breaks the existing constraint. Engineering work. |
 
-The doc page at `docs/contributor/generators/<name>.md` is also updated to match.
+---
 
-### Registry support
+## What the bot does
 
-| Ecosystem | File detected | Registry API |
-|---|---|---|
-| npm | `package.json` | `registry.npmjs.org/<pkg>/latest` |
-| Go modules | `go.mod` | `proxy.golang.org/<module>/@latest` |
-| Rust | `Cargo.toml` | `crates.io/api/v1/crates/<name>` |
-| Java/Maven | `pom.xml` | `search.maven.org` (groupId:artifactId format) |
+```
+scan the Catalog  (a map read — no generator is executed)
+ │
+ ├─ rollup     → ONE batched PR on deps/npm/rollup
+ ├─ migration  → one PR per package on deps/npm/<pkg>
+ └─ deprecated → an issue. Never a PR.
+```
 
-To add a new ecosystem, implement `RegistryChecker` in `checkers.go` and add one entry
-to `checkerFor()`.
+**Rollup** — bot-owned and disposable. Rebuilt from scratch on every run, so it always
+reflects what is currently behind. *Never push to it; the bot force-pushes over it.* It
+excludes any package that has an open dep PR of its own.
 
-## Running locally
+**Migration** — human-owned from the moment it is raised. The bot opens it once and never
+touches that branch again. Leaving the PR open is how you tell the bot "I have this" — and
+it keeps that package out of the Rollup.
+
+**Deprecation** — an issue, never a PR. A deprecation is not fixed by a version bump: the
+replacement is a *different package*, or none. Every deprecation in this repo today needs a
+rename or a removal — `@clerk/clerk-react` → `@clerk/react`, `@vercel/flags` → `flags`,
+`@types/bcryptjs` → delete. Bumping to the latest *deprecated* version resolves none of them.
+
+### When the Rollup's CI goes red
+
+One package in the batch broke the templates. Its own semver said it was safe; it wasn't.
+That makes it a Migration, and the domain already has a vehicle for that:
+
+1. Eject it into its own `deps/npm/<pkg>` PR.
+2. The next Rollup rebuild drops it automatically — via the same open-PR check that
+   protects Migrations.
+
+The bot does not bisect. Finding the culprit costs a CI log; bisecting costs ~5 full
+`test-flows` runs (37 fixtures, real `pnpm install`).
+
+---
+
+## Generator versions
+
+A generator's **Manifest Version** describes its *behaviour*. It must move when — and only
+when — what the generator scaffolds actually changes.
+
+That question is answered by a **Fingerprint**: a hash of the generator's *Contribution* —
+the files it adds, and the edits it makes to files other generators own — taken across every
+fixture that exercises it. A Contribution is a **diff**, not a file hash, so that bumping
+`react` moves the Fingerprint of the two generators that name react, and not of the twenty
+that merely merge something else into the same `package.json`.
 
 ```bash
-# Scan all generators and write a report
+dot gen-fingerprint          # generator → fingerprint
+dot gen-check --docs         # rule 2
+dot gen-check --bumped --base=fingerprints.json   # rules 1 and 3
+```
+
+| Rule | When | What |
+|---|---|---|
+| **1** | every PR touching `generators/**` | Fingerprint moved ⇒ manifest bumped, doc row synced |
+| **2** | every PR | every doc version row equals its manifest Version |
+| **3** | release (`make release-prep`) | every generator whose Fingerprint moved since the last tag, bumped once |
+
+A comment fix or a `gofmt` moves no Fingerprint and demands nothing. A template edit does.
+
+### Why dependency PRs don't bump manifests
+
+Rule 1 deliberately does **not** fire on a diff that only touches `internal/deps/`.
+
+A version bump computed inside a PR is a *relative* operation — `0.8.0 → 0.9.0` — worked out
+against `main` at PR-creation time and applied at *merge* time, when `main` has moved. With
+several dependency PRs open, the resulting version is a function of merge order. And it is
+fatal for long-lived Migrations: a React Migration open for two months would collide with
+every weekly Rollup that touches the same manifest, and rot under perpetual rebasing.
+
+Deriving the bump at release, once, from the final state makes merge order **provably**
+irrelevant. Five PRs in any sequence produce the identical manifest. A Migration PR touches
+only its own line of the Catalog, so it rebases cleanly for months.
+
+---
+
+## Running it locally
+
+```bash
 go run ./tools/dep-checker scan --output=dep-report.json
-
-# Inspect results
-cat dep-report.json | jq '.entries[] | select(.outdated or .deprecated)'
-
-# Patch a single generator and bump its manifest (done automatically by CI)
-go run ./tools/dep-checker patch \
-  --generator=express_server_typescript_deps \
-  --package=express \
-  --current="^4.21.0" \
-  --latest=5.1.0
-
-# Patch multiple packages for the same generator without compounding version bumps:
-go run ./tools/dep-checker patch \
-  --generator=express_server_typescript_deps \
-  --package=express \
-  --current="^4.21.0" \
-  --latest=5.1.0 \
-  --skip-manifest-bump
-
-go run ./tools/dep-checker patch \
-  --generator=express_server_typescript_deps \
-  --package=cors \
-  --current="^2.8.5" \
-  --latest=2.9.0 \
-  --skip-manifest-bump
-
-# Then bump the manifest once for the highest-severity update
-go run ./tools/dep-checker bump-manifest \
-  --generator=express_server_typescript_deps \
-  --type=minor
+go run ./tools/dep-checker report --input=dep-report.json      # markdown summary
+go run ./tools/dep-checker patch --package=react --version=^19.3.0
 ```
 
-## CI workflow
+`patch` writes `internal/deps/npm.go` and nothing else.
 
-The GitHub Action at `.github/workflows/dep-checker.yml` runs every **Wednesday at 09:00 UTC**
-(offset from Dependabot's Monday to avoid PR pile-ups) and on `workflow_dispatch`.
+## CI
 
-For each dependency group in the report:
+| Workflow | Runs | Does |
+|---|---|---|
+| `ci.yml` → `dep-scan` | every PR | scan + step summary |
+| `ci.yml` → `generator-versions` | every PR | rules 1 and 2 |
+| `dep-checker.yml` | Wednesdays 09:00 UTC, or manually | Rollup, Migrations, deprecation issues |
 
-```
-scan
- └─ for each group:
-     ├─ open PR already exists on deps/<ecosystem>/<group>? → skip
-     ├─ patch all generators in the group
-     ├─ make test-flows  (cache handles unaffected generators)
-     │   ├─ PASS → push branch, open PR
-     │   └─ FAIL → open issue with test output (no PR)
-     └─ package deprecated?
-         ├─ issue already open? → reopen if closed, add comment
-         └─ no issue → create issue with deprecation notice
-```
-
-### PR format
-
-- **Branch:** `deps/<ecosystem>/<group>` (e.g. `deps/npm/express`, `deps/npm/minor-and-patch`)
-- **Title:** `chore(deps): bump <package>` (or multiple packages) `in templates`
-- **Body:** lists affected generators, confirms test-flows passed, links to dep-checker
-
-### Issue format
-
-Two issue types are created:
-
-**test-flow failure** (label: `dependencies`, `test-failure`)
-- Title: `chore(deps): test-flow failure bumping <package> to <latest>`
-- Body: full test-flow output so the root cause is immediately visible
-
-**deprecated package** (label: `dependencies`, `deprecated`)
-- Title: `deprecated: <package> (<ecosystem>) used in templates`
-- Body: deprecation notice, affected generators, recommended action
-- Reopened automatically on subsequent CRON runs if still deprecated
-
-## Known limitations
-
-- **Template-based generators** — `plugin_repo_skeleton` embeds `dotModuleVersion` as a
-  Go constant rather than via `UpdateGoMod`. This value is invisible to the scanner.
-  Update it manually when releasing a new stable version of `dot`.
-- **Generators requiring answers** — generators that validate `ctx.Answers` at Generate
-  time (e.g. `base_project`) are skipped with a warning. These generators do not declare
-  npm/Go deps directly, so this is safe.
-- **Go module deprecation** — the Go proxy API does not expose a deprecation field.
-  Deprecated Go modules are detected via `go.mod` `Deprecated:` comments, which is not
-  yet implemented. A future iteration can use `go list -m -json` for this.
-- **Cargo and Maven** — implementations return version info but not deprecation status,
-  as neither registry has a stable deprecation API. Treat their results as "outdated only".
-
-## Adding a new generator with npm deps
-
-No action needed. Any generator that calls `ctx.State.UpdateJSON("package.json", ...)` is
-automatically picked up on the next scan. The dep-checker uses the same generator registry
-as the scaffold pipeline.
+The bot does **not** run `test-flows`. The PR's own CI does, and duplicating it would double
+the most expensive job in CI for no added signal.
