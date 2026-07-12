@@ -41,6 +41,10 @@ type ScaffoldOptions struct {
 	// after the flow's resolver runs and appends the results to the
 	// invocation set before topo-sorting.
 	Plugins []plugin.Provider
+
+	// Observer, when set, is called around each generator invocation.
+	// Fingerprinting uses this to attribute each generator's Contribution.
+	Observer generator.Observer
 }
 
 // ScaffoldResult is what callers (CLI / test-flow) get back after Scaffold.
@@ -146,6 +150,7 @@ func Scaffold(ctx context.Context, opts ScaffoldOptions) (*ScaffoldResult, error
 
 	vstate := state.NewVirtualProjectState(s.Metadata)
 	exec := generator.NewExecutor(opts.Registry, opts.Logger)
+	exec.Observer = opts.Observer
 
 	opts.Logger.Infof("→ executing %d generators", len(invs))
 	if err := exec.Execute(invs, s, vstate); err != nil {
