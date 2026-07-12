@@ -3,6 +3,7 @@ package shadcnui
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -38,16 +39,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"tailwindcss":              "^4.3.0",
-				"class-variance-authority": "^0.7.1",
-				"clsx":                     "^2.1.1",
-				"tailwind-merge":           "^3.6.0",
-				"lucide-react":             "^1.17.0",
-			},
-			"devDependencies": map[string]interface{}{
-				"@tailwindcss/vite": "^4.3.0",
-			},
+			"dependencies":    deps.NPM("tailwindcss", "class-variance-authority", "clsx", "tailwind-merge", "lucide-react"),
+			"devDependencies": deps.NPM("@tailwindcss/vite"),
 		})
 		return nil
 	}); err != nil {

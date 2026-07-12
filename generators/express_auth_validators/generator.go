@@ -3,6 +3,7 @@ package expressauthvalidators
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -26,9 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	return ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"zod": "^4.4.3",
-			},
+			"dependencies": deps.NPM("zod"),
 		})
 		return nil
 	})

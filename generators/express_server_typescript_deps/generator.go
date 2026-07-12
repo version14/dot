@@ -1,6 +1,7 @@
 package expressservertypescriptdeps
 
 import (
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -20,18 +21,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"build": "tsc",
 				"start": "node dist/index.js",
 			},
-			"dependencies": map[string]interface{}{
-				"cors":    "^2.8.6",
-				"dotenv":  "^17.4.2",
-				"express": "^5.2.1",
-			},
-			"devDependencies": map[string]interface{}{
-				"@types/cors":    "^2.8.19",
-				"@types/express": "^5.0.6",
-				"@types/node":    "^25.9.2",
-				"nodemon":        "^3.1.14",
-				"tsx":            "^4.22.4",
-			},
+			"dependencies":    deps.NPM("cors", "dotenv", "express"),
+			"devDependencies": deps.NPM("@types/cors", "@types/express", "@types/node", "nodemon", "tsx"),
 		})
 		return nil
 	})

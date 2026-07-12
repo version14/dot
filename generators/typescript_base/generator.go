@@ -1,6 +1,7 @@
 package typescriptbase
 
 import (
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -33,9 +34,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			"scripts": map[string]interface{}{
 				"build": "tsc",
 			},
-			"devDependencies": map[string]interface{}{
-				"typescript": "^6.0.3",
-			},
+			"devDependencies": deps.NPM("typescript"),
 		})
 		return nil
 	}); err != nil {

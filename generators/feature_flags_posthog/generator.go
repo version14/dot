@@ -3,6 +3,7 @@ package featureflagsposthog
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -26,9 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"posthog-js": "^1.384.2",
-			},
+			"dependencies": deps.NPM("posthog-js"),
 		})
 		return nil
 	}); err != nil {

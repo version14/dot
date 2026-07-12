@@ -3,6 +3,7 @@ package tailwindv4
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -24,17 +25,10 @@ func (g *Generator) Version() string { return Manifest.Version }
 func (g *Generator) Generate(ctx *dotapi.Context) error {
 	framework, _ := ctx.Answers["framework"].(string)
 
-	devDeps := map[string]interface{}{
-		"@tailwindcss/vite":    "^4.3.0",
-		"@tailwindcss/postcss": "^4.3.0",
-	}
-
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"tailwindcss": "^4.3.0",
-			},
-			"devDependencies": devDeps,
+			"dependencies":    deps.NPM("tailwindcss"),
+			"devDependencies": deps.NPM("@tailwindcss/vite", "@tailwindcss/postcss"),
 		})
 		return nil
 	}); err != nil {

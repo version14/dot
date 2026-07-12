@@ -3,6 +3,7 @@ package expresstestsetup
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -29,12 +30,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"test":          "vitest run",
 				"test:coverage": "vitest run --coverage",
 			},
-			"devDependencies": map[string]interface{}{
-				"vitest":              "^4.1.8",
-				"@vitest/coverage-v8": "^4.1.8",
-				"supertest":           "^7.2.2",
-				"@types/supertest":    "^7.2.0",
-			},
+			"devDependencies": deps.NPM("vitest", "@vitest/coverage-v8", "supertest", "@types/supertest"),
 		})
 		return nil
 	})
