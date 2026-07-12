@@ -79,7 +79,7 @@ var npm = map[string]string{
 	"tailwind-merge":                 "^3.6.0",
 	"tailwindcss":                    "^4.3.0",
 	"tsx":                            "^4.22.4",
-	"typescript":                     "^6.0.3",
+	"typescript":                     "^7.0.2",
 	"vite":                           "^8.0.16",
 	"vitest":                         "^4.1.8",
 	"zod":                            "^4.4.3",
