@@ -1,7 +1,14 @@
 # ADR-0001: Template Dependency Checker Architecture
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0002](./0002-dependency-catalog.md)
 **Date:** 2026-05-28
+
+> **Superseded 2026-07-11.** The "real-state extraction" premise below is false: calling
+> `Generate()` with empty `Answers` executes one arbitrary branch, not real state, so
+> dependencies behind conditionals were never checked. Worse, the scanner read *values* while
+> the patcher rewrote *source literals* — a gap that made some dependencies structurally
+> unpatchable, crashed the weekly run, and merged a mislabeled commit (`997e489`) to `main`.
+> See [ADR-0002](./0002-dependency-catalog.md).
 
 ## Context
 
