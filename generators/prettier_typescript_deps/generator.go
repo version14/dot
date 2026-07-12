@@ -1,6 +1,7 @@
 package prettiertypescriptdeps
 
 import (
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -19,9 +20,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"format":       "prettier --write .",
 				"format:check": "prettier --check .",
 			},
-			"devDependencies": map[string]interface{}{
-				"prettier": "^3.8.4",
-			},
+			"devDependencies": deps.NPM("prettier"),
 		})
 		return nil
 	})

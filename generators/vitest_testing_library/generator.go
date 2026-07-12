@@ -3,6 +3,7 @@ package vitesttestinglibrary
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -26,14 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"test:watch":    "vitest",
 				"test:coverage": "vitest run --coverage",
 			},
-			"devDependencies": map[string]interface{}{
-				"vitest":                      "^4.1.7",
-				"@vitest/coverage-v8":         "^4.1.7",
-				"@testing-library/react":      "^16.3.2",
-				"@testing-library/user-event": "^14.6.1",
-				"@testing-library/jest-dom":   "^6.9.1",
-				"jsdom":                       "^29.1.1",
-			},
+			"devDependencies": deps.NPM("vitest", "@vitest/coverage-v8", "@testing-library/react", "@testing-library/user-event", "@testing-library/jest-dom", "jsdom"),
 		})
 		return nil
 	}); err != nil {

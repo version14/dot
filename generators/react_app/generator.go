@@ -3,6 +3,7 @@ package reactapp
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -38,16 +39,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"build":   "tsc && vite build",
 				"preview": "vite preview",
 			},
-			"dependencies": map[string]interface{}{
-				"react":     "^19.2.7",
-				"react-dom": "^19.2.7",
-			},
-			"devDependencies": map[string]interface{}{
-				"@types/react":         "^19.2.17",
-				"@types/react-dom":     "^19.2.3",
-				"@vitejs/plugin-react": "^6.0.2",
-				"vite":                 "^8.0.16",
-			},
+			"dependencies":    deps.NPM("react", "react-dom"),
+			"devDependencies": deps.NPM("@types/react", "@types/react-dom", "@vitejs/plugin-react", "vite"),
 		})
 		return nil
 	}); err != nil {

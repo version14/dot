@@ -3,6 +3,7 @@ package playwrightsetup
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -38,9 +39,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 			"scripts": map[string]interface{}{
 				"test:e2e": "playwright test",
 			},
-			"devDependencies": map[string]interface{}{
-				"@playwright/test": "^1.60.0",
-			},
+			"devDependencies": deps.NPM("@playwright/test"),
 		})
 		return nil
 	}); err != nil {

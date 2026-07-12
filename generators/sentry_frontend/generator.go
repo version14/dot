@@ -3,6 +3,7 @@ package sentryfrontend
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -42,9 +43,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				sentryPkg: "^10.55.0",
-			},
+			"dependencies": deps.NPM(sentryPkg),
 		})
 		return nil
 	}); err != nil {

@@ -3,6 +3,7 @@ package nextjsbase
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -39,16 +40,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"start": "next start",
 				"lint":  "next lint",
 			},
-			"dependencies": map[string]interface{}{
-				"next":      "^16.2.9",
-				"react":     "^19.2.7",
-				"react-dom": "^19.2.7",
-			},
-			"devDependencies": map[string]interface{}{
-				"@types/node":      "^25.9.2",
-				"@types/react":     "^19.2.17",
-				"@types/react-dom": "^19.2.3",
-			},
+			"dependencies":    deps.NPM("next", "react", "react-dom"),
+			"devDependencies": deps.NPM("@types/node", "@types/react", "@types/react-dom"),
 		})
 		return nil
 	}); err != nil {

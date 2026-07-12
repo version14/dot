@@ -1,6 +1,7 @@
 package biomeconfig
 
 import (
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -74,9 +75,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"lint":   "biome check .",
 				"format": "biome format --write .",
 			},
-			"devDependencies": map[string]interface{}{
-				"@biomejs/biome": "^2.4.16",
-			},
+			"devDependencies": deps.NPM("@biomejs/biome"),
 		})
 		return nil
 	})

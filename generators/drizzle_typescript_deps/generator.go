@@ -1,6 +1,7 @@
 package drizzletypescriptdeps
 
 import (
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
 )
@@ -21,12 +22,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"db:push":     "drizzle-kit push",
 				"db:studio":   "drizzle-kit studio",
 			},
-			"dependencies": map[string]interface{}{
-				"drizzle-orm": "^0.45.2",
-			},
-			"devDependencies": map[string]interface{}{
-				"drizzle-kit": "^0.31.10",
-			},
+			"dependencies":    deps.NPM("drizzle-orm"),
+			"devDependencies": deps.NPM("drizzle-kit"),
 		})
 		return nil
 	})

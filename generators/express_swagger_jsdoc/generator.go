@@ -4,6 +4,7 @@ import (
 	"embed"
 	"strings"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -30,14 +31,8 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"swagger-jsdoc":      "^6.3.0",
-				"swagger-ui-express": "^5.0.1",
-			},
-			"devDependencies": map[string]interface{}{
-				"@types/swagger-jsdoc":      "^6.0.4",
-				"@types/swagger-ui-express": "^4.1.8",
-			},
+			"dependencies":    deps.NPM("swagger-jsdoc", "swagger-ui-express"),
+			"devDependencies": deps.NPM("@types/swagger-jsdoc", "@types/swagger-ui-express"),
 		})
 		return nil
 	}); err != nil {

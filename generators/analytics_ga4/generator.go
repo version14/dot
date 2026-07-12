@@ -3,6 +3,7 @@ package analyticsga4
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -26,9 +27,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 
 	if err := ctx.State.UpdateJSON("package.json", func(d *state.JSONDoc) error {
 		d.Merge(map[string]interface{}{
-			"dependencies": map[string]interface{}{
-				"react-ga4": "^3.0.1",
-			},
+			"dependencies": deps.NPM("react-ga4"),
 		})
 		return nil
 	}); err != nil {

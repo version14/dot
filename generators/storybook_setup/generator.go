@@ -3,6 +3,7 @@ package storybooksetup
 import (
 	"embed"
 
+	"github.com/version14/dot/internal/deps"
 	"github.com/version14/dot/internal/render"
 	"github.com/version14/dot/internal/state"
 	"github.com/version14/dot/pkg/dotapi"
@@ -36,11 +37,7 @@ func (g *Generator) Generate(ctx *dotapi.Context) error {
 				"storybook":       "storybook dev -p 6006",
 				"build-storybook": "storybook build",
 			},
-			"devDependencies": map[string]interface{}{
-				"storybook":        "^10.4.1",
-				"@storybook/react": "^10.4.1",
-				frameworkPkg:       "^10.4.1",
-			},
+			"devDependencies": deps.NPM("storybook", "@storybook/react", frameworkPkg),
 		})
 		return nil
 	}); err != nil {
