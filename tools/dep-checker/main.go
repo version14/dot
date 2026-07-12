@@ -1,28 +1,29 @@
-// dep-checker scans generator source files for hardcoded dependency versions,
-// queries their respective registries, and reports outdated or deprecated
-// packages. It can also patch a single generator file in-place.
+// dep-checker keeps the dependency Catalog (internal/deps) in step with the
+// package registries.
+//
+// It reads the Catalog, asks each registry what the newest version is, and
+// classifies the drift by the Pin's own constraint: an update that satisfies the
+// constraint is a Rollup (batched, bot-owned), one that breaks it is a Migration
+// (one PR, human-owned). Deprecations get an issue and never a PR.
+//
+// It executes no generators and writes exactly one file. See ADR-0002.
 //
 // Usage:
 //
-//	go run ./tools/dep-checker scan [--output=dep-report.json]
-//	go run ./tools/dep-checker patch --generator=<name> --package=<pkg> --current=<ver> --latest=<ver>
+//	dep-checker scan   [--output=dep-report.json]
+//	dep-checker report [--input=dep-report.json] [--output=-]
+//	dep-checker patch  --package=<pkg> --version=<constraint>
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"time"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|patch|bump-manifest|report> [flags]")
-		fmt.Fprintln(os.Stderr, "  scan          --output=dep-report.json")
-		fmt.Fprintln(os.Stderr, "  patch         --generator=<name> --package=<pkg> --current=<ver> --latest=<ver> [--skip-manifest-bump]")
-		fmt.Fprintln(os.Stderr, "  bump-manifest --generator=<name> --type=<major|minor|patch>")
-		fmt.Fprintln(os.Stderr, "  report        --input=dep-report.json --output=-")
+		usage()
 		os.Exit(2)
 	}
 
@@ -30,81 +31,40 @@ func main() {
 	case "scan":
 		fs := flag.NewFlagSet("scan", flag.ExitOnError)
 		output := fs.String("output", "dep-report.json", "path to write the JSON report")
-		fs.Parse(os.Args[2:])
-		if err := runScan(*output); err != nil {
-			fmt.Fprintln(os.Stderr, "dep-checker scan:", err)
-			os.Exit(1)
-		}
-
-	case "patch":
-		fs := flag.NewFlagSet("patch", flag.ExitOnError)
-		generator := fs.String("generator", "", "generator name (e.g. express_server_typescript_deps)")
-		pkg := fs.String("package", "", "package name to bump")
-		current := fs.String("current", "", "current version string as it appears in generator.go (e.g. ^4.21.0)")
-		latest := fs.String("latest", "", "latest version from registry (e.g. 5.1.0)")
-		skipManifestBump := fs.Bool("skip-manifest-bump", false, "skip bumping the manifest version (use bump-manifest separately)")
-		fs.Parse(os.Args[2:])
-		if err := runPatch(*generator, *pkg, *current, *latest, *skipManifestBump); err != nil {
-			fmt.Fprintln(os.Stderr, "dep-checker patch:", err)
-			os.Exit(1)
-		}
-
-	case "bump-manifest":
-		fs := flag.NewFlagSet("bump-manifest", flag.ExitOnError)
-		generator := fs.String("generator", "", "generator name")
-		bumpType := fs.String("type", "", "dep update type that drives the bump: major, minor, or patch")
-		fs.Parse(os.Args[2:])
-		if err := runBumpManifest(*generator, *bumpType); err != nil {
-			fmt.Fprintln(os.Stderr, "dep-checker bump-manifest:", err)
-			os.Exit(1)
-		}
+		_ = fs.Parse(os.Args[2:])
+		fail(runScan(*output))
 
 	case "report":
 		fs := flag.NewFlagSet("report", flag.ExitOnError)
 		input := fs.String("input", "dep-report.json", "path to read the JSON report")
-		output := fs.String("output", "-", "path to write the markdown report (use '-' for stdout)")
-		fs.Parse(os.Args[2:])
-		if err := runReport(*input, *output); err != nil {
-			fmt.Fprintln(os.Stderr, "dep-checker report:", err)
-			os.Exit(1)
-		}
+		output := fs.String("output", "-", "path to write markdown ('-' for stdout)")
+		_ = fs.Parse(os.Args[2:])
+		fail(runReport(*input, *output))
+
+	case "patch":
+		fs := flag.NewFlagSet("patch", flag.ExitOnError)
+		pkg := fs.String("package", "", "package name as it appears in the Catalog")
+		version := fs.String("version", "", "new pin, with its constraint (e.g. ^5.62.0)")
+		_ = fs.Parse(os.Args[2:])
+		fail(runPatch(*pkg, *version))
 
 	default:
-		fmt.Fprintf(os.Stderr, "dep-checker: unknown command %q\n", os.Args[1])
+		fmt.Fprintf(os.Stderr, "dep-checker: unknown command %q\n\n", os.Args[1])
+		usage()
 		os.Exit(2)
 	}
 }
 
-// writeReport serialises entries into a Report and writes it to path.
-func writeReport(path string, entries []DepEntry) error {
-	report := Report{
-		GeneratedAt: time.Now().UTC(),
-		Entries:     entries,
-	}
-	if entries == nil {
-		report.Entries = []DepEntry{}
-	}
+func usage() {
+	fmt.Fprintln(os.Stderr, "usage: dep-checker <scan|report|patch> [flags]")
+	fmt.Fprintln(os.Stderr, "  scan    --output=dep-report.json")
+	fmt.Fprintln(os.Stderr, "  report  --input=dep-report.json --output=-")
+	fmt.Fprintln(os.Stderr, "  patch   --package=<pkg> --version=<constraint>")
+}
 
-	data, err := json.MarshalIndent(report, "", "  ")
+func fail(err error) {
 	if err != nil {
-		return err
+		fmt.Fprintln(os.Stderr, "dep-checker:", err)
+		os.Exit(1)
 	}
-
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		return err
-	}
-
-	outdated := 0
-	deprecated := 0
-	for _, e := range entries {
-		if e.Outdated {
-			outdated++
-		}
-		if e.Deprecated {
-			deprecated++
-		}
-	}
-	fmt.Printf("dep-checker: scanned %d deps — %d outdated, %d deprecated → %s\n",
-		len(entries), outdated, deprecated, path)
-	return nil
 }

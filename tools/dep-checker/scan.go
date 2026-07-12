@@ -3,213 +3,136 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"sort"
 	"strings"
+	"sync"
+	"time"
 
-	"github.com/version14/dot/internal/cli"
-	"github.com/version14/dot/internal/spec"
-	"github.com/version14/dot/internal/state"
-	"github.com/version14/dot/pkg/dotapi"
+	"github.com/version14/dot/internal/deps"
 )
 
-// depFiles are the filenames whose contents the scanner extracts deps from.
-// Keyed by filename → Ecosystem.
-var depFiles = map[string]Ecosystem{
-	"package.json": EcosystemNPM,
-	"go.mod":       EcosystemGo,
-	"Cargo.toml":   EcosystemCargo,
-	"pom.xml":      EcosystemMaven,
-}
+// scanConcurrency bounds in-flight registry requests. The Catalog is ~75 pins;
+// this keeps a full scan under a couple of seconds without hammering npm.
+const scanConcurrency = 8
 
-// ScanResult holds everything found during a single generator scan pass,
-// before registry queries happen.
-type ScanResult struct {
-	Generator string
-	File      string
-	Ecosystem Ecosystem
-	Package   string
-	Current   string
-}
-
-// runScan walks all registered generators, invokes each with a fresh
-// VirtualProjectState, extracts declared dependencies, queries their
-// respective registries, and writes a JSON Report to outputPath.
+// runScan reads the Catalog, asks each Pin's registry what the newest version
+// is, classifies the drift, and writes a JSON Report.
+//
+// The scan is a map read. It does not execute a single generator.
+//
+// The previous scanner ran Generate() on every generator with empty Answers and
+// read back whatever package.json fell out, on the theory (ADR-0001) that this
+// was "strictly accurate". It was not: generators branch on Answers, so an empty
+// Answers map executes one arbitrary branch. Three generators
+// (auth_clerk_frontend, sentry_frontend, storybook_setup) pick their package
+// *name* from the framework answer, so @clerk/nextjs, @sentry/nextjs and
+// @storybook/nextjs were never checked once in that tool's entire lifetime.
+//
+// A Catalog has no branches. Every Pin is visible because every Pin is a map key.
 func runScan(outputPath string) error {
-	registry, err := cli.DefaultGeneratorRegistry()
-	if err != nil {
-		return fmt.Errorf("build registry: %w", err)
-	}
+	pins := deps.All()
 
-	var raw []ScanResult
-	for _, entry := range registry.All() {
-		results, err := scanGenerator(entry.Manifest.Name, entry.Generator)
-		if err != nil {
-			fmt.Printf("warn: skipping %s: %v\n", entry.Manifest.Name, err)
+	registries := map[deps.Ecosystem]Registry{}
+	for _, pin := range pins {
+		if _, ok := registries[pin.Ecosystem]; ok {
 			continue
 		}
-		raw = append(raw, results...)
+		reg, ok := registryFor(pin.Ecosystem)
+		if !ok {
+			return fmt.Errorf("no registry for ecosystem %q", pin.Ecosystem)
+		}
+		registries[pin.Ecosystem] = reg
 	}
 
-	entries, err := checkAll(raw)
-	if err != nil {
-		return fmt.Errorf("registry check: %w", err)
+	var (
+		mu      sync.Mutex
+		entries []Entry
+		failed  []string
+		wg      sync.WaitGroup
+		sem     = make(chan struct{}, scanConcurrency)
+	)
+
+	for _, pin := range pins {
+		wg.Add(1)
+		go func(pin deps.Pin) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			entry, err := checkPin(registries[pin.Ecosystem], pin)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				failed = append(failed, fmt.Sprintf("%s: %v", pin.Name, err))
+				return
+			}
+			entries = append(entries, entry)
+		}(pin)
 	}
+	wg.Wait()
+
+	// A registry that cannot be reached is a scan failure, not a silent skip.
+	// The old checker printed a warning and dropped the package — so a flaky npm
+	// response quietly turned into "this dependency is up to date".
+	if len(failed) > 0 {
+		sort.Strings(failed)
+		return fmt.Errorf("registry lookups failed for %d package(s):\n  %s",
+			len(failed), strings.Join(failed, "\n  "))
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Ecosystem != entries[j].Ecosystem {
+			return entries[i].Ecosystem < entries[j].Ecosystem
+		}
+		return entries[i].Package < entries[j].Package
+	})
 
 	return writeReport(outputPath, entries)
 }
 
-// scanGenerator calls Generate() on g with an empty VirtualProjectState and
-// returns every dep-file entry it wrote.
-func scanGenerator(name string, g dotapi.Generator) ([]ScanResult, error) {
-	st := state.NewVirtualProjectState(spec.ProjectMetadata{ProjectName: "dep-checker-probe"})
-
-	ctx := &dotapi.Context{
-		Spec:    &spec.ProjectSpec{},
-		Answers: map[string]interface{}{},
-		State:   st,
-		Logger:  dotapi.DiscardLogger{},
+func checkPin(reg Registry, pin deps.Pin) (Entry, error) {
+	info, err := reg.Latest(pin.Name)
+	if err != nil {
+		return Entry{}, err
 	}
 
-	if err := g.Generate(ctx); err != nil {
-		return nil, err
+	kind, err := classify(pin.Version, info.Latest)
+	if err != nil {
+		return Entry{}, err
 	}
 
-	var results []ScanResult
-	for filename, eco := range depFiles {
-		node, ok := st.GetFile(filename)
-		if !ok {
-			continue
-		}
-		deps, err := extractDeps(filename, eco, node.Content)
-		if err != nil {
-			fmt.Printf("warn: %s: extract %s: %v\n", name, filename, err)
-			continue
-		}
-		for pkg, ver := range deps {
-			results = append(results, ScanResult{
-				Generator: name,
-				File:      filename,
-				Ecosystem: eco,
-				Package:   pkg,
-				Current:   ver,
-			})
-		}
-	}
-	return results, nil
+	return Entry{
+		Ecosystem:  pin.Ecosystem,
+		Package:    pin.Name,
+		Pin:        pin.Version,
+		Latest:     info.Latest,
+		Proposed:   reg.Render(pin.Version, info.Latest),
+		Kind:       kind,
+		Deprecated: info.Deprecated,
+		Notice:     info.Notice,
+	}, nil
 }
 
-// extractDeps parses the content of a dependency file and returns
-// {packageName: versionConstraint} for that ecosystem.
-func extractDeps(filename string, eco Ecosystem, content []byte) (map[string]string, error) {
-	switch eco {
-	case EcosystemNPM:
-		return extractNPMDeps(content)
-	case EcosystemGo:
-		return extractGoDeps(content)
-	case EcosystemCargo:
-		return extractCargoDeps(content)
-	default:
-		return nil, fmt.Errorf("no extractor for %s", eco)
+func writeReport(path string, entries []Entry) error {
+	report := Report{GeneratedAt: time.Now().UTC(), Entries: entries}
+	if entries == nil {
+		report.Entries = []Entry{}
 	}
-}
 
-func extractNPMDeps(content []byte) (map[string]string, error) {
-	var pkg struct {
-		Dependencies    map[string]string `json:"dependencies"`
-		DevDependencies map[string]string `json:"devDependencies"`
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
 	}
-	if err := json.Unmarshal(content, &pkg); err != nil {
-		return nil, err
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return err
 	}
-	out := make(map[string]string)
-	for k, v := range pkg.Dependencies {
-		out[k] = v
-	}
-	for k, v := range pkg.DevDependencies {
-		out[k] = v
-	}
-	return out, nil
-}
 
-func extractGoDeps(content []byte) (map[string]string, error) {
-	mod := state.NewGoMod()
-	if err := mod.Load(content); err != nil {
-		return nil, err
-	}
-	out := make(map[string]string, len(mod.Requires))
-	for _, r := range mod.Requires {
-		// Skip indirect deps — they are managed by `go mod tidy`, not generators.
-		if !strings.HasSuffix(r.Version, "// indirect") {
-			out[r.Path] = r.Version
-		}
-	}
-	return out, nil
-}
-
-func extractCargoDeps(content []byte) (map[string]string, error) {
-	// Minimal TOML [dependencies] parser — only handles simple
-	// name = "version" lines inside the [dependencies] section.
-	out := make(map[string]string)
-	inDeps := false
-	for _, line := range strings.Split(string(content), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "[dependencies]" || line == "[dev-dependencies]" {
-			inDeps = true
-			continue
-		}
-		if strings.HasPrefix(line, "[") {
-			inDeps = false
-			continue
-		}
-		if !inDeps || !strings.Contains(line, "=") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		name := strings.TrimSpace(parts[0])
-		val := strings.TrimSpace(parts[1])
-		// Only handle simple string values: name = "version"
-		if strings.HasPrefix(val, `"`) {
-			ver := strings.Trim(val, `"`)
-			out[name] = ver
-		}
-	}
-	return out, nil
-}
-
-// checkAll queries registries for every ScanResult and returns DepEntries.
-func checkAll(raw []ScanResult) ([]DepEntry, error) {
-	// Cache one checker per ecosystem to reuse HTTP clients.
-	checkers := map[string]RegistryChecker{}
-
-	var entries []DepEntry
-	for _, r := range raw {
-		key := string(r.Ecosystem)
-		checker, ok := checkers[key]
-		if !ok {
-			checker, ok = checkerFor(r.File)
-			if !ok {
-				continue
-			}
-			checkers[key] = checker
-		}
-
-		info, err := checker.Check(r.Package, r.Current)
-		if err != nil {
-			fmt.Printf("warn: %s/%s: registry: %v\n", r.Generator, r.Package, err)
-			continue
-		}
-
-		entries = append(entries, DepEntry{
-			Generator:         r.Generator,
-			File:              r.File,
-			Ecosystem:         r.Ecosystem,
-			Package:           r.Package,
-			Current:           r.Current,
-			Latest:            info.Latest,
-			UpdateType:        updateType(r.Current, info.Latest),
-			Outdated:          isOutdated(r.Current, info.Latest),
-			Deprecated:        info.Deprecated,
-			DeprecationNotice: info.Notice,
-		})
-	}
-	return entries, nil
+	fmt.Printf("dep-checker: %d pins — %d rollup, %d migration, %d deprecated → %s\n",
+		len(report.Entries),
+		len(report.Rollup()),
+		len(report.Migrations()),
+		len(report.Deprecations()),
+		path)
+	return nil
 }
