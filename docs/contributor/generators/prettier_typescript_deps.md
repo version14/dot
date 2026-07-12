@@ -9,7 +9,7 @@ Merges prettier devDependency and `format`/`format:check` scripts into `package.
 | Field   | Value                                 |
 | ------- | ------------------------------------- |
 | Name    | `prettier_typescript_deps`            |
-| Version | `0.1.1`                               |
+| Version | `0.1.2` |
 | Package | `generators/prettier_typescript_deps` |
 
 ---

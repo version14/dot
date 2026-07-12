@@ -9,7 +9,7 @@ Adds Jotai v2 atomic state management with a counter atom example.
 | Field | Value |
 |-------|-------|
 | Name | `jotai_setup` |
-| Version | `0.2.0` |
+| Version | `0.2.1` |
 | Package | `generators/jotai_setup` |
 
 ---
