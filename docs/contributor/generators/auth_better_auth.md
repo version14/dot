@@ -9,7 +9,7 @@ BetterAuth session-based authentication. Creates `src/lib/auth.ts` (auth instanc
 | Field   | Value                         |
 | ------- | ----------------------------- |
 | Name    | `auth_better_auth`            |
-| Version | `0.2.2`                       |
+| Version | `0.2.3` |
 | Package | `generators/auth_better_auth` |
 
 ---

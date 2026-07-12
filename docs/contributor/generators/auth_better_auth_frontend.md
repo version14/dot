@@ -9,7 +9,7 @@ Integrates Better Auth — writes an auth client, a React context provider, and 
 | Field | Value |
 |-------|-------|
 | Name | `auth_better_auth_frontend` |
-| Version | `0.2.0` |
+| Version | `0.2.1` |
 | Package | `generators/auth_better_auth_frontend` |
 
 ---

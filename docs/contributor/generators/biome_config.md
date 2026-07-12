@@ -9,7 +9,7 @@ Biome formatter and linter configuration. Writes `biome.json` and merges `lint`/
 | Field | Value |
 |-------|-------|
 | Name | `biome_config` |
-| Version | `0.2.4` |
+| Version | `0.3.0` |
 | Package | `generators/biome_config` |
 
 ---

@@ -9,7 +9,7 @@ Adds Playwright E2E testing — framework-aware dev server URL (5173 for Vite, 3
 | Field | Value |
 |-------|-------|
 | Name | `playwright_setup` |
-| Version | `0.2.0` |
+| Version | `0.3.0` |
 | Package | `generators/playwright_setup` |
 
 ---
