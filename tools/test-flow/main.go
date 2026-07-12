@@ -26,7 +26,7 @@ import (
 // For each fixture it:
 //
 //  1. Picks the named flow from the flows registry.
-//  2. Replays the recorded answers via a scriptedRunner.
+//  2. Replays the recorded answers via flow.ScriptedRunner.
 //  3. Scaffolds into a fresh temp dir (full generator pipeline).
 //  4. Runs validators against the generated tree.
 //  5. Runs PostGenerationCommands (unless skipped).
