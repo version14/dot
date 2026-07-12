@@ -4,112 +4,89 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 )
 
-type reportSummary struct {
-	Total      int
-	Outdated   int
-	Deprecated int
-}
-
-type depRow struct {
-	Generator  string
-	Ecosystem  string
-	Package    string
-	Current    string
-	Latest     string
-	Update     string
-	Outdated   bool
-	Deprecated bool
-}
-
+// runReport renders a scan Report as markdown, grouped the way the work is
+// actually done: what the bot will batch, what needs a human, and what needs a
+// decision.
+//
+// The old report was one flat table of every (generator, package) pair with
+// "outdated: yes/no" columns, which told you nothing about what would happen next.
 func runReport(inputPath, outputPath string) error {
-	report, err := loadReport(inputPath)
+	data, err := os.ReadFile(inputPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("read report: %w", err)
 	}
-
-	rows := make([]depRow, 0, len(report.Entries))
-	stats := reportSummary{}
-	for _, entry := range report.Entries {
-		stats.Total++
-		if entry.Outdated {
-			stats.Outdated++
-		}
-		if entry.Deprecated {
-			stats.Deprecated++
-		}
-		rows = append(rows, depRow{
-			Generator:  entry.Generator,
-			Ecosystem:  string(entry.Ecosystem),
-			Package:    entry.Package,
-			Current:    entry.Current,
-			Latest:     entry.Latest,
-			Update:     entry.UpdateType,
-			Outdated:   entry.Outdated,
-			Deprecated: entry.Deprecated,
-		})
-	}
-
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].Ecosystem != rows[j].Ecosystem {
-			return rows[i].Ecosystem < rows[j].Ecosystem
-		}
-		if rows[i].Package != rows[j].Package {
-			return rows[i].Package < rows[j].Package
-		}
-		return rows[i].Generator < rows[j].Generator
-	})
-
-	lines := make([]string, 0, len(rows)+6)
-	lines = append(lines, "# Dependency scan report")
-	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("- Total dependencies: %d", stats.Total))
-	lines = append(lines, fmt.Sprintf("- Outdated: %d", stats.Outdated))
-	lines = append(lines, fmt.Sprintf("- Deprecated: %d", stats.Deprecated))
-	lines = append(lines, "")
-	lines = append(lines, "| Generator | Ecosystem | Package | Current | Latest | Update | Outdated | Deprecated |")
-	lines = append(lines, "| --- | --- | --- | --- | --- | --- | --- | --- |")
-
-	for _, row := range rows {
-		lines = append(lines, fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s | %s |",
-			row.Generator,
-			row.Ecosystem,
-			row.Package,
-			row.Current,
-			row.Latest,
-			row.Update,
-			boolLabel(row.Outdated),
-			boolLabel(row.Deprecated),
-		))
-	}
-
-	output := strings.Join(lines, "\n") + "\n"
-	if outputPath == "-" {
-		fmt.Print(output)
-		return nil
-	}
-	return os.WriteFile(outputPath, []byte(output), 0644)
-}
-
-func loadReport(path string) (Report, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return Report{}, fmt.Errorf("read report: %w", err)
-	}
-
 	var report Report
 	if err := json.Unmarshal(data, &report); err != nil {
-		return Report{}, fmt.Errorf("parse report: %w", err)
+		return fmt.Errorf("parse report: %w", err)
 	}
-	return report, nil
+
+	var b strings.Builder
+	b.WriteString("# Dependency scan\n\n")
+
+	rollup := report.Rollup()
+	migrations := report.Migrations()
+	deprecations := report.Deprecations()
+
+	fmt.Fprintf(&b, "%d pins in the Catalog — **%d rollup**, **%d migration**, **%d deprecated**.\n\n",
+		len(report.Entries), len(rollup), len(migrations), len(deprecations))
+
+	if len(rollup) == 0 && len(migrations) == 0 && len(deprecations) == 0 {
+		b.WriteString("Every Pin is current. Nothing to do.\n")
+		return emit(outputPath, b.String())
+	}
+
+	if len(rollup) > 0 {
+		b.WriteString("## Rollup\n\n")
+		b.WriteString("Satisfy their existing constraint, so the package itself promises compatibility. ")
+		b.WriteString("These go into one batched PR.\n\n")
+		writeTable(&b, rollup)
+	}
+
+	if len(migrations) > 0 {
+		b.WriteString("## Migrations\n\n")
+		b.WriteString("**Break their existing constraint.** Each needs its own PR and may need generator ")
+		b.WriteString("code changes — this is engineering work, not a version bump.\n\n")
+		writeTable(&b, migrations)
+	}
+
+	if len(deprecations) > 0 {
+		b.WriteString("## Deprecated\n\n")
+		b.WriteString("The registry says stop using these. A deprecation is **never** fixed by a version ")
+		b.WriteString("bump — the replacement is a different package, or none. Issue only.\n\n")
+		b.WriteString("| Package | Pin | Notice |\n| --- | --- | --- |\n")
+		for _, e := range deprecations {
+			fmt.Fprintf(&b, "| `%s` | `%s` | %s |\n", e.Package, e.Pin, oneLine(e.Notice))
+		}
+		b.WriteString("\n")
+	}
+
+	return emit(outputPath, b.String())
 }
 
-func boolLabel(value bool) string {
-	if value {
-		return "yes"
+func writeTable(b *strings.Builder, entries []Entry) {
+	b.WriteString("| Package | Pin | Latest | Proposed |\n| --- | --- | --- | --- |\n")
+	for _, e := range entries {
+		fmt.Fprintf(b, "| `%s` | `%s` | `%s` | `%s` |\n", e.Package, e.Pin, e.Latest, e.Proposed)
 	}
-	return "no"
+	b.WriteString("\n")
+}
+
+func oneLine(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "|", "\\|")
+	if len(s) > 160 {
+		s = s[:157] + "..."
+	}
+	return s
+}
+
+func emit(path, content string) error {
+	if path == "-" {
+		fmt.Print(content)
+		return nil
+	}
+	return os.WriteFile(path, []byte(content), 0o644)
 }
