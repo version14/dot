@@ -34,7 +34,7 @@ var npm = map[string]string{
 	"@types/cors":                    "^2.8.19",
 	"@types/express":                 "^5.0.6",
 	"@types/jsonwebtoken":            "^9.0.10",
-	"@types/node":                    "^25.9.2",
+	"@types/node":                    "^26.1.1",
 	"@types/react":                   "^19.2.17",
 	"@types/react-dom":               "^19.2.3",
 	"@types/supertest":               "^7.2.0",
