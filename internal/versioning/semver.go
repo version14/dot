@@ -170,6 +170,19 @@ func MustParseConstraint(s string) Constraint {
 // String returns the original constraint text.
 func (c Constraint) String() string { return c.raw }
 
+// Anchor returns the version this constraint is pinned to — the "1.2.3" in
+// "^1.2.3" — and whether it has one. The wildcard constraint ("") has none.
+//
+// Callers need this to tell "there is nothing newer" apart from "what's newer
+// breaks the constraint". Allows() collapses both into false: it rejects a
+// version below the anchor for the same reason it rejects one above the range.
+func (c Constraint) Anchor() (Version, bool) {
+	if c.raw == "" {
+		return Version{}, false
+	}
+	return c.ver, true
+}
+
 // Allows reports whether v satisfies this constraint.
 func (c Constraint) Allows(v Version) bool {
 	if c.raw == "" {
