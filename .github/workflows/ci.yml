@@ -37,6 +37,13 @@ jobs:
       contents: read
       pull-requests: write
 
+  # Rules 1 and 2 from ADR-0002: a Generator's Manifest Version moves when — and
+  # only when — what it scaffolds changes, and its doc row never drifts from it.
+  generator-versions:
+    uses: ./.github/workflows/generator-versions.yml
+    permissions:
+      contents: read
+
   test:
     uses: ./.github/workflows/unit-tests.yml
 

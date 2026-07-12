@@ -1,0 +1,98 @@
+name: Generator versions
+
+# Keeps a Generator's Manifest Version honest: it must move when — and only when —
+# what the Generator scaffolds actually changes. See ADR-0002.
+#
+#   Rule 1  a Generator whose Fingerprint moved has a bumped Manifest Version
+#   Rule 2  every Generator's doc version row equals its manifest Version
+#
+# A Fingerprint is a hash of what a Generator *contributes* to a scaffolded
+# project. So a comment fix or a gofmt demands nothing, while a template edit
+# demands a bump. It is all in-memory — no pnpm install — and takes seconds.
+#
+# Rule 1 deliberately does NOT run on a diff that only touches internal/deps/.
+# A Catalog Pin change alters what many Generators scaffold, but forcing their
+# manifest bumps into the dependency PR is exactly what made merge order corrupt
+# those versions. Those bumps are derived at release instead (rule 3, release.yml).
+
+on:
+  workflow_call:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-match-manifests:
+    name: "Rule 2: docs match manifests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build dot
+        run: make build ARGS="-d"
+      - name: Check
+        run: ./bin/dot gen-check --docs
+
+  changed-generators-are-bumped:
+    name: "Rule 1: changed generators are bumped"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Did this PR touch generators/?
+        id: scope
+        run: |
+          base="origin/${{ github.base_ref || 'main' }}"
+          git fetch origin "${{ github.base_ref || 'main' }}" --depth=1 --quiet || true
+          if git diff --name-only "$base"...HEAD | grep -q '^generators/'; then
+            echo "touched=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "touched=false" >> "$GITHUB_OUTPUT"
+            echo "No generators/ changes — rule 1 does not apply."
+          fi
+
+      # Fingerprints depend on the generators compiled into the binary, so the
+      # base fingerprints must be produced by a binary built from the BASE
+      # generators. We get that by checking the base out into a worktree and
+      # overlaying this branch's fingerprinting code onto it — the base may not
+      # have `gen-fingerprint` at all.
+      - name: Fingerprint the base
+        if: steps.scope.outputs.touched == 'true'
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref || 'main' }}"
+          git worktree add --detach /tmp/base "$base"
+
+          mkdir -p /tmp/base/internal/fingerprint
+          cp internal/fingerprint/fingerprint.go /tmp/base/internal/fingerprint/
+          cp internal/flow/scripted.go           /tmp/base/internal/flow/
+          cp internal/generator/executor.go      /tmp/base/internal/generator/
+          cp internal/cli/gen_fingerprint.go     /tmp/base/internal/cli/
+          cp internal/cli/gen_check.go           /tmp/base/internal/cli/
+          cp internal/cli/runner.go              /tmp/base/internal/cli/
+          cp internal/cli/command.go             /tmp/base/internal/cli/
+
+          (cd /tmp/base && go build -o /tmp/dot-base ./cmd/dot)
+          /tmp/dot-base gen-fingerprint --json > /tmp/fingerprints-base.json
+          git worktree remove --force /tmp/base
+
+      - name: Build dot
+        if: steps.scope.outputs.touched == 'true'
+        run: make build ARGS="-d"
+
+      - name: Every changed generator has a bumped version
+        if: steps.scope.outputs.touched == 'true'
+        env:
+          DOT_BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: ./bin/dot gen-check --bumped --base=/tmp/fingerprints-base.json
