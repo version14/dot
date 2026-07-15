@@ -10,7 +10,7 @@ package deps
 // and name it from a generator via deps.NPM("...").
 var npm = map[string]string{
 	"@ark-ui/react":                  "^5.37.2",
-	"@asteasolutions/zod-to-openapi": "^8.5.0",
+	"@asteasolutions/zod-to-openapi": "^9.0.0",
 	"@biomejs/biome":                 "^2.5.3",
 	"@clerk/clerk-react":             "^5.61.3",
 	"@clerk/nextjs":                  "^7.5.17",
