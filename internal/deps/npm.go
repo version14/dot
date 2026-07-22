@@ -27,7 +27,7 @@ var npm = map[string]string{
 	"@tanstack/react-query-devtools": "^5.101.2",
 	"@tanstack/react-router":         "^1.170.17",
 	"@tanstack/router-plugin":        "^1.168.19",
-	"@testing-library/jest-dom":      "^6.9.1",
+	"@testing-library/jest-dom":      "^7.0.0",
 	"@testing-library/react":         "^16.3.2",
 	"@testing-library/user-event":    "^14.6.1",
 	"@types/cookie-parser":           "^1.4.10",
