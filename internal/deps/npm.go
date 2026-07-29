@@ -57,7 +57,7 @@ var npm = map[string]string{
 	"express":                        "^5.2.1",
 	"express-rate-limit":             "^8.5.2",
 	"jotai":                          "^2.20.1",
-	"jsdom":                          "^29.1.1",
+	"jsdom":                          "^30.0.1",
 	"jsonwebtoken":                   "^9.0.3",
 	"lucide-react":                   "^1.24.0",
 	"next":                           "^16.2.10",
