@@ -79,7 +79,7 @@ jobs:
       # unbounded — entries here are a few hundred bytes each.
       - name: Restore fixture cache
         if: ${{ !inputs.no_cache }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .test-flow-cache/${{ matrix.fixture }}.json
           key: test-flow-cache-${{ matrix.fixture }}-${{ github.run_id }}
