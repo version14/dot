@@ -44,7 +44,7 @@ var npm = map[string]string{
 	"@vercel/flags":                  "^3.1.1",
 	"@version14/ui":                  "^0.8.0",
 	"@vitejs/plugin-react":           "^6.0.3",
-	"@vitest/coverage-v8":            "^4.1.10",
+	"@vitest/coverage-v8":            "^5.0.0",
 	"bcryptjs":                       "^3.0.3",
 	"better-auth":                    "^1.6.23",
 	"class-variance-authority":       "^0.7.1",
