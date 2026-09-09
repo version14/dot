@@ -81,7 +81,7 @@ var npm = map[string]string{
 	"tsx":                            "^4.23.0",
 	"typescript":                     "^6.0.3",
 	"vite":                           "^8.1.4",
-	"vitest":                         "^4.1.10",
+	"vitest":                         "^5.0.0",
 	"zod":                            "^4.4.3",
 	"zustand":                        "^5.0.14",
 }
