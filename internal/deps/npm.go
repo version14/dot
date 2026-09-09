@@ -56,7 +56,7 @@ var npm = map[string]string{
 	"drizzle-orm":                    "^0.45.2",
 	"express":                        "^5.2.1",
 	"express-rate-limit":             "^8.5.2",
-	"jotai":                          "^2.20.1",
+	"jotai":                          "^3.0.0",
 	"jsdom":                          "^29.1.1",
 	"jsonwebtoken":                   "^9.0.3",
 	"lucide-react":                   "^1.24.0",
