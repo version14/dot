@@ -51,7 +51,7 @@ var npm = map[string]string{
 	"clsx":                           "^2.1.1",
 	"cookie-parser":                  "^1.4.7",
 	"cors":                           "^2.8.6",
-	"dotenv":                         "^17.4.2",
+	"dotenv":                         "^18.0.3",
 	"drizzle-kit":                    "^0.31.10",
 	"drizzle-orm":                    "^0.45.2",
 	"express":                        "^5.2.1",
