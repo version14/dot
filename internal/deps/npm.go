@@ -17,7 +17,7 @@ var npm = map[string]string{
 	"@pandacss/dev":                  "^1.11.4",
 	"@playwright/test":               "^1.61.1",
 	"@sentry/nextjs":                 "^10.65.0",
-	"@sentry/react":                  "^10.65.0",
+	"@sentry/react":                  "^11.0.0",
 	"@storybook/nextjs":              "^10.5.0",
 	"@storybook/react":               "^10.5.0",
 	"@storybook/react-vite":          "^10.5.0",
