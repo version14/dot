@@ -14,7 +14,7 @@ var npm = map[string]string{
 	"@biomejs/biome":                 "^2.5.3",
 	"@clerk/clerk-react":             "^5.61.3",
 	"@clerk/nextjs":                  "^7.5.17",
-	"@pandacss/dev":                  "^1.11.4",
+	"@pandacss/dev":                  "^2.0.0",
 	"@playwright/test":               "^1.61.1",
 	"@sentry/nextjs":                 "^10.65.0",
 	"@sentry/react":                  "^10.65.0",
