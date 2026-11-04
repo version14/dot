@@ -63,7 +63,7 @@ var npm = map[string]string{
 	"next":                           "^16.2.10",
 	"nodemon":                        "^3.1.14",
 	"plausible-tracker":              "^0.3.9",
-	"postgres":                       "^3.4.9",
+	"postgres":                       "^4.0.0",
 	"posthog-js":                     "^1.399.2",
 	"prettier":                       "^3.9.5",
 	"react":                          "^19.2.7",
